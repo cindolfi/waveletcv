@@ -1972,64 +1972,6 @@ std::pair<double, double> Dwt2dResults::normalization_constants(int normalizatio
 }
 
 
-// Dwt2dResults::Iterator::Iterator(
-//     const Dwt2dResults* result,
-//     int level,
-//     const Dwt2dLevelCoeffs::Iterator& current
-// ) :
-//     _result(result),
-//     _level(level),
-//     _current_iter(current),
-//     _current_end(result->coeffs[level].end())
-// {
-// }
-
-// Dwt2dResults::Iterator::Iterator(const Dwt2dResults::Iterator& other) :
-//     _result(other._result),
-//     _level(other._level),
-//     _current_iter(other._current_iter),
-//     _current_end(other._current_end)
-// {
-// }
-
-// Dwt2dResults::Iterator& Dwt2dResults::Iterator::operator=(const Dwt2dResults::Iterator& other)
-// {
-//     if (this != &other) {
-//         _result = other._result;
-//         _level = other._level;
-//         _current_iter = other._current_iter;
-//         _current_end = other._current_end;
-//     }
-
-//     return *this;
-// }
-
-// Dwt2dResults::Iterator::reference Dwt2dResults::Iterator::operator*() const
-// {
-//     return *_current_iter;
-// }
-
-// Dwt2dResults::Iterator& Dwt2dResults::Iterator::operator++()
-// {
-//     if (_current_iter == _current_end) {
-//         ++_level;
-//         _current_iter = _result->coeffs[_level].begin();
-//         _current_end = _result->coeffs[_level].end();
-//     } else {
-//         ++_current_iter;
-//     }
-
-//     return *this;
-// }
-
-// Dwt2dResults::Iterator Dwt2dResults::Iterator::operator++(int)
-// {
-//     auto tmp = *this;
-//     ++(*this);
-//     return tmp;
-// }
-
-
 
 
 /**
@@ -2095,62 +2037,6 @@ cv::Mat Dwt2dLevelCoeffs::find_first_nonempty() const
 }
 
 
-// Dwt2dLevelCoeffs::Iterator::Iterator(
-//     const Dwt2dLevelCoeffs* coeffs,
-//     int category,
-//     const cv::MatConstIterator_<Dwt2dLevelCoeffs::Iterator::value_type>& current
-// ) :
-//     _coeffs(coeffs),
-//     _category(category),
-//     _current_iter(current),
-//     _current_end(coeffs->coeffs(category).end<value_type>())
-// {
-// }
-
-// Dwt2dLevelCoeffs::Iterator::Iterator(const Dwt2dLevelCoeffs::Iterator& other) :
-//     _coeffs(other._coeffs),
-//     _category(other._category),
-//     _current_iter(other._current_iter),
-//     _current_end(other._current_end)
-// {
-// }
-
-// Dwt2dLevelCoeffs::Iterator& Dwt2dLevelCoeffs::Iterator::operator=(const Dwt2dLevelCoeffs::Iterator& other)
-// {
-//     if (this != &other) {
-//         _coeffs = other._coeffs;
-//         _category = other._category;
-//         _current_iter = other._current_iter;
-//         _current_end = other._current_end;
-//     }
-
-//     return *this;
-// }
-
-// Dwt2dLevelCoeffs::Iterator::reference Dwt2dLevelCoeffs::Iterator::operator*() const
-// {
-//     return *_current_iter;
-// }
-
-// Dwt2dLevelCoeffs::Iterator& Dwt2dLevelCoeffs::Iterator::operator++()
-// {
-//     if (_current_iter == _current_end) {
-//         ++_category;
-//         _current_iter = _coeffs->coeffs(_category).begin<value_type>();
-//         _current_end = _coeffs->coeffs(_category).end<value_type>();
-//     } else {
-//         ++_current_iter;
-//     }
-
-//     return *this;
-// }
-
-// Dwt2dLevelCoeffs::Iterator Dwt2dLevelCoeffs::Iterator::operator++(int)
-// {
-//     auto tmp = *this;
-//     ++(*this);
-//     return tmp;
-// }
 
 
 

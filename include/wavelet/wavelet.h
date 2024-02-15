@@ -1709,39 +1709,6 @@ class Dwt2dLevelCoeffs {
 public:
     using Coefficients = std::array<cv::Mat, 4>;
 
-    struct Iterator
-    {
-        using iterator_category = std::forward_iterator_tag;
-        using value_type = double;
-        using pointer = value_type*;
-        using reference = const value_type&;
-
-        Iterator(
-            const Dwt2dLevelCoeffs* coeffs,
-            int category,
-            const cv::MatConstIterator_<value_type>& current
-        );
-        Iterator(const Iterator& other);
-        Iterator() = default;
-
-        Iterator& operator=(const Iterator& other);
-        reference operator*() const;
-        Iterator& operator++();
-        Iterator operator++(int);
-
-        friend bool operator==(const Iterator& a, const Iterator& b) {
-            return a._coeffs == b._coeffs && a._current_iter == b._current_iter;
-        };
-        friend bool operator!=(const Iterator& a, const Iterator& b) {
-            return !(a == b);
-        };
-    private:
-        const Dwt2dLevelCoeffs* _coeffs;
-        int _category;
-        cv::MatConstIterator_<value_type> _current_iter;
-        cv::MatConstIterator_<value_type> _current_end;
-    };
-
 public:
     Dwt2dLevelCoeffs();
     Dwt2dLevelCoeffs(const cv::Mat& approx, const cv::Mat& horizontal_detail, const cv::Mat& vertical_detail, const cv::Mat& diagonal_detail);
@@ -1791,20 +1758,6 @@ public:
         return _coeffs;
     }
 
-    // Iterator begin() const {
-    //     return Iterator(this, APPROXIMATION, approx().begin<double>());
-    // }
-    // Iterator end() const {
-    //     return Iterator(this, DIAGONAL, diagonal_detail().end<double>());
-    // }
-
-    // Iterator details_begin() const {
-    //     return Iterator(this, HORIZONTAL, horizontal_detail().begin<double>());
-    // }
-    // Iterator details_end() const {
-    //     return Iterator(this, DIAGONAL, diagonal_detail().end<double>());
-    // }
-
     int rows() const;
     int cols() const;
     cv::Size size() const;
@@ -1836,39 +1789,6 @@ struct Dwt2dResults {
 public:
     using Coefficients = std::vector<Dwt2dLevelCoeffs>;
     Coefficients coeffs;
-
-    struct Iterator
-    {
-        using iterator_category = std::forward_iterator_tag;
-        using value_type = double;
-        using pointer = value_type*;
-        using reference = const value_type&;
-
-        Iterator(
-            const Dwt2dResults* result,
-            int level,
-            const Dwt2dLevelCoeffs::Iterator& current
-        );
-        Iterator(const Iterator& other);
-        Iterator() = default;
-
-        Iterator& operator=(const Iterator& other);
-        reference operator*() const;
-        Iterator& operator++();
-        Iterator operator++(int);
-
-        friend bool operator==(const Iterator& a, const Iterator& b) {
-            return (a._result == b._result) && (a._current_iter == b._current_iter);
-        };
-        friend bool operator!=(const Iterator& a, const Iterator& b) {
-            return !(a == b);
-        };
-    private:
-        const Dwt2dResults* _result;
-        int _level;
-        Dwt2dLevelCoeffs::Iterator _current_iter;
-        Dwt2dLevelCoeffs::Iterator _current_end;
-    };
 
 public:
     Dwt2dResults();
@@ -1915,22 +1835,6 @@ public:
     size_t depth() const {
         return coeffs.size();
     }
-
-    // Iterator begin() const {
-    //     return Iterator(this, 0, coeffs.front().begin());
-    // }
-
-    // Iterator end() const {
-    //     return Iterator(this, coeffs.size() - 1, coeffs.back().end());
-    // }
-
-    // Iterator details_begin() const {
-    //     return Iterator(this, 0, coeffs.front().begin());
-    // }
-
-    // Iterator details_end() const {
-    //     return Iterator(this, coeffs.size() - 1, coeffs.back().end());
-    // }
 
     void normalize(int approx_mode=DWT_NORMALIZE_MAX, int detail_mode=DWT_NORMALIZE_ZERO_TO_HALF);
     double maximum_abs_value() const;
