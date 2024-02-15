@@ -1,0 +1,8 @@
+{
+    "wavelet": "db1",
+    "mode": "symmetric",
+    "name": 0,
+    "path": "data/db1/symmetric/0",
+    "input_filename": "input.png",
+    "coeffs_filename": "coeffs.png"
+}

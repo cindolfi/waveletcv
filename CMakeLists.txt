@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(Wavelet)
 
+enable_testing()
+
 #   ----------------------------------------------------------------------------
 #   CMake Includes
 #   ----------------------------------------------------------------------------
@@ -16,3 +18,4 @@ find_package(OpenCV REQUIRED)
 #   ----------------------------------------------------------------------------
 add_subdirectory(src)
 add_subdirectory(tests)
+add_subdirectory(examples)

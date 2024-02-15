@@ -1,12 +1,12 @@
 # Optionally glob, but only for CMake 3.12 or later:
 #file(GLOB HEADER_LIST CONFIGURE_DEPENDS "${Wavelet_SOURCE_DIR}/include/wavelet/*.hpp")
-set(HEADER_LIST "${Wavelet_SOURCE_DIR}/include/wavelet/lib.hpp")
+set(HEADER_LIST "${Wavelet_SOURCE_DIR}/include/wavelet/wavelet.h")
 
 #   ----------------------------------------------------------------------------
 #   Add Library Target
 #   ----------------------------------------------------------------------------
 # Make an automatic library - will be static or dynamic based on user setting
-add_library(wavelet_library lib.cpp ${HEADER_LIST})
+add_library(wavelet_library wavelet.cpp ${HEADER_LIST})
 
 #   ----------------------------------------------------------------------------
 #   Target Settings

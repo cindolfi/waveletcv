@@ -14,7 +14,7 @@
  * 2D
  *  single channel
  *  multi channel
- * ND 
+ * ND
 */
 
 
@@ -29,9 +29,56 @@
  * 5. lint
 */
 
+enum class WaveletSymmetry {
+    SYMMETRIC,
+    ASYMMETRIC,
+};
+
+enum class WaveletId {
+    DB_1, DB_2, DB_3, DB_4, DB_5, DB_6, DB_7, DB_8, DB_9, DB_10, DB_11, DB_12,
+    DB_13, DB_14, DB_15, DB_16, DB_17, DB_18, DB_19, DB_20, DB_21, DB_22, DB_23, DB_24,
+    DB_25, DB_26, DB_27, DB_28, DB_29, DB_30, DB_31, DB_32, DB_33, DB_34, DB_35, DB_36,
+    DB_37, DB_38
+};
+
+struct WaveletFilterBank
+{
+    using Coeffs = std::vector<double>;
+
+    WaveletFilterBank(const Coeffs& lowpass, const Coeffs& highpass);
+    WaveletFilterBank() = default;
+    WaveletFilterBank(const WaveletFilterBank& filters);
+    WaveletFilterBank(const WaveletFilterBank&& filters);
+
+    Coeffs lowpass;
+    Coeffs highpass;
+
+    static WaveletFilterBank build_analysis_filter_bank(const Coeffs& analysis_coeffs);
+    static WaveletFilterBank build_synthesis_filter_bank(const Coeffs& synthesis_coeffs);
+
+    static void negate_odds(Coeffs& filter_coeffs);
+    static void negate_evens(Coeffs& filter_coeffs);
+};
 
 class Wavelet
 {
+public:
+    const WaveletFilterBank::Coeffs& analysis_lowpass_coeffs() const {
+        return _analysis_coeffs.lowpass;
+    }
+    const WaveletFilterBank::Coeffs& analysis_highpass_coeffs() const {
+        return _analysis_coeffs.highpass;
+    }
+    const WaveletFilterBank::Coeffs& synthesis_lowpass_coeffs() const {
+        return _synthesis_coeffs.lowpass;
+    }
+    const WaveletFilterBank::Coeffs& synthesis_highpass_coeffs() const {
+        return _synthesis_coeffs.highpass;
+    }
+
+    Wavelet(const Wavelet& other);
+    Wavelet(Wavelet&& other);
+
 protected:
     Wavelet(
         int order,
@@ -40,29 +87,13 @@ protected:
         int support_width,
         bool orthogonal,
         bool biorthogonal,
-        bool symmetry,
+        WaveletSymmetry symmetry,
         bool compact_support,
         const std::string& family_name,
         const std::string& short_name,
-        const std::vector<double>& analysis_filter_coeffs,
-        const std::vector<double>& synthesis_filter_coeffs
+        const WaveletFilterBank& analysis_coeffs,
+        const WaveletFilterBank& synthesis_coeffs
     );
-    virtual void build_filter_bank();
-    std::vector<double> alternate_signs(const std::vector<double>& filter_coeffs) const;
-
-public:
-    const std::vector<double>& analysis_highpass_coeffs() const { 
-        return _highpass_analysis_filter;
-    }
-    const std::vector<double>& analysis_lowpass_coeffs() const { 
-        return _lowpass_analysis_filter;
-    }
-    const std::vector<double>& synthesis_highpass_coeffs() const { 
-        return _highpass_synthesis_filter;
-    }
-    const std::vector<double>& synthesis_lowpass_coeffs() const { 
-        return _lowpass_synthesis_filter;
-    }
 
 public:
     const int order;
@@ -71,19 +102,16 @@ public:
     const int support_width;
     const bool orthogonal;
     const bool biorthogonal;
-    const bool symmetry;
+    const WaveletSymmetry symmetry;
     const bool compact_support;
     const std::string family_name;
     const std::string short_name;
 
-private:
-    std::vector<double> _analysis_filter_coeffs;
-    std::vector<double> _synthesis_filter_coeffs;
-
-    std::vector<double> _highpass_analysis_filter;
-    std::vector<double> _lowpass_analysis_filter;
-    std::vector<double> _highpass_synthesis_filter;
-    std::vector<double> _lowpass_synthesis_filter;
+protected:
+    // std::shared_ptr<WaveletFilterBank> _analysis_coeffs;
+    // std::shared_ptr<WaveletFilterBank> _synthesis_coeffs;
+    WaveletFilterBank _analysis_coeffs;
+    WaveletFilterBank _synthesis_coeffs;
 };
 
 
@@ -93,7 +121,7 @@ public:
     DaubechiesWavelet(int order);
 
 private:
-    std::vector<double> ORDER_FILTER_COEFFS[38] = {
+    std::vector<double> ORDER_FILTER_COEFFS2[38] = {
         std::vector<double> {
             7.071067811865475244008443621048490392848359376884740365883398e-01,
             7.071067811865475244008443621048490392848359376884740365883398e-01
@@ -1658,18 +1686,61 @@ private:
 
 
 
+template <class WaveletType, int order>
+void register_wavelet_factory(const std::string& name);
+
+/**
+ * Wavelt factory that returns a wavelet object from a wavelet name
+*/
+Wavelet create_wavelet(const std::string& id);
+
+std::vector<std::string> registered_wavelets();
+
 
 
 enum DWT2DCoeffCategory {
-    HORIZONTAL = 0,
-    VERTICAL = 1,
-    DIAGONAL = 2,
-    APPROXIMATION = 3,
+    APPROXIMATION = 0,
+    HORIZONTAL = 1,
+    VERTICAL = 2,
+    DIAGONAL = 3,
 };
 
 class Dwt2dLevelCoeffs {
 public:
     using Coefficients = std::array<cv::Mat, 4>;
+
+    struct Iterator
+    {
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = double;
+        using pointer = value_type*;
+        using reference = const value_type&;
+
+        Iterator(
+            const Dwt2dLevelCoeffs* coeffs,
+            int category,
+            const cv::MatConstIterator_<value_type>& current
+        );
+        Iterator(const Iterator& other);
+        Iterator() = default;
+
+        Iterator& operator=(const Iterator& other);
+        reference operator*() const;
+        Iterator& operator++();
+        Iterator operator++(int);
+
+        friend bool operator==(const Iterator& a, const Iterator& b) {
+            return a._coeffs == b._coeffs && a._current_iter == b._current_iter;
+        };
+        friend bool operator!=(const Iterator& a, const Iterator& b) {
+            return !(a == b);
+        };
+    private:
+        const Dwt2dLevelCoeffs* _coeffs;
+        int _category;
+        cv::MatConstIterator_<value_type> _current_iter;
+        cv::MatConstIterator_<value_type> _current_end;
+    };
 
 public:
     Dwt2dLevelCoeffs();
@@ -1698,7 +1769,7 @@ public:
     cv::Mat& diagonal_detail() {
         return _coeffs[DIAGONAL];
     }
-    
+
     const cv::Mat& approx() const {
         return _coeffs[APPROXIMATION];
     }
@@ -1706,10 +1777,10 @@ public:
         return _coeffs[APPROXIMATION];
     }
 
-    const cv::Mat& coeffs(DWT2DCoeffCategory category) const {
+    const cv::Mat& coeffs(int category) const {
         return _coeffs[category];
     }
-    cv::Mat& coeffs(DWT2DCoeffCategory category) {
+    cv::Mat& coeffs(int category) {
         return _coeffs[category];
     }
 
@@ -1720,10 +1791,25 @@ public:
         return _coeffs;
     }
 
+    // Iterator begin() const {
+    //     return Iterator(this, APPROXIMATION, approx().begin<double>());
+    // }
+    // Iterator end() const {
+    //     return Iterator(this, DIAGONAL, diagonal_detail().end<double>());
+    // }
+
+    // Iterator details_begin() const {
+    //     return Iterator(this, HORIZONTAL, horizontal_detail().begin<double>());
+    // }
+    // Iterator details_end() const {
+    //     return Iterator(this, DIAGONAL, diagonal_detail().end<double>());
+    // }
+
     int rows() const;
     int cols() const;
+    cv::Size size() const;
     int type() const;
-    
+
 protected:
     cv::Mat find_first_nonempty() const;
 
@@ -1733,55 +1819,165 @@ private:
 
 
 
-class Dwt2dResults {
-public:
-    Dwt2dResults(const Wavelet& wavelet);
-    
-    const cv::Mat& approx() const;
-    std::vector<const cv::Mat&> details(DWT2DCoeffCategory direction) const;
-    const Dwt2dLevelCoeffs& level_coeffs(int level) const {
-        return _level_coeffs[level];
-    }
-    int levels() const {
-        return _level_coeffs.size();
-    }
 
-    const std::vector<Dwt2dLevelCoeffs>& all_coeffs() const {
-        return _level_coeffs;
+
+
+
+
+
+
+enum {
+    DWT_NORMALIZE_NONE = 0,
+    DWT_NORMALIZE_ZERO_TO_HALF,
+    DWT_NORMALIZE_MAX,
+};
+
+struct Dwt2dResults {
+public:
+    using Coefficients = std::vector<Dwt2dLevelCoeffs>;
+    Coefficients coeffs;
+
+    struct Iterator
+    {
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = double;
+        using pointer = value_type*;
+        using reference = const value_type&;
+
+        Iterator(
+            const Dwt2dResults* result,
+            int level,
+            const Dwt2dLevelCoeffs::Iterator& current
+        );
+        Iterator(const Iterator& other);
+        Iterator() = default;
+
+        Iterator& operator=(const Iterator& other);
+        reference operator*() const;
+        Iterator& operator++();
+        Iterator operator++(int);
+
+        friend bool operator==(const Iterator& a, const Iterator& b) {
+            return (a._result == b._result) && (a._current_iter == b._current_iter);
+        };
+        friend bool operator!=(const Iterator& a, const Iterator& b) {
+            return !(a == b);
+        };
+    private:
+        const Dwt2dResults* _result;
+        int _level;
+        Dwt2dLevelCoeffs::Iterator _current_iter;
+        Dwt2dLevelCoeffs::Iterator _current_end;
+    };
+
+public:
+    Dwt2dResults();
+    explicit Dwt2dResults(const std::vector<Dwt2dLevelCoeffs>& coeffs);
+    Dwt2dResults(const cv::Mat& matrix, int depth=0);
+    Dwt2dResults(int rows, int cols, int type, int max_depth=0);
+    Dwt2dResults(const cv::Size& size, int type, int max_depth=0);
+
+    // Dwt2dResults(const Dwt2dResults& other);
+    // Dwt2dResults(Dwt2dResults&& other);
+
+    cv::Mat approx() const;
+    std::vector<cv::Mat> details(DWT2DCoeffCategory direction) const;
+    std::vector<cv::Mat> horizontal_details() const {
+        return details(HORIZONTAL);
+    }
+    std::vector<cv::Mat> vertical_details() const {
+        return details(VERTICAL);
+    }
+    std::vector<cv::Mat> diagonal_details() const {
+        return details(DIAGONAL);
     }
 
     cv::Mat as_matrix() const;
-    void push_back(const Dwt2dLevelCoeffs& level_coeffs);
+    operator cv::Mat() const { return as_matrix(); }
+    // Dwt2dResults operator=(const cv::Mat& matrix);
 
-public:
-    const Wavelet& wavelet;
+    Dwt2dLevelCoeffs level_coeffs(int level) const {
+        return coeffs.at(level);
+    }
+    size_t levels() const {
+        return coeffs.size();
+    }
+
+    Dwt2dLevelCoeffs& operator[](size_t level) {
+        return coeffs.at(level);
+    }
+    const Dwt2dLevelCoeffs& operator[](size_t level) const {
+        return coeffs.at(level);
+    }
+    size_t size() const {
+        return coeffs.size();
+    }
+    size_t depth() const {
+        return coeffs.size();
+    }
+
+    // Iterator begin() const {
+    //     return Iterator(this, 0, coeffs.front().begin());
+    // }
+
+    // Iterator end() const {
+    //     return Iterator(this, coeffs.size() - 1, coeffs.back().end());
+    // }
+
+    // Iterator details_begin() const {
+    //     return Iterator(this, 0, coeffs.front().begin());
+    // }
+
+    // Iterator details_end() const {
+    //     return Iterator(this, coeffs.size() - 1, coeffs.back().end());
+    // }
+
+    void normalize(int approx_mode=DWT_NORMALIZE_MAX, int detail_mode=DWT_NORMALIZE_ZERO_TO_HALF);
+    double maximum_abs_value() const;
 
 protected:
-    std::vector<Dwt2dLevelCoeffs> _level_coeffs;
+    std::pair<double, double> normalization_constants(int normalization_mode, double max_abs_value) const;
 };
+
 
 
 
 class DWT2D {
 public:
-    DWT2D(const Wavelet& wavelet);
-    
-    Dwt2dResults operator()(cv::InputArray x, int max_levels=0) const;
+    DWT2D(const Wavelet& wavelet, int border_type=cv::BORDER_DEFAULT);
+
+    Dwt2dResults operator()(cv::InputArray x, int max_depth=0) const;
     Dwt2dLevelCoeffs compute_single_level(cv::InputArray x) const;
 
+    Dwt2dResults forward(cv::InputArray x, int max_depth=0) const;
+    void inverse(const Dwt2dResults& coeffs, cv::OutputArray output) const;
+
+    int max_possible_depth(cv::InputArray x) const;
+
 public:
-    const Wavelet& wavelet;
+    const Wavelet wavelet;
+    int border_type;
 
 protected:
     cv::Mat convolve_rows_and_decimate_cols(const cv::Mat& data, cv::InputArray kernel) const;
     cv::Mat convolve_cols_and_decimate_rows(const cv::Mat& data, cv::InputArray kernel) const;
     cv::Mat convolve_and_decimate(
-        const cv::Mat& data, 
-        cv::InputArray kernel_x, 
-        cv::InputArray kernel_y, 
-        int final_rows, 
+        const cv::Mat& data,
+        cv::InputArray kernel_x,
+        cv::InputArray kernel_y,
+        int final_rows,
         int final_cols
     ) const;
 };
+
+
+Dwt2dResults dwt2d(
+    cv::InputArray input,
+    const Wavelet& wavelet,
+    int max_depth=0,
+    int border_type=cv::BORDER_DEFAULT
+);
+
+// Dwt2dResults dwt2d(cv::InputArray input, const std::string& wavelet, int max_levels=0);
 
 #endif
