@@ -15,8 +15,8 @@ add_library(wavelet_library wavelet.cpp ${HEADER_LIST})
 target_include_directories(wavelet_library PUBLIC ../include /usr/local/include/opencv4)
 target_link_libraries(wavelet_library gtest_main ${OpenCV_LIBS})
 
-# All users of this library will need at least C++17
-target_compile_features(wavelet_library PUBLIC cxx_std_17)
+# All users of this library will need at least C++20
+target_compile_features(wavelet_library PUBLIC cxx_std_20)
 
 #   ----------------------------------------------------------------------------
 #   IDE Settings

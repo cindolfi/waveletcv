@@ -10,7 +10,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 
 FetchContent_Declare(
-    json 
+    json
     URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
 )
 FetchContent_MakeAvailable(json)
@@ -26,19 +26,17 @@ add_executable(wavelet_test wavelet_test.cpp)
 #   ----------------------------------------------------------------------------
 # Should be linked to the main library, as well as the GoogleTest testing library
 target_link_libraries (
-    wavelet_test 
-    PRIVATE 
-    wavelet_library 
-    gtest_main 
+    wavelet_test
+    PRIVATE
+    wavelet_library
+    gtest_main
     nlohmann_json::nlohmann_json
 )
 
-# I'm using C++17 in the test
-target_compile_features(wavelet_test PRIVATE cxx_std_17)
+# I'm using C++20 in the test
+target_compile_features(wavelet_test PRIVATE cxx_std_20)
 
 #   ----------------------------------------------------------------------------
 #   Add Tests
 #   ----------------------------------------------------------------------------
 add_test(NAME testwavelet_test COMMAND wavelet_test)
-
-

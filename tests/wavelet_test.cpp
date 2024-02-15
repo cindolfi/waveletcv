@@ -15,27 +15,29 @@
 
 using json = nlohmann::json;
 
-cv::Mat create_matrix(int rows, int cols, int type, float initial_value = 0) 
+cv::Mat create_matrix(int rows, int cols, int type, float initial_value = 0)
 {
     std::vector<float> elements(rows * cols);
     std::iota(elements.begin(), elements.end(), initial_value);
-    return cv::Mat(elements, true).reshape(0, rows);
+    auto result = cv::Mat(elements, true).reshape(0, rows);
+    result.convertTo(result, type);
+
+    return result;
 }
 
-bool matrix_equals(const cv::Mat &a, const cv::Mat &b) {
-    cv::Mat mask = a == b;
-    return std::all_of(
-        mask.begin<int>(), 
-        mask.end<int>(), 
-        [](int i) { return bool(i); }
-    );
-}
 
-void print_matrix(const cv::Mat& matrix) {
+
+
+void print_matrix(const cv::Mat& matrix, float zero_clamp=1e-7) {
     if (matrix.type() == CV_32F) {
-        for (int row = 0; row < matrix.rows; ++row) {
-            for (int col = 0; col < matrix.cols; ++col) {
-                std::cout << std::setfill(' ') << std::setprecision(6) << matrix.at<float>(row, col) << " ";
+        // matrix
+        cv::Mat clamped;
+        matrix.copyTo(clamped);
+        clamped.setTo(0, cv::abs(clamped) < zero_clamp);
+
+        for (int row = 0; row < clamped.rows; ++row) {
+            for (int col = 0; col < clamped.cols; ++col) {
+                std::cout << std::setfill(' ') << std::setw(3) << std::setprecision(3) << clamped.at<float>(row, col) << " ";
             }
             std::cout << std::endl;
         }
@@ -50,381 +52,536 @@ void print_matrix(const cv::Mat& matrix) {
 }
 
 
+bool matrix_equals(const cv::Mat& a, const cv::Mat& b) {
+    return cv::countNonZero(a == b) == a.total();
+}
 
-// TEST(Daubechies, Construction) {
-//     DaubechiesWavelet wavelet(2);
-//     ASSERT_EQ(wavelet.order, 2);
-//     ASSERT_EQ(wavelet.vanising_moments_psi, 4);
-//     ASSERT_EQ(wavelet.vanising_moments_phi, 0);
-//     ASSERT_EQ(wavelet.support_width, 3);
-//     ASSERT_EQ(wavelet.orthogonal, true);
-//     ASSERT_EQ(wavelet.biorthogonal, true);
-//     ASSERT_EQ(wavelet.symmetry, WaveletSymmetry::ASYMMETRIC);
-//     ASSERT_EQ(wavelet.compact_support, true);
-//     ASSERT_EQ(wavelet.family_name, "Daubechies");
-//     ASSERT_EQ(wavelet.short_name, "db");
-// }
+bool matrix_is_all_zeros(const cv::Mat& a) {
+    return cv::countNonZero(a == 0.0) == a.total();
+}
 
-// TEST(Daubechies, CoeffsSize) {
-//     DaubechiesWavelet wavelet(2);
-//     ASSERT_EQ(wavelet.analysis_highpass_coeffs().size(), 1 + wavelet.support_width);
-//     ASSERT_EQ(wavelet.analysis_lowpass_coeffs().size(), 1 + wavelet.support_width);
-//     ASSERT_EQ(wavelet.synthesis_highpass_coeffs().size(), 1 + wavelet.support_width);
-//     ASSERT_EQ(wavelet.synthesis_lowpass_coeffs().size(), 1 + wavelet.support_width);
-// }
+bool matrix_equals_float(const cv::Mat& a, const cv::Mat& b, float tolerance=0.0) {
+    if (tolerance <= 0)
+        tolerance = std::numeric_limits<float>::epsilon();
 
-// // w.dec_lo = [-0.12940952255126037, 0.2241438680420134, 0.8365163037378079, 0.48296291314453416]
-// TEST(Daubechies, AnalysisLowpassCoeffs) {
-//     DaubechiesWavelet wavelet(2);
-    
-//     auto coeffs = wavelet.analysis_lowpass_coeffs();
-
-//     ASSERT_DOUBLE_EQ(coeffs[0], -1.294095225512603811744494188120241641745344506599652569070016e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[1], 2.241438680420133810259727622404003554678835181842717613871683e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[2], 8.365163037378079055752937809168732034593703883484392934953414e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[3], 4.829629131445341433748715998644486838169524195042022752011715e-01);   
-// }
-
-// // w.dec_hi = [-0.48296291314453416, 0.8365163037378079, -0.2241438680420134, -0.12940952255126037]
-// TEST(Daubechies, AnalysisHighpassCoeffs) {
-//     DaubechiesWavelet wavelet(2);
-    
-//     auto coeffs = wavelet.analysis_highpass_coeffs();
-
-//     ASSERT_DOUBLE_EQ(coeffs[0], -4.829629131445341433748715998644486838169524195042022752011715e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[1], 8.365163037378079055752937809168732034593703883484392934953414e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[2], -2.241438680420133810259727622404003554678835181842717613871683e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[3], -1.294095225512603811744494188120241641745344506599652569070016e-01);   
-// }
-
-// // w.rec_lo = [0.48296291314453416, 0.8365163037378079, 0.2241438680420134, -0.12940952255126037], 
-// TEST(Daubechies, SynthesisLowpassCoeffs) {
-//     DaubechiesWavelet wavelet(2);
-    
-//     auto coeffs = wavelet.synthesis_lowpass_coeffs();
-
-//     ASSERT_DOUBLE_EQ(coeffs[0], 4.829629131445341433748715998644486838169524195042022752011715e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[1], 8.365163037378079055752937809168732034593703883484392934953414e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[2], 2.241438680420133810259727622404003554678835181842717613871683e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[3], -1.294095225512603811744494188120241641745344506599652569070016e-01);
-// }
-
-// //  w.rec_hi = [-0.12940952255126037, -0.2241438680420134, 0.8365163037378079, -0.48296291314453416] 
-// TEST(Daubechies, SynthesisHighpassCoeffs) {
-//     DaubechiesWavelet wavelet(2);
-    
-//     auto coeffs = wavelet.synthesis_highpass_coeffs();
-
-//     ASSERT_DOUBLE_EQ(coeffs[0], -1.294095225512603811744494188120241641745344506599652569070016e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[1], -2.241438680420133810259727622404003554678835181842717613871683e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[2], 8.365163037378079055752937809168732034593703883484392934953414e-01);
-//     ASSERT_DOUBLE_EQ(coeffs[3], -4.829629131445341433748715998644486838169524195042022752011715e-01);
-// }
+    cv::Mat diff;
+    cv::absdiff(a, b, diff);
+    cv::Mat mask = (diff <= tolerance);
+    return cv::countNonZero(diff <= tolerance) == diff.total();
+}
 
 
 
-// /**
-//  * -----------------------------------------------------------------------------
-//  * Dwt2dLevelCoeffs
-//  * -----------------------------------------------------------------------------
-// */
-// void assert_level_coeffs_accessors(
-//     const Dwt2dLevelCoeffs &level_coeffs, 
-//     const cv::Mat &approx, 
-//     const cv::Mat &horizontal_detail, 
-//     const cv::Mat &vertical_detail, 
-//     const cv::Mat &diagonal_detail
-// ) 
-// {
-//     ASSERT_TRUE(matrix_equals(level_coeffs.approx(), approx));
-//     ASSERT_TRUE(matrix_equals(level_coeffs.horizontal_detail(), horizontal_detail));
-//     ASSERT_TRUE(matrix_equals(level_coeffs.vertical_detail(), vertical_detail));
-//     ASSERT_TRUE(matrix_equals(level_coeffs.diagonal_detail(), diagonal_detail));
-// }
+TEST(Daubechies, Construction) {
+    Wavelet wavelet = daubechies(2);
+    ASSERT_EQ(wavelet.order(), 2);
+    ASSERT_EQ(wavelet.vanising_moments_psi(), 4);
+    ASSERT_EQ(wavelet.vanising_moments_phi(), 0);
+    ASSERT_EQ(wavelet.support_width(), 3);
+    ASSERT_EQ(wavelet.orthogonal(), true);
+    ASSERT_EQ(wavelet.biorthogonal(), true);
+    ASSERT_EQ(wavelet.symmetry(), WaveletSymmetry::ASYMMETRIC);
+    ASSERT_EQ(wavelet.compact_support(), true);
+    ASSERT_EQ(wavelet.family_name(), "Daubechies");
+    ASSERT_EQ(wavelet.short_name(), "db2");
+}
 
-// void assert_level_coeffs_accessors_consistent_with_coeffs_method(const Dwt2dLevelCoeffs &level_coeffs) 
-// {
-//     ASSERT_TRUE(matrix_equals(level_coeffs.coeffs(APPROXIMATION), level_coeffs.approx()));
-//     ASSERT_TRUE(matrix_equals(level_coeffs.coeffs(HORIZONTAL), level_coeffs.horizontal_detail()));
-//     ASSERT_TRUE(matrix_equals(level_coeffs.coeffs(VERTICAL), level_coeffs.vertical_detail()));
-//     ASSERT_TRUE(matrix_equals(level_coeffs.coeffs(DIAGONAL), level_coeffs.diagonal_detail()));
-// }
+TEST(Daubechies, CoeffsSize) {
+    Wavelet wavelet = daubechies(2);
 
-// void assert_level_coeffs_all_coeffs_method_consistent_with_coeffs_method(const Dwt2dLevelCoeffs &level_coeffs) 
-// {
-//     auto coeffs = level_coeffs.all_coeffs();
-//     ASSERT_TRUE(matrix_equals(coeffs[APPROXIMATION], level_coeffs.coeffs(APPROXIMATION)));
-//     ASSERT_TRUE(matrix_equals(coeffs[HORIZONTAL], level_coeffs.coeffs(HORIZONTAL)));
-//     ASSERT_TRUE(matrix_equals(coeffs[VERTICAL], level_coeffs.coeffs(VERTICAL)));
-//     ASSERT_TRUE(matrix_equals(coeffs[DIAGONAL], level_coeffs.coeffs(DIAGONAL)));
-// }
+    ASSERT_EQ(wavelet.analysis_filter_bank().lowpass.size(), 1 + wavelet.support_width());
+    ASSERT_EQ(wavelet.analysis_filter_bank().highpass.size(), 1 + wavelet.support_width());
+    ASSERT_EQ(wavelet.synthesis_filter_bank().lowpass.size(), 1 + wavelet.support_width());
+    ASSERT_EQ(wavelet.synthesis_filter_bank().highpass.size(), 1 + wavelet.support_width());
+}
 
-// void assert_level_coeffs_matrix_properties(const Dwt2dLevelCoeffs &level_coeffs, int rows, int cols, int type) {
-//     ASSERT_EQ(level_coeffs.rows(), rows);
-//     ASSERT_EQ(level_coeffs.cols(), cols);
-//     ASSERT_EQ(level_coeffs.type(), type);
-// }
+// w.dec_lo = [-0.12940952255126037, 0.2241438680420134, 0.8365163037378079, 0.48296291314453416]
+TEST(Daubechies, AnalysisLowpassCoeffs) {
+    Wavelet wavelet = daubechies(2);
 
-// void assert_level_coeffs_constructed_correctly(
-//     const Dwt2dLevelCoeffs &level_coeffs, 
-//     const cv::Mat &approx, 
-//     const cv::Mat &horizontal_detail, 
-//     const cv::Mat &vertical_detail, 
-//     const cv::Mat &diagonal_detail,
-//     int rows,
-//     int cols,
-//     int type
-// ) 
-// {
-//     assert_level_coeffs_accessors(level_coeffs, approx, horizontal_detail, vertical_detail, diagonal_detail);
-//     assert_level_coeffs_accessors_consistent_with_coeffs_method(level_coeffs);
-//     assert_level_coeffs_all_coeffs_method_consistent_with_coeffs_method(level_coeffs);
-//     assert_level_coeffs_matrix_properties(level_coeffs, rows, cols, type);
-// }
+    auto coeffs = wavelet.analysis_filter_bank().lowpass;
 
-// TEST(Dwt2dLevelCoeffs, DefaultConstructor) {
-//     Dwt2dLevelCoeffs level_coeffs;
+    ASSERT_DOUBLE_EQ(coeffs[0], -1.294095225512603811744494188120241641745344506599652569070016e-01);
+    ASSERT_DOUBLE_EQ(coeffs[1], 2.241438680420133810259727622404003554678835181842717613871683e-01);
+    ASSERT_DOUBLE_EQ(coeffs[2], 8.365163037378079055752937809168732034593703883484392934953414e-01);
+    ASSERT_DOUBLE_EQ(coeffs[3], 4.829629131445341433748715998644486838169524195042022752011715e-01);
+}
 
-//     ASSERT_TRUE(level_coeffs.approx().empty());
-//     ASSERT_TRUE(level_coeffs.horizontal_detail().empty());
-//     ASSERT_TRUE(level_coeffs.vertical_detail().empty());
-//     ASSERT_TRUE(level_coeffs.diagonal_detail().empty());
+// w.dec_hi = [-0.48296291314453416, 0.8365163037378079, -0.2241438680420134, -0.12940952255126037]
+TEST(Daubechies, AnalysisHighpassCoeffs) {
+    Wavelet wavelet = daubechies(2);
 
-//     ASSERT_TRUE(level_coeffs.coeffs(APPROXIMATION).empty());
-//     ASSERT_TRUE(level_coeffs.coeffs(HORIZONTAL).empty());
-//     ASSERT_TRUE(level_coeffs.coeffs(VERTICAL).empty());
-//     ASSERT_TRUE(level_coeffs.coeffs(DIAGONAL).empty());
+    auto coeffs = wavelet.analysis_filter_bank().highpass;
 
-//     auto all_coeffs = level_coeffs.all_coeffs();
-//     ASSERT_TRUE(all_coeffs[APPROXIMATION].empty());
-//     ASSERT_TRUE(all_coeffs[HORIZONTAL].empty());
-//     ASSERT_TRUE(all_coeffs[VERTICAL].empty());
-//     ASSERT_TRUE(all_coeffs[DIAGONAL].empty());
+    ASSERT_DOUBLE_EQ(coeffs[0], -4.829629131445341433748715998644486838169524195042022752011715e-01);
+    ASSERT_DOUBLE_EQ(coeffs[1], 8.365163037378079055752937809168732034593703883484392934953414e-01);
+    ASSERT_DOUBLE_EQ(coeffs[2], -2.241438680420133810259727622404003554678835181842717613871683e-01);
+    ASSERT_DOUBLE_EQ(coeffs[3], -1.294095225512603811744494188120241641745344506599652569070016e-01);
+}
 
-//     ASSERT_EQ(level_coeffs.rows(), 0);
-//     ASSERT_EQ(level_coeffs.cols(), 0);
-//     ASSERT_EQ(level_coeffs.type(), 0);
-// }
+// w.rec_lo = [0.48296291314453416, 0.8365163037378079, 0.2241438680420134, -0.12940952255126037],
+TEST(Daubechies, SynthesisLowpassCoeffs) {
+    Wavelet wavelet = daubechies(2);
 
-// TEST(Dwt2dLevelCoeffs, FourMatricesConstructor) {
-//     int rows = 16;
-//     int cols = 8;
-//     int type = CV_32F;
-//     cv::Mat approx = create_matrix(rows, cols, type, 0);
-//     cv::Mat horizontal_detail = create_matrix(rows, cols, type, 1);
-//     cv::Mat vertical_detail = create_matrix(rows, cols, type, 2);
-//     cv::Mat diagonal_detail = create_matrix(rows, cols, type, 3);
+    auto coeffs = wavelet.synthesis_filter_bank().lowpass;
 
-//     Dwt2dLevelCoeffs level_coeffs(approx, horizontal_detail, vertical_detail, diagonal_detail);
+    ASSERT_DOUBLE_EQ(coeffs[0], 4.829629131445341433748715998644486838169524195042022752011715e-01);
+    ASSERT_DOUBLE_EQ(coeffs[1], 8.365163037378079055752937809168732034593703883484392934953414e-01);
+    ASSERT_DOUBLE_EQ(coeffs[2], 2.241438680420133810259727622404003554678835181842717613871683e-01);
+    ASSERT_DOUBLE_EQ(coeffs[3], -1.294095225512603811744494188120241641745344506599652569070016e-01);
+}
 
-//     assert_level_coeffs_constructed_correctly(
-//         level_coeffs, 
-//         approx, 
-//         horizontal_detail, 
-//         vertical_detail, 
-//         diagonal_detail,
-//         rows,
-//         cols,
-//         type
-//     );
-// }
+//  w.rec_hi = [-0.12940952255126037, -0.2241438680420134, 0.8365163037378079, -0.48296291314453416]
+TEST(Daubechies, SynthesisHighpassCoeffs) {
+    Wavelet wavelet = daubechies(2);
 
-// TEST(Dwt2dLevelCoeffs, ArrayConstructor) {
-//     int rows = 16;
-//     int cols = 8;
-//     int type = CV_32F;
-//     cv::Mat approx = create_matrix(rows, cols, type, 0);
-//     cv::Mat horizontal_detail = create_matrix(rows, cols, type, 1);
-//     cv::Mat vertical_detail = create_matrix(rows, cols, type, 2);
-//     cv::Mat diagonal_detail = create_matrix(rows, cols, type, 3);
+    auto coeffs = wavelet.synthesis_filter_bank().highpass;
 
-//     Dwt2dLevelCoeffs::Coefficients coeffs = {approx, horizontal_detail, vertical_detail, diagonal_detail};
-//     Dwt2dLevelCoeffs level_coeffs(coeffs);
-
-//     assert_level_coeffs_constructed_correctly(
-//         level_coeffs, 
-//         approx, 
-//         horizontal_detail, 
-//         vertical_detail, 
-//         diagonal_detail,
-//         rows,
-//         cols,
-//         type
-//     );
-// }
-
-// TEST(Dwt2dLevelCoeffs, CopyConstructor) {
-//     int rows = 16;
-//     int cols = 8;
-//     int type = CV_32F;
-//     cv::Mat approx = create_matrix(rows, cols, type, 0);
-//     cv::Mat horizontal_detail = create_matrix(rows, cols, type, 1);
-//     cv::Mat vertical_detail = create_matrix(rows, cols, type, 2);
-//     cv::Mat diagonal_detail = create_matrix(rows, cols, type, 3);
-
-//     Dwt2dLevelCoeffs level_coeffs = Dwt2dLevelCoeffs(approx, horizontal_detail, vertical_detail, diagonal_detail);
-
-//     assert_level_coeffs_constructed_correctly(
-//         level_coeffs, 
-//         approx, 
-//         horizontal_detail, 
-//         vertical_detail, 
-//         diagonal_detail,
-//         rows,
-//         cols,
-//         type
-//     );
-// }
+    ASSERT_DOUBLE_EQ(coeffs[0], -1.294095225512603811744494188120241641745344506599652569070016e-01);
+    ASSERT_DOUBLE_EQ(coeffs[1], -2.241438680420133810259727622404003554678835181842717613871683e-01);
+    ASSERT_DOUBLE_EQ(coeffs[2], 8.365163037378079055752937809168732034593703883484392934953414e-01);
+    ASSERT_DOUBLE_EQ(coeffs[3], -4.829629131445341433748715998644486838169524195042022752011715e-01);
+}
 
 
 
+// w.dec_lo = [0.7071067811865476, 0.7071067811865476]
+TEST(Haar, AnalysisLowpassCoeffs) {
+    Wavelet wavelet = haar();
 
-// /**
-//  * -----------------------------------------------------------------------------
-//  * Dwt2dResults
-//  * -----------------------------------------------------------------------------
-// */
-// Dwt2dLevelCoeffs create_level_coeffs(int rows, int cols, int type)
-// {
-//     cv::Mat approx = create_matrix(rows, cols, type, 0);
-//     cv::Mat horizontal_detail = create_matrix(rows, cols, type, 1);
-//     cv::Mat vertical_detail = create_matrix(rows, cols, type, 2);
-//     cv::Mat diagonal_detail = create_matrix(rows, cols, type, 3);
+    auto coeffs = wavelet.analysis_filter_bank().lowpass;
 
-//     return Dwt2dLevelCoeffs(approx, horizontal_detail, vertical_detail, diagonal_detail);
-// }
+    ASSERT_DOUBLE_EQ(coeffs[0], 7.071067811865475244008443621048490392848359376884740365883398e-01);
+    ASSERT_DOUBLE_EQ(coeffs[1], 7.071067811865475244008443621048490392848359376884740365883398e-01);
+}
 
+// w.dec_hi = [-0.7071067811865476, 0.7071067811865476]
+TEST(Haar, AnalysisHighpassCoeffs) {
+    Wavelet wavelet = haar();
 
-// class Dwt2dResultsTest : public testing::Test {
-// protected:
-//     void SetUp() override {
-//         int rows = 32;
-//         int cols = 16;
-//         int type = CV_32F;
+    auto coeffs = wavelet.analysis_filter_bank().highpass;
 
-//         coeffs = Dwt2dResults::Coefficients{
-//             create_level_coeffs(rows, cols, type),
-//             create_level_coeffs(rows / 2, cols / 2, type),
-//             create_level_coeffs(rows / 4, cols / 4, type),
-//             create_level_coeffs(rows / 8, cols / 8, type),
-//             create_level_coeffs(rows / 16, cols / 16, type),
-//         };
-        
-//         coeffs_constructed_results = Dwt2dResults(coeffs);
+    ASSERT_DOUBLE_EQ(coeffs[0], -7.071067811865475244008443621048490392848359376884740365883398e-01);
+    ASSERT_DOUBLE_EQ(coeffs[1], 7.071067811865475244008443621048490392848359376884740365883398e-01);
+}
 
+// w.rec_lo = [0.7071067811865476, 0.7071067811865476]
+TEST(Haar, SynthesisLowpassCoeffs) {
+    Wavelet wavelet = haar();
 
-//         expected_matrix = create_matrix(rows, cols, type);
+    auto coeffs = wavelet.synthesis_filter_bank().lowpass;
 
-//         auto approx_0 = cv::Mat();
-//         auto vertical_0 = expected_matrix(cv::Range(16, 32), cv::Range(0, 8));
-//         auto horizontal_0 = expected_matrix(cv::Range(0, 16), cv::Range(8, 16));
-//         // auto horizontal_0 = expected_matrix(cv::Range(16, 32), cv::Range(0, 8));
-//         // auto vertical_0 = expected_matrix(cv::Range(0, 16), cv::Range(8, 16));
-//         auto diagonal_0 = expected_matrix(cv::Range(16, 32), cv::Range(8, 16));
+    ASSERT_DOUBLE_EQ(coeffs[0], 7.071067811865475244008443621048490392848359376884740365883398e-01);
+    ASSERT_DOUBLE_EQ(coeffs[1], 7.071067811865475244008443621048490392848359376884740365883398e-01);
+}
 
-//         auto approx_1 = cv::Mat();
-//         auto vertical_1 = expected_matrix(cv::Range(8, 16), cv::Range(0, 4));
-//         auto horizontal_1 = expected_matrix(cv::Range(0, 8), cv::Range(4, 8));
-//         // auto horizontal_1 = expected_matrix(cv::Range(8, 16), cv::Range(0, 4));
-//         // auto vertical_1 = expected_matrix(cv::Range(0, 8), cv::Range(4, 8));
-//         auto diagonal_1 = expected_matrix(cv::Range(8, 16), cv::Range(4, 8));
+//  w.rec_hi = [0.7071067811865476, -0.7071067811865476]
+TEST(Haar, SynthesisHighpassCoeffs) {
+    Wavelet wavelet = haar();
 
-//         auto approx_2 = cv::Mat();
-//         auto vertical_2 = expected_matrix(cv::Range(4, 8), cv::Range(0, 2));
-//         auto horizontal_2 = expected_matrix(cv::Range(0, 4), cv::Range(2, 4));
-//         // auto horizontal_2 = expected_matrix(cv::Range(4, 8), cv::Range(0, 2));
-//         // auto vertical_2 = expected_matrix(cv::Range(0, 4), cv::Range(2, 4));
-//         auto diagonal_2 = expected_matrix(cv::Range(4, 8), cv::Range(2, 4));
+    auto coeffs = wavelet.synthesis_filter_bank().highpass;
 
-//         auto approx_3 = expected_matrix(cv::Range(0, 2), cv::Range(0, 1));
-//         auto vertical_3 = expected_matrix(cv::Range(2, 4), cv::Range(0, 1));
-//         auto horizontal_3 = expected_matrix(cv::Range(0, 2), cv::Range(1, 2));
-//         // auto horizontal_3 = expected_matrix(cv::Range(2, 4), cv::Range(0, 1));
-//         // auto vertical_3 = expected_matrix(cv::Range(0, 2), cv::Range(1, 2));
-//         auto diagonal_3 = expected_matrix(cv::Range(2, 4), cv::Range(1, 2));
-
-//         level0 = Dwt2dLevelCoeffs(approx_0, horizontal_0, vertical_0, diagonal_0);
-//         level1 = Dwt2dLevelCoeffs(approx_1, horizontal_1, vertical_1, diagonal_1);
-//         level2 = Dwt2dLevelCoeffs(approx_2, horizontal_2, vertical_2, diagonal_2);
-//         level3 = Dwt2dLevelCoeffs(approx_3, horizontal_3, vertical_3, diagonal_3);
-
-//         results.coeffs = {level0, level1, level2, level3};
-//     }
-
-//     void TearDown() override {
-//     }
-
-//     Dwt2dResults default_results;
-//     Dwt2dResults coeffs_constructed_results;
-//     Dwt2dResults::Coefficients coeffs;
-//     Dwt2dResults results;
-//     cv::Mat expected_matrix;
-//     Dwt2dLevelCoeffs level0;
-//     Dwt2dLevelCoeffs level1;
-//     Dwt2dLevelCoeffs level2;
-//     Dwt2dLevelCoeffs level3;
-// };
+    ASSERT_DOUBLE_EQ(coeffs[0], 7.071067811865475244008443621048490392848359376884740365883398e-01);
+    ASSERT_DOUBLE_EQ(coeffs[1], -7.071067811865475244008443621048490392848359376884740365883398e-01);
+}
 
 
-// TEST_F(Dwt2dResultsTest, DefaultConstructor) {
-//     ASSERT_TRUE(default_results.coeffs.empty());
-// }
 
-// TEST_F(Dwt2dResultsTest, CoeffsConstructor) {
-//     ASSERT_EQ(coeffs_constructed_results.levels(), coeffs.size());
-//     ASSERT_TRUE(matrix_equals(coeffs_constructed_results.approx(), coeffs.back().approx()));
-// }
+/**
+ * -----------------------------------------------------------------------------
+ * Dwt2dLevelCoeffs
+ * -----------------------------------------------------------------------------
+*/
+class Dwt2dLevelCoeffsTest : public testing::Test {
+protected:
+    void SetUp() override {
+        approx = create_matrix(rows, cols, type, 0);
+        horizontal_detail = create_matrix(rows, cols, type, 1);
+        vertical_detail = create_matrix(rows, cols, type, 2);
+        diagonal_detail = create_matrix(rows, cols, type, 3);
 
-// TEST_F(Dwt2dResultsTest, details) {
-//     //  horizontal
-//     auto horizontal_details = results.details(HORIZONTAL);
-//     ASSERT_EQ(horizontal_details.size(), 4);
-//     ASSERT_TRUE(matrix_equals(horizontal_details[0], level0.horizontal_detail()));
-//     ASSERT_TRUE(matrix_equals(horizontal_details[1], level1.horizontal_detail()));
-//     ASSERT_TRUE(matrix_equals(horizontal_details[2], level2.horizontal_detail()));
-//     ASSERT_TRUE(matrix_equals(horizontal_details[3], level3.horizontal_detail()));
 
-//     auto horizontal_details2 = results.horizontal_details();
-//     ASSERT_EQ(horizontal_details2.size(), 4);
-//     ASSERT_TRUE(matrix_equals(horizontal_details2[0], level0.horizontal_detail()));
-//     ASSERT_TRUE(matrix_equals(horizontal_details2[1], level1.horizontal_detail()));
-//     ASSERT_TRUE(matrix_equals(horizontal_details2[2], level2.horizontal_detail()));
-//     ASSERT_TRUE(matrix_equals(horizontal_details2[3], level3.horizontal_detail()));
-    
-//     //  vertical
-//     auto vertical_details = results.details(VERTICAL);
-//     ASSERT_EQ(vertical_details.size(), 4);
-//     ASSERT_TRUE(matrix_equals(vertical_details[0], level0.vertical_detail()));
-//     ASSERT_TRUE(matrix_equals(vertical_details[1], level1.vertical_detail()));
-//     ASSERT_TRUE(matrix_equals(vertical_details[2], level2.vertical_detail()));
-//     ASSERT_TRUE(matrix_equals(vertical_details[3], level3.vertical_detail()));
+        Dwt2dLevelCoeffs::CoeffArray coeffs = {
+            approx,
+            horizontal_detail,
+            vertical_detail,
+            diagonal_detail,
+        };
 
-//     auto vertical_details2 = results.vertical_details();
-//     ASSERT_EQ(vertical_details2.size(), 4);
-//     ASSERT_TRUE(matrix_equals(vertical_details2[0], level0.vertical_detail()));
-//     ASSERT_TRUE(matrix_equals(vertical_details2[1], level1.vertical_detail()));
-//     ASSERT_TRUE(matrix_equals(vertical_details2[2], level2.vertical_detail()));
-//     ASSERT_TRUE(matrix_equals(vertical_details2[3], level3.vertical_detail()));
+        default_constructed = new Dwt2dLevelCoeffs();
+        size_and_type_constructed = new Dwt2dLevelCoeffs(rows, cols, type);
+        array_constructed = new Dwt2dLevelCoeffs(coeffs);
+        four_matrices_constructed = new Dwt2dLevelCoeffs(
+            approx,
+            horizontal_detail,
+            vertical_detail,
+            diagonal_detail
+        );
+    }
 
-//     //  diagonal
-//     auto diagonal_details = results.details(DIAGONAL);
-//     ASSERT_EQ(diagonal_details.size(), 4);
-//     ASSERT_TRUE(matrix_equals(diagonal_details[0], level0.diagonal_detail()));
-//     ASSERT_TRUE(matrix_equals(diagonal_details[1], level1.diagonal_detail()));
-//     ASSERT_TRUE(matrix_equals(diagonal_details[2], level2.diagonal_detail()));
-//     ASSERT_TRUE(matrix_equals(diagonal_details[3], level3.diagonal_detail()));
+    void TearDown() override {
+        delete default_constructed;
+        delete array_constructed;
+        delete four_matrices_constructed;
+    }
 
-//     auto diagonal_details2 = results.diagonal_details();
-//     ASSERT_EQ(diagonal_details2.size(), 4);
-//     ASSERT_TRUE(matrix_equals(diagonal_details2[0], level0.diagonal_detail()));
-//     ASSERT_TRUE(matrix_equals(diagonal_details2[1], level1.diagonal_detail()));
-//     ASSERT_TRUE(matrix_equals(diagonal_details2[2], level2.diagonal_detail()));
-//     ASSERT_TRUE(matrix_equals(diagonal_details2[3], level3.diagonal_detail()));
-// }
+    void assert_coeffs_constructed_correctly(
+        const Dwt2dLevelCoeffs& level_coeffs,
+        const cv::Mat& approx,
+        const cv::Mat& horizontal_detail,
+        const cv::Mat& vertical_detail,
+        const cv::Mat& diagonal_detail
+    )
+    {
+        EXPECT_FALSE(
+            level_coeffs.approx().empty()
+        ) << "approx() is empty";
+        EXPECT_TRUE(
+            matrix_equals(level_coeffs.approx(), approx)
+        ) << "approx() is not correct";
 
-// TEST_F(Dwt2dResultsTest, as_matrix) {
-//     ASSERT_TRUE(matrix_equals(expected_matrix, results.as_matrix()));
-// }
+        EXPECT_FALSE(
+            level_coeffs.horizontal_detail().empty()
+        ) << "horizontal_detail() is empty";
+        EXPECT_TRUE(
+            matrix_equals(level_coeffs.horizontal_detail(), horizontal_detail)
+        ) << "horizontal_detail() is not correct";
+
+        EXPECT_FALSE(
+            level_coeffs.vertical_detail().empty()
+        ) << "vertical_detail() is empty";
+        EXPECT_TRUE(
+            matrix_equals(level_coeffs.vertical_detail(), vertical_detail)
+        ) << "vertical_detail() is not correct";
+
+        EXPECT_FALSE(
+            level_coeffs.diagonal_detail().empty()
+        ) << "diagonal_detail() is empty";
+        EXPECT_TRUE(
+            matrix_equals(level_coeffs.diagonal_detail(), diagonal_detail)
+        ) << "diagonal_detail() is not correct";
+    }
+
+    void assert_level_coeffs_size(const Dwt2dLevelCoeffs& level_coeffs, int rows, int cols)
+    {
+        EXPECT_EQ(level_coeffs.rows(), rows) << "rows() is incorrect";
+        EXPECT_EQ(level_coeffs.cols(), cols) << "cols() is incorrect";
+        EXPECT_EQ(level_coeffs.size(), cv::Size(cols, rows)) << "size() is incorrect";
+    }
+
+    void assert_level_coeffs_type(const Dwt2dLevelCoeffs& level_coeffs, int type)
+    {
+        EXPECT_EQ(level_coeffs.type(), type) << "type() is incorrect";
+    }
+
+    int rows = 16;
+    int cols = 8;
+    int type = CV_32F;
+    cv::Mat approx;
+    cv::Mat horizontal_detail;
+    cv::Mat vertical_detail;
+    cv::Mat diagonal_detail;
+    Dwt2dLevelCoeffs* default_constructed;
+    Dwt2dLevelCoeffs* size_and_type_constructed;
+    Dwt2dLevelCoeffs* array_constructed;
+    Dwt2dLevelCoeffs* four_matrices_constructed;
+};
+
+
+
+//  Default Constructor
+TEST_F(Dwt2dLevelCoeffsTest, DefaultConstructor_CoeffsAreEmpty) {
+    EXPECT_TRUE(
+        default_constructed->approx().empty()
+    ) << "approx() is not empty";
+    EXPECT_TRUE(
+        default_constructed->horizontal_detail().empty()
+    ) << "horizontal_detail() is not empty";
+    EXPECT_TRUE(
+        default_constructed->vertical_detail().empty()
+    ) << "vertical_detail() is not empty";
+    EXPECT_TRUE(
+        default_constructed->diagonal_detail().empty()
+    ) << "diagonal_detail() is not empty";
+}
+
+TEST_F(Dwt2dLevelCoeffsTest, DefaultConstructed_SizeIsZero) {
+    assert_level_coeffs_size(*default_constructed, 0, 0);
+}
+
+TEST_F(Dwt2dLevelCoeffsTest, DefaultConstructed_TypeIsFloat) {
+    assert_level_coeffs_type(*default_constructed, CV_32F);
+}
+
+//  Size & Type Constructor
+TEST_F(Dwt2dLevelCoeffsTest, SizeAndTypeConstructor_CoeffsAreZero) {
+
+    EXPECT_TRUE(
+        matrix_is_all_zeros(size_and_type_constructed->approx())
+    ) << "approx() is not all zeros";
+    EXPECT_TRUE(
+        matrix_is_all_zeros(size_and_type_constructed->horizontal_detail())
+    ) << "horizontal_detail() is not all zeros";
+    EXPECT_TRUE(
+        matrix_is_all_zeros(size_and_type_constructed->vertical_detail())
+    ) << "vertical_detail() is not all zeros";
+    EXPECT_TRUE(
+        matrix_is_all_zeros(size_and_type_constructed->diagonal_detail())
+    ) << "diagonal_detail() is not all zeros";
+}
+
+TEST_F(Dwt2dLevelCoeffsTest, SizeAndTypeConstructor_SizeIsCorrect) {
+    assert_level_coeffs_size(*size_and_type_constructed, rows, cols);
+}
+
+TEST_F(Dwt2dLevelCoeffsTest, SizeAndTypeConstructor_TypeIsCorrect) {
+    assert_level_coeffs_type(*size_and_type_constructed, type);
+}
+
+//  Array Constructor
+TEST_F(Dwt2dLevelCoeffsTest, ArrayConstructor_CoeffsConstructedCorrectly) {
+    assert_coeffs_constructed_correctly(
+        *array_constructed,
+        approx,
+        horizontal_detail,
+        vertical_detail,
+        diagonal_detail
+    );
+}
+
+TEST_F(Dwt2dLevelCoeffsTest, ArrayConstructor_SizeMatchesCoeffs) {
+    assert_level_coeffs_size(*array_constructed, rows, cols);
+}
+
+TEST_F(Dwt2dLevelCoeffsTest, ArrayConstructor_TypeMatchesCoeffs) {
+    assert_level_coeffs_type(*array_constructed, type);
+}
+
+//  Four Matrices Constructor
+TEST_F(Dwt2dLevelCoeffsTest, FourMatricesConstructor_CoeffsConstructedCorrectly) {
+    assert_coeffs_constructed_correctly(
+        *four_matrices_constructed,
+        approx,
+        horizontal_detail,
+        vertical_detail,
+        diagonal_detail
+    );
+}
+
+TEST_F(Dwt2dLevelCoeffsTest, FourMatricesConstructor_SizeMatchesCoeffs) {
+    assert_level_coeffs_size(*four_matrices_constructed, rows, cols);
+}
+
+TEST_F(Dwt2dLevelCoeffsTest, FourMatricesConstructor_TypeMatchesCoeffs) {
+    assert_level_coeffs_type(*four_matrices_constructed, type);
+}
+
+//  Accessor
+TEST_F(Dwt2dLevelCoeffsTest, AccessorsConsistentWitIndexing) {
+    Dwt2dLevelCoeffs& level_coeffs = *four_matrices_constructed;
+
+    EXPECT_TRUE(
+        matrix_equals(level_coeffs.at(APPROXIMATION), level_coeffs.approx())
+    ) << "approx() and at() are inconsistent";
+    EXPECT_TRUE(
+        matrix_equals(level_coeffs[APPROXIMATION], level_coeffs.approx())
+    ) << "approx() and operaotor[]() are inconsistent";
+
+    EXPECT_TRUE(
+        matrix_equals(level_coeffs.at(HORIZONTAL), level_coeffs.horizontal_detail())
+    ) << "horizontal_detail() and at() are inconsistent";
+    EXPECT_TRUE(
+        matrix_equals(level_coeffs[HORIZONTAL], level_coeffs.horizontal_detail())
+    ) << "horizontal_detail() and operaotor[]() are inconsistent";
+
+    EXPECT_TRUE(
+        matrix_equals(level_coeffs.at(VERTICAL), level_coeffs.vertical_detail())
+    ) << "vertical_detail() and at() are inconsistent";
+    EXPECT_TRUE(
+        matrix_equals(level_coeffs[VERTICAL], level_coeffs.vertical_detail())
+    ) << "vertical_detail() and operaotor[]() are inconsistent";
+
+    EXPECT_TRUE(
+        matrix_equals(level_coeffs.at(DIAGONAL), level_coeffs.diagonal_detail())
+    ) << "diagonal_detail() and at() are inconsistent";
+    EXPECT_TRUE(
+        matrix_equals(level_coeffs[DIAGONAL], level_coeffs.diagonal_detail())
+    ) << "diagonal_detail() and operaotor[]() are inconsistent";
+}
+
+//  Exceptions
+TEST_F(Dwt2dLevelCoeffsTest, DISABLED_MismatchedCoeffsSiseIsException) {
+    // ASSERT_THROW()
+}
+
+
+
+
+
+
+
+/**
+ * -----------------------------------------------------------------------------
+ * Dwt2dResults
+ * -----------------------------------------------------------------------------
+*/
+class Dwt2dResultsTest : public testing::Test {
+protected:
+    void SetUp() override {
+        int rows = 32;
+        int cols = 16;
+        int type = CV_32F;
+
+        // coeffs = Dwt2dResults::Coefficients{
+        //     create_level_coeffs(rows, cols, type),
+        //     create_level_coeffs(rows / 2, cols / 2, type),
+        //     create_level_coeffs(rows / 4, cols / 4, type),
+        //     create_level_coeffs(rows / 8, cols / 8, type),
+        //     create_level_coeffs(rows / 16, cols / 16, type),
+        // };
+
+        // coeffs_constructed_results = Dwt2dResults(coeffs);
+
+        expected_matrix = create_matrix(rows, cols, type);
+
+        auto approx_0 = cv::Mat();
+        auto horizontal_0 = expected_matrix(cv::Range(16, 32), cv::Range(0, 8));
+        auto vertical_0 = expected_matrix(cv::Range(0, 16), cv::Range(8, 16));
+        auto diagonal_0 = expected_matrix(cv::Range(16, 32), cv::Range(8, 16));
+
+        auto approx_1 = cv::Mat();
+        auto horizontal_1 = expected_matrix(cv::Range(8, 16), cv::Range(0, 4));
+        auto vertical_1 = expected_matrix(cv::Range(0, 8), cv::Range(4, 8));
+        auto diagonal_1 = expected_matrix(cv::Range(8, 16), cv::Range(4, 8));
+
+        auto approx_2 = cv::Mat();
+        auto horizontal_2 = expected_matrix(cv::Range(4, 8), cv::Range(0, 2));
+        auto vertical_2 = expected_matrix(cv::Range(0, 4), cv::Range(2, 4));
+        auto diagonal_2 = expected_matrix(cv::Range(4, 8), cv::Range(2, 4));
+
+        auto approx_3 = expected_matrix(cv::Range(0, 2), cv::Range(0, 1));
+        auto horizontal_3 = expected_matrix(cv::Range(2, 4), cv::Range(0, 1));
+        auto vertical_3 = expected_matrix(cv::Range(0, 2), cv::Range(1, 2));
+        auto diagonal_3 = expected_matrix(cv::Range(2, 4), cv::Range(1, 2));
+
+        // level0 = Dwt2dLevelCoeffs(approx_0, horizontal_0, vertical_0, diagonal_0);
+        // level1 = Dwt2dLevelCoeffs(approx_1, horizontal_1, vertical_1, diagonal_1);
+        // level2 = Dwt2dLevelCoeffs(approx_2, horizontal_2, vertical_2, diagonal_2);
+        // level3 = Dwt2dLevelCoeffs(approx_3, horizontal_3, vertical_3, diagonal_3);
+        // level_coeffs = {level0, level1, level2, level3};
+
+        level_coeffs = {
+            Dwt2dLevelCoeffs(approx_0, horizontal_0, vertical_0, diagonal_0),
+            Dwt2dLevelCoeffs(approx_1, horizontal_1, vertical_1, diagonal_1),
+            Dwt2dLevelCoeffs(approx_2, horizontal_2, vertical_2, diagonal_2),
+            Dwt2dLevelCoeffs(approx_3, horizontal_3, vertical_3, diagonal_3),
+        };
+
+        results = Dwt2dResults(level_coeffs);
+    }
+
+    void TearDown() override {
+    }
+
+    Dwt2dLevelCoeffs create_level_coeffs(int rows, int cols, int type)
+    {
+        cv::Mat approx = create_matrix(rows, cols, type, 0);
+        cv::Mat horizontal_detail = create_matrix(rows, cols, type, 1);
+        cv::Mat vertical_detail = create_matrix(rows, cols, type, 2);
+        cv::Mat diagonal_detail = create_matrix(rows, cols, type, 3);
+
+        return Dwt2dLevelCoeffs(approx, horizontal_detail, vertical_detail, diagonal_detail);
+    }
+
+    void assert_level_details_collected_correctly(const Dwt2dResults& results, int detail_type)
+    {
+        auto details = results.details(detail_type);
+        ASSERT_EQ(
+            details.size(),
+            level_coeffs.size()
+        ) << "size of collected " << detail_type_name(detail_type) << " details is incorrect";
+
+        for (int level = 0; level < level_coeffs.size(); ++level) {
+            EXPECT_TRUE(
+                matrix_equals(details[level], level_coeffs[level][detail_type])
+            ) << detail_type_name(detail_type) << " at level " << level << " are not collected correctly";
+        }
+    }
+
+    std::string detail_type_name(int detail_type) {
+        switch (detail_type) {
+            case HORIZONTAL:
+                return "horizontal";
+            case VERTICAL:
+                return "vertical";
+            case DIAGONAL:
+                return "diagonal";
+            default:
+                throw std::invalid_argument(
+                    std::to_string(detail_type) + " is not a valid detail type"
+                );
+        };
+    }
+
+    Dwt2dResults default_results;
+    Dwt2dResults coeffs_constructed_results;
+    Dwt2dResults::Coefficients coeffs;
+    Dwt2dResults::Coefficients level_coeffs;
+    Dwt2dResults results;
+    cv::Mat expected_matrix;
+};
+
+TEST_F(Dwt2dResultsTest, DefaultConstructor)
+{
+    ASSERT_TRUE(default_results.empty());
+}
+
+TEST_F(Dwt2dResultsTest, DefaultConstructor_DepthIsZero)
+{
+    ASSERT_EQ(default_results.depth(), 0);
+}
+
+TEST_F(Dwt2dResultsTest, DefaultConstructor_ApproxIsEmpty)
+{
+    ASSERT_TRUE(default_results.approx().empty());
+}
+
+TEST_F(Dwt2dResultsTest, DefaultConstructor_CollectDetailsIsEmpty)
+{
+    EXPECT_TRUE(
+        default_results.horizontal_details().empty()
+    ) << "horizontal_details() is not empty";
+
+    EXPECT_TRUE(
+        default_results.vertical_details().empty()
+    ) << "vertical_details() is not empty";
+
+    EXPECT_TRUE(
+        default_results.diagonal_details().empty()
+    ) << "diagonal_details() is not empty";
+}
+
+TEST_F(Dwt2dResultsTest, ApproxEqualsLastLevel)
+{
+    ASSERT_TRUE(matrix_equals(results.approx(), level_coeffs.back().approx()));
+}
+
+TEST_F(Dwt2dResultsTest, DepthEqualsSize)
+{
+    ASSERT_EQ(results.depth(), level_coeffs.size());
+}
+
+TEST_F(Dwt2dResultsTest, CollectDetails)
+{
+    assert_level_details_collected_correctly(results, HORIZONTAL);
+    assert_level_details_collected_correctly(results, VERTICAL);
+    assert_level_details_collected_correctly(results, DIAGONAL);
+}
+
+TEST_F(Dwt2dResultsTest, MatrixBuiltWithCorrectOrdering)
+{
+    ASSERT_TRUE(matrix_equals(expected_matrix, results.as_matrix()));
+}
 
 
 
@@ -433,32 +590,8 @@ void print_matrix(const cv::Mat& matrix) {
  * DWT2D
  * -----------------------------------------------------------------------------
 */
-
-// class DWT2D {
-// public:
-//     DWT2D(const Wavelet& wavelet);
-    
-//     Dwt2dResults operator()(cv::InputArray x, int max_levels=0) const;
-//     Dwt2dLevelCoeffs compute_single_level(cv::InputArray x) const;
-
-// public:
-//     const Wavelet& wavelet;
-
-// protected:
-//     cv::Mat convolve_rows_and_decimate_cols(const cv::Mat& data, cv::InputArray kernel) const;
-//     cv::Mat convolve_cols_and_decimate_rows(const cv::Mat& data, cv::InputArray kernel) const;
-//     cv::Mat convolve_and_decimate(
-//         const cv::Mat& data, 
-//         cv::InputArray kernel_x, 
-//         cv::InputArray kernel_y, 
-//         int final_rows, 
-//         int final_cols
-//     ) const;
-// };
-
-
 TEST(DWT2D, single_level_zeros) {
-    DaubechiesWavelet wavelet(2);
+    Wavelet wavelet = daubechies(2);
     DWT2D dwt(wavelet);
 
     cv::Mat input(32, 32, CV_32F, 0.0);
@@ -466,14 +599,9 @@ TEST(DWT2D, single_level_zeros) {
     cv::Mat expected_horizontal_detail(16, 16, CV_32F, 0.0);
     cv::Mat expected_vertical_detail(16, 16, CV_32F, 0.0);
     cv::Mat expected_diagonal_detail(16, 16, CV_32F, 0.0);
-    
-    auto coeffs = dwt.compute_single_level(input);
 
-    // std::cout << coeffs.approx().size() << std::endl;
-    // std::cout << coeffs.horizontal_detail().size() << std::endl;
-    // std::cout << coeffs.vertical_detail().size() << std::endl;
-    // std::cout << coeffs.diagonal_detail().size() << std::endl;
-    
+    auto coeffs = dwt.forward_single_level(input);
+
     ASSERT_TRUE(matrix_equals(coeffs.approx(), expected_approx));
     ASSERT_TRUE(matrix_equals(coeffs.horizontal_detail(), expected_horizontal_detail));
     ASSERT_TRUE(matrix_equals(coeffs.vertical_detail(), expected_vertical_detail));
@@ -482,28 +610,28 @@ TEST(DWT2D, single_level_zeros) {
 
 
 TEST(DWT2D, zeros) {
-    DaubechiesWavelet wavelet(2);
+    Wavelet wavelet = daubechies(2);
 
     DWT2D dwt(wavelet);
 
     cv::Mat input(32, 32, CV_32F, 0.0);
     cv::Mat expected_output(32, 32, CV_32F, 0.0);
-    
-    auto result = dwt(input);    
+
+    auto result = dwt(input);
     auto actual_output = result.as_matrix();
 
-    ASSERT_EQ(result.levels(), 5);
+    ASSERT_EQ(result.depth(), 5);
     ASSERT_TRUE(matrix_equals(actual_output, expected_output));
 }
 
 TEST(DWT2D, zeros_two_levels) {
-    DaubechiesWavelet wavelet(2);
+    Wavelet wavelet = daubechies(2);
 
     DWT2D dwt(wavelet);
 
     cv::Mat input(32, 32, CV_32F, 0.0);
     cv::Mat expected_matrix(32, 32, CV_32F, 0.0);
-    
+
     cv::Mat expected_approx_0(16, 16, CV_32F, 0.0);
     cv::Mat expected_horizontal_detail_0(16, 16, CV_32F, 0.0);
     cv::Mat expected_vertical_detail_0(16, 16, CV_32F, 0.0);
@@ -516,16 +644,16 @@ TEST(DWT2D, zeros_two_levels) {
 
     auto result = dwt(input, 2);
 
-    ASSERT_EQ(result.levels(), 2);
+    ASSERT_EQ(result.depth(), 2);
     ASSERT_TRUE(matrix_equals(result.as_matrix(), expected_matrix));
 
-    auto coeffs_0 = result.level_coeffs(0);
+    auto coeffs_0 = result.at(0);
     ASSERT_TRUE(matrix_equals(coeffs_0.approx(), expected_approx_0));
     ASSERT_TRUE(matrix_equals(coeffs_0.horizontal_detail(), expected_horizontal_detail_0));
     ASSERT_TRUE(matrix_equals(coeffs_0.vertical_detail(), expected_vertical_detail_0));
     ASSERT_TRUE(matrix_equals(coeffs_0.diagonal_detail(), expected_diagonal_detail_0));
 
-    auto coeffs_1 = result.level_coeffs(1);
+    auto coeffs_1 = result.at(1);
     ASSERT_TRUE(matrix_equals(coeffs_1.approx(), expected_approx_1));
     ASSERT_TRUE(matrix_equals(coeffs_1.horizontal_detail(), expected_horizontal_detail_1));
     ASSERT_TRUE(matrix_equals(coeffs_1.vertical_detail(), expected_vertical_detail_1));
@@ -533,50 +661,399 @@ TEST(DWT2D, zeros_two_levels) {
 }
 
 
-TEST(DWT2D, from_files) {
-    // std::cout << std::filesystem::current_path() << std::endl;
 
-    std::ifstream manifest_file("/home/chris/projects/wavelet/tests/cases_manifest.json");
-    json manifest = json::parse(manifest_file);
 
-    // std::cout << manifest << std::endl;
 
-    std::filesystem::path test_case_root = "/home/chris/projects/wavelet/tests";
 
-    for (auto entry : manifest) {
-        // std::cout << entry << std::endl;
-        DaubechiesWavelet wavelet(1);
-        DWT2D dwt(wavelet);
 
-        std::filesystem::path case_path = test_case_root / entry["path"];
-        int flags = entry["flags"];
-        auto input_filename = case_path / entry["input_filename"];
-        auto coeffs_filename = case_path / entry["coeffs_filename"];
 
-        std::cout << input_filename << std::endl;
-        std::cout << coeffs_filename << std::endl;
-        std::cout << flags << std::endl;
 
-        // flags = cv::IMREAD_ANYDEPTH | cv::IMREAD_ANYCOLOR;
-        flags = cv::IMREAD_ANYCOLOR;
-        
-        auto input = cv::imread(input_filename, flags);
-        auto expected_coeffs = cv::imread(coeffs_filename);
 
-        std::cout << expected_coeffs.size() << "  " << expected_coeffs.type() << std::endl;
 
-        ASSERT_TRUE(false);    
-        // auto results = dwt(input);
-        // auto actual_coeffs = results.as_matrix();
 
-        // std::cout << actual_coeffs.size() << "  " << actual_coeffs.type() << std::endl;
 
-        // std::cout << "-----------------------------" << std::endl;
-        // ASSERT_TRUE(matrix_equals(actual_coeffs, expected_coeffs));
-    }
 
-    ASSERT_TRUE(false);
+
+
+class HaarPatternParameterizedTests : public testing::TestWithParam<std::tuple<cv::Mat, cv::Mat>>
+{
+};
+
+static auto make_pattern_case_data(const std::vector<float>& pattern, const std::vector<float>& expected)
+{
+    int rows = std::sqrt(pattern.size());
+
+    return std::make_tuple(
+        cv::Mat(pattern, true).reshape(0, rows),
+        cv::Mat(expected, true).reshape(0, rows)
+    );
 }
+
+
+std::vector<std::tuple<cv::Mat, cv::Mat>> basic_test_patterns = {
+    //  zeros
+    make_pattern_case_data(
+        {
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        },
+        {
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        }
+    ),
+    //  ones
+    make_pattern_case_data(
+        {
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        },
+        {
+            16.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        }
+    ),
+    //  checker board
+    make_pattern_case_data(
+        {
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+        },
+        {
+            8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        }
+    ),
+    //  inverted checker board
+    make_pattern_case_data(
+        {
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0,
+            1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0,
+        },
+        {
+            8.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0,
+        }
+    ),
+    //  vertical lines
+    make_pattern_case_data(
+        {
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+            1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0.,
+        },
+        {
+            8., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        }
+    ),
+    //  inverted vertical lines
+    make_pattern_case_data(
+        {
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+            0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1., 0., 1.,
+        },
+        {
+            8.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+        }
+    ),
+    //  horizontal lines
+    make_pattern_case_data(
+        {
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        },
+        {
+            8., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0., 0.,
+        }
+    ),
+    //  inverted horizontal lines
+    make_pattern_case_data(
+        {
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+            0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+            1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.,
+        },
+        {
+             8.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+             0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+             0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+             0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+             0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+             0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+             0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+             0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            -1., -1., -1., -1., -1., -1., -1., -1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            -1., -1., -1., -1., -1., -1., -1., -1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            -1., -1., -1., -1., -1., -1., -1., -1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            -1., -1., -1., -1., -1., -1., -1., -1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            -1., -1., -1., -1., -1., -1., -1., -1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            -1., -1., -1., -1., -1., -1., -1., -1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            -1., -1., -1., -1., -1., -1., -1., -1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+            -1., -1., -1., -1., -1., -1., -1., -1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+        }
+    ),
+};
+
+std::vector<std::string> pattern_names = {
+    "ZerosPattern",
+    "OnesPattern",
+    "CheckerBoardPattern",
+    "InvertedCheckerBoardPattern",
+    "VerticalLinesPattern",
+    "InvertedVerticalLinesPattern",
+    "HorizontalLinesPattern",
+    "InvertedHorizontalLinesPattern",
+};
+
+
+
+
+TEST_P(HaarPatternParameterizedTests, ForwardTransform) {
+    DWT2D dwt(haar(), cv::BORDER_REFLECT101);
+
+    auto [input_pattern, expected_output] = GetParam();
+    auto actual_output = dwt(input_pattern).as_matrix();
+
+    ASSERT_TRUE(matrix_equals_float(actual_output, expected_output, 1e-5));
+}
+
+
+// TEST_P(HaarPatternParameterizedTests, InverseTransform) {
+//     DWT2D dwt(haar(), cv::BORDER_REFLECT101);
+
+//     auto [expected_output, input_pattern] = GetParam();
+//     auto actual_output = dwt.inverse(expected_output).as_matrix();
+
+//     ASSERT_TRUE(matrix_equals_float(actual_output, expected_output, 1e-6));
+// }
+
+
+INSTANTIATE_TEST_CASE_P(
+    HaarPatternTests,
+    HaarPatternParameterizedTests,
+    testing::ValuesIn(basic_test_patterns),
+    [](const auto& info) { return pattern_names[info.index]; }
+);
+
+
+
+
+
+
+
+
+
 
 
 

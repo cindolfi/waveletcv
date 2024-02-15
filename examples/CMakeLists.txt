@@ -18,10 +18,10 @@ add_executable(denoise noise.cpp)
 #   Executable Target Settings
 #   ----------------------------------------------------------------------------
 target_link_libraries (
-    denoise 
-    PRIVATE 
-    wavelet_library 
+    denoise
+    PRIVATE
+    wavelet_library
     cxxopts
 )
 
-target_compile_features(denoise PRIVATE cxx_std_17)
+target_compile_features(denoise PRIVATE cxx_std_20)

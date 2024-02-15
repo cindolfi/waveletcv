@@ -104,12 +104,107 @@ def main():
 
 
 
+
+def make_checkerboard(shape, dtype):
+    return np.tile(
+        np.array([[0, 1], [1, 0]], dtype=dtype),
+        (shape[0] // 2, shape[1] // 2),
+    )
+
+def make_horizontal_lines(shape, dtype):
+    return np.tile(
+        np.array([[1, 1], [0, 0]], dtype=dtype),
+        (shape[0] // 2, shape[1] // 2),
+    )
+
+
+def make_vertical_lines(shape, dtype):
+    return np.tile(
+        np.array([[1, 0], [1, 0]], dtype=dtype),
+        (shape[0] // 2, shape[1] // 2),
+    )
+
+
+def test_pattern_ones(wavelet, shape, dtype, border_mode):
+    pattern = np.ones(shape, dtype=dtype)
+    run_test('ones', pattern, wavelet, border_mode)
+
+
+def test_pattern_checkerboard(wavelet, shape, dtype, border_mode):
+    pattern = make_checkerboard(shape, dtype)
+    run_test('checkerboard', pattern, wavelet, border_mode)
+
+
+def test_pattern_checkerboard2(wavelet, shape, dtype, border_mode):
+    pattern = make_checkerboard(shape, dtype)
+    run_test('checkerboard2', 1 - pattern, wavelet, border_mode)
+
+
+def test_pattern_vertical_lines(wavelet, shape, dtype, border_mode):
+    pattern = make_vertical_lines(shape, dtype)
+    run_test('vertical_lines', pattern, wavelet, border_mode)
+
+
+def test_pattern_vertical_lines2(wavelet, shape, dtype, border_mode):
+    pattern = make_vertical_lines(shape, dtype)
+    run_test('vertical_lines2', 1 - pattern, wavelet, border_mode)
+
+
+def test_pattern_horizontal_lines(wavelet, shape, dtype, border_mode):
+    pattern = make_horizontal_lines(shape, dtype)
+    run_test('horizontal_lines', pattern, wavelet, border_mode)
+
+
+def test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode):
+    pattern = make_horizontal_lines(shape, dtype)
+    run_test('horizontal_lines2', 1 - pattern, wavelet, border_mode)
+
+
+
+
+def run_test(title, pattern, wavelet, border_mode):
+    np.set_printoptions(linewidth=240, precision=2)
+
+    axes = (0, 1)
+    coeffs = pywt.wavedec2(pattern, wavelet, axes=axes, mode=border_mode)
+    coeffs, _ = pywt.coeffs_to_array(coeffs, axes=axes)
+
+    print(title)
+    print('wavelet =', wavelet)
+    print('pattern =')
+    print(pattern)
+    print(pattern.shape)
+    print()
+    print('coeffs =')
+    print(coeffs)
+    print(coeffs.shape)
+    print()
+    print('-' * 80)
+    print()
+
 if __name__ == '__main__':
     # inputs = [
     #     np.ones([32, 32], dtype=np.float32),
     #     ('inputs/lena_gray.png', cv2.IMREAD_GRAYSCALE),
     # ]
-    main()
+    wavelet = 'db1'
+    dtype = np.float32
+    shape = [16, 16]
+    border_mode = 'reflect'
+
+    wavelet = pywt.Wavelet('db1')
+
+    print(wavelet.filter_bank)
+
+    # test_pattern_ones(wavelet, shape, dtype, border_mode)
+    # test_pattern_vertical_lines(wavelet, shape, dtype, border_mode)
+    # test_pattern_vertical_lines2(wavelet, shape, dtype, border_mode)
+    # test_pattern_horizontal_lines(wavelet, shape, dtype, border_mode)
+    # test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode)
+    # test_pattern_checkerboard(wavelet, shape, dtype, border_mode)
+    # test_pattern_checkerboard2(wavelet, shape, dtype, border_mode)
+
+    # main()
 
 
 

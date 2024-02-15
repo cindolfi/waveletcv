@@ -7,6 +7,7 @@
 #include <iostream>
 #include <regex>
 #include <limits>
+#include <ranges>
 
 std::vector<double> DB_ORDER_FILTER_COEFFS[38] = {
     std::vector<double> {
@@ -1634,31 +1635,93 @@ void WaveletFilterBank::negate_evens(Coeffs& filter_coeffs)
     );
 }
 
-
-using WaveletFactory = std::function<Wavelet()>;
-
-template <class WavletType, int order>
-constexpr WaveletFactory make_wavelet_factory()
+Wavelet::Wavelet(
+        int order,
+        int vanising_moments_psi,
+        int vanising_moments_phi,
+        int support_width,
+        bool orthogonal,
+        bool biorthogonal,
+        WaveletSymmetry symmetry,
+        bool compact_support,
+        const std::string& family_name,
+        const std::string& short_name,
+        const WaveletFilterBank& analysis_coeffs,
+        const WaveletFilterBank& synthesis_coeffs
+    ) :
+    _p(
+        std::make_shared<WaveletImpl>(
+            order,
+            vanising_moments_psi,
+            vanising_moments_phi,
+            support_width,
+            orthogonal,
+            biorthogonal,
+            symmetry,
+            compact_support,
+            family_name,
+            short_name,
+            analysis_coeffs,
+            synthesis_coeffs
+        )
+    )
 {
-    return WaveletFactory([]() { return WavletType(order); });
+}
+
+
+// using WaveletFactory = std::function<Wavelet()>;
+
+WaveletFactory make_wavelet_factory(const std::function<Wavelet(int)>& family_factory, int order)
+{
+    return std::bind_front(family_factory, order);
 }
 
 std::map<std::string, WaveletFactory> wavelet_factories
 {
-    {"db1", make_wavelet_factory<DaubechiesWavelet, 1>()},
-    {"db2", make_wavelet_factory<DaubechiesWavelet, 2>()},
-    {"db3", make_wavelet_factory<DaubechiesWavelet, 3>()}
+    {"haar", haar},
+    {"db1", make_wavelet_factory(daubechies, 1)},
+    {"db2", make_wavelet_factory(daubechies, 2)},
+    {"db3", make_wavelet_factory(daubechies, 3)},
+    {"db4", make_wavelet_factory(daubechies, 4)},
+    {"db5", make_wavelet_factory(daubechies, 5)},
+    {"db6", make_wavelet_factory(daubechies, 6)},
+    {"db7", make_wavelet_factory(daubechies, 7)},
+    {"db8", make_wavelet_factory(daubechies, 8)},
+    {"db9", make_wavelet_factory(daubechies, 9)},
+    {"db10", make_wavelet_factory(daubechies, 10)},
+    {"db11", make_wavelet_factory(daubechies, 11)},
+    {"db12", make_wavelet_factory(daubechies, 12)},
+    {"db13", make_wavelet_factory(daubechies, 13)},
+    {"db14", make_wavelet_factory(daubechies, 14)},
+    {"db15", make_wavelet_factory(daubechies, 15)},
+    {"db16", make_wavelet_factory(daubechies, 16)},
+    {"db17", make_wavelet_factory(daubechies, 17)},
+    {"db18", make_wavelet_factory(daubechies, 18)},
+    {"db19", make_wavelet_factory(daubechies, 19)},
+    {"db20", make_wavelet_factory(daubechies, 20)},
+    {"db21", make_wavelet_factory(daubechies, 21)},
+    {"db22", make_wavelet_factory(daubechies, 22)},
+    {"db23", make_wavelet_factory(daubechies, 23)},
+    {"db24", make_wavelet_factory(daubechies, 24)},
+    {"db25", make_wavelet_factory(daubechies, 25)},
+    {"db26", make_wavelet_factory(daubechies, 26)},
+    {"db27", make_wavelet_factory(daubechies, 27)},
+    {"db28", make_wavelet_factory(daubechies, 28)},
+    {"db29", make_wavelet_factory(daubechies, 29)},
+    {"db30", make_wavelet_factory(daubechies, 30)},
+    {"db31", make_wavelet_factory(daubechies, 31)},
+    {"db32", make_wavelet_factory(daubechies, 32)},
+    {"db33", make_wavelet_factory(daubechies, 33)},
+    {"db34", make_wavelet_factory(daubechies, 34)},
+    {"db35", make_wavelet_factory(daubechies, 35)},
+    {"db36", make_wavelet_factory(daubechies, 36)},
+    {"db37", make_wavelet_factory(daubechies, 37)},
+    {"db38", make_wavelet_factory(daubechies, 38)},
 };
 
-template <class WaveletType, int order>
-void register_wavelet_factory(const std::string& name)
+void register_wavelet_factory(const std::string& name, const WaveletFactory& factory)
 {
-    wavelet_factories[name] = make_wavelet_factory<DaubechiesWavelet, 1>();
-}
-
-Wavelet create_wavelet(const std::string& name)
-{
-    return wavelet_factories[name]();
+    wavelet_factories[name] = factory;
 }
 
 std::vector<std::string> registered_wavelets()
@@ -1674,71 +1737,32 @@ std::vector<std::string> registered_wavelets()
     return keys;
 }
 
-
-Wavelet::Wavelet(
-        int order,
-        int vanising_moments_psi,
-        int vanising_moments_phi,
-        int support_width,
-        bool orthogonal,
-        bool biorthogonal,
-        WaveletSymmetry symmetry,
-        bool compact_support,
-        const std::string& family_name,
-        const std::string& short_name,
-        const WaveletFilterBank& analysis_coeffs,
-        const WaveletFilterBank& synthesis_coeffs
-    ) :
-    order(order),
-    vanising_moments_psi(vanising_moments_psi),
-    vanising_moments_phi(vanising_moments_phi),
-    support_width(support_width),
-    orthogonal(orthogonal),
-    biorthogonal(biorthogonal),
-    symmetry(symmetry),
-    compact_support(compact_support),
-    family_name(family_name),
-    short_name(short_name),
-    _analysis_coeffs(analysis_coeffs),
-    _synthesis_coeffs(synthesis_coeffs)
+Wavelet create_wavelet(const std::string& name)
 {
+    return wavelet_factories[name]();
 }
 
-Wavelet::Wavelet(const Wavelet& other) :
-    order(other.order),
-    vanising_moments_psi(other.vanising_moments_psi),
-    vanising_moments_phi(other.vanising_moments_phi),
-    support_width(other.support_width),
-    orthogonal(other.orthogonal),
-    biorthogonal(other.biorthogonal),
-    symmetry(other.symmetry),
-    compact_support(other.compact_support),
-    family_name(other.family_name),
-    short_name(other.short_name),
-    _analysis_coeffs(other._analysis_coeffs),
-    _synthesis_coeffs(other._synthesis_coeffs)
+Wavelet haar()
 {
+    return Wavelet(
+        1, // order
+        2, // vanising_moments_psi
+        0, // vanising_moments_phi
+        1, // support_width
+        true, // orthogonal
+        true, // biorthogonal
+        WaveletSymmetry::ASYMMETRIC, // symmetry
+        true, // compact_support
+        "Haar", // family_name
+        "haar", // short_name
+        WaveletFilterBank::build_analysis_filter_bank(DB_ORDER_FILTER_COEFFS[0]), // analysis_filter_coeffs
+        WaveletFilterBank::build_synthesis_filter_bank(DB_ORDER_FILTER_COEFFS[0]) // synthesis_filter_coeffs
+    );
 }
 
-Wavelet::Wavelet(Wavelet&& other) :
-    order(other.order),
-    vanising_moments_psi(other.vanising_moments_psi),
-    vanising_moments_phi(other.vanising_moments_phi),
-    support_width(other.support_width),
-    orthogonal(other.orthogonal),
-    biorthogonal(other.biorthogonal),
-    symmetry(other.symmetry),
-    compact_support(other.compact_support),
-    family_name(other.family_name),
-    short_name(other.short_name),
-    _analysis_coeffs(std::move(other._analysis_coeffs)),
-    _synthesis_coeffs(std::move(other._synthesis_coeffs))
+Wavelet daubechies(int order)
 {
-}
-
-
-DaubechiesWavelet::DaubechiesWavelet(int order) :
-    Wavelet {
+    return Wavelet(
         order, // order
         2 * order, // vanising_moments_psi
         0, // vanising_moments_phi
@@ -1751,11 +1775,136 @@ DaubechiesWavelet::DaubechiesWavelet(int order) :
         "db" + std::to_string(order), // short_name
         WaveletFilterBank::build_analysis_filter_bank(DB_ORDER_FILTER_COEFFS[order - 1]), // analysis_filter_coeffs
         WaveletFilterBank::build_synthesis_filter_bank(DB_ORDER_FILTER_COEFFS[order - 1]) // synthesis_filter_coeffs
-    }
-{
+    );
 }
 
 
+
+/**
+ * -----------------------------------------------------------------------------
+ * Dwt2dLevelCoeffs
+ * -----------------------------------------------------------------------------
+*/
+Dwt2dLevelCoeffs::Dwt2dLevelCoeffs() :
+    Dwt2dLevelCoeffs(0, 0, CV_32F)
+{
+}
+
+Dwt2dLevelCoeffs::Dwt2dLevelCoeffs(int rows, int cols, int type) :
+    Dwt2dLevelCoeffs(
+        Dwt2dLevelCoeffs::CoeffArray{
+            cv::Mat(rows, cols, type, 0.0),
+            cv::Mat(rows, cols, type, 0.0),
+            cv::Mat(rows, cols, type, 0.0),
+            cv::Mat(rows, cols, type, 0.0),
+        }
+    )
+{
+}
+
+Dwt2dLevelCoeffs::Dwt2dLevelCoeffs(
+    const cv::Mat& approx,
+    const cv::Mat& horizontal_detail,
+    const cv::Mat& vertical_detail,
+    const cv::Mat& diagonal_detail
+) :
+    Dwt2dLevelCoeffs(
+        Dwt2dLevelCoeffs::CoeffArray{approx, horizontal_detail, vertical_detail, diagonal_detail}
+    )
+{
+}
+
+Dwt2dLevelCoeffs::Dwt2dLevelCoeffs(const Dwt2dLevelCoeffs::CoeffArray& coeffs) :
+    _coeffs{coeffs}
+{
+    if (!std::ranges::all_of(_coeffs, [](const auto& x) { return x.empty(); })) {
+        int coeff_type = type();
+        for (auto& coeff : _coeffs)
+            if (coeff.empty() && coeff.type() != coeff_type)
+                coeff.create(0, 0, coeff_type);
+    }
+    check_for_consistent_types();
+    check_for_consistent_sizes();
+}
+
+bool Dwt2dLevelCoeffs::has_consistent_types() const noexcept
+{
+    auto coeff_type = type();
+    return std::ranges::all_of(
+        _coeffs,
+        [&](const auto& x) { return x.type() == coeff_type; }
+    );
+}
+
+void Dwt2dLevelCoeffs::check_for_consistent_types() const
+{
+    if (!has_consistent_types()) {
+        std::stringstream message;
+        message
+            << "All matrices must have the same type, got: "
+            << _coeffs[0].type() << ", "
+            << _coeffs[1].type() << ", "
+            << _coeffs[2].type() << ", and "
+            << _coeffs[3].type() << ".";
+
+        throw std::runtime_error(message.str());
+    }
+}
+
+bool Dwt2dLevelCoeffs::has_consistent_sizes() const noexcept
+{
+    auto coeff_size = size();
+    return std::ranges::all_of(
+        _coeffs,
+        [&](const auto& x) { return x.empty() || x.size() == coeff_size; }
+    );
+}
+
+void Dwt2dLevelCoeffs::check_for_consistent_sizes() const
+{
+    if (!has_consistent_sizes()) {
+        std::stringstream message;
+        message
+            << "All matrices must have the same size, got: "
+            << _coeffs[0].size() << ", "
+            << _coeffs[1].size() << ", "
+            << _coeffs[2].size() << ", and "
+            << _coeffs[3].size() << ".";
+
+        throw std::runtime_error(message.str());
+    }
+}
+
+
+int Dwt2dLevelCoeffs::rows() const
+{
+    return find_first_nonempty().rows;
+}
+
+int Dwt2dLevelCoeffs::cols() const
+{
+    return find_first_nonempty().cols;
+}
+
+cv::Size Dwt2dLevelCoeffs::size() const
+{
+    return find_first_nonempty().size();
+}
+
+int Dwt2dLevelCoeffs::type() const
+{
+    return find_first_nonempty().type();
+}
+
+cv::Mat Dwt2dLevelCoeffs::find_first_nonempty() const
+{
+    auto result = std::ranges::find_if(
+        _coeffs,
+        [](const auto& coeff) { return !coeff.empty(); }
+    );
+
+    return (result != _coeffs.end()) ? *result : _coeffs[0];
+}
 
 
 
@@ -1770,9 +1919,144 @@ Dwt2dResults::Dwt2dResults() :
 {
 }
 
+// Dwt2dResults::Dwt2dResults(const cv::Mat& matrix, int depth=0)
+//     : coeffs()
+// {
+//     /*
+//         |----------------------------------|----------------------------------|
+//         |  2a   |  2h    |                 |                                  |
+//         |-------+--------|      1h         |                                  |
+//         |  2v   |  2d    |                 |                                  |
+//         -----------------+-----------------|               0h                 |
+//         |                |                 |                                  |
+//         |      1v        |      1d         |                                  |
+//         |                |                 |                                  |
+//         |                |                 |                                  |
+//         |----------------------------------+----------------------------------|
+//         |                                  |                                  |
+//         |                                  |                                  |
+//         |                                  |                                  |
+//         |               0v                 |               0d                 |
+//         |                                  |                                  |
+//         |                                  |                                  |
+//         |                                  |                                  |
+//         |                                  |                                  |
+//         |----------------------------------|----------------------------------|
+//     */
+//     int rows = coeffs[0].rows();
+//     int cols = coeffs[0].cols();
+//     int type = coeffs[0].type();
+
+//     if (depth <= 0)
+//         depth = DWT2D::max_possible_depth(matrix);
+
+//     for (int level = 0; level < depth; ++level)
+//         auto horizontal_submatrix = matrix(horizontal_rect(level));
+//         auto vertical_submatrix = matrix(vertical_rect(level));
+//         auto diagonal_submatrix = matrix(diagonal_rect(level));
+
+//         auto level_coeffs = Dwt2dLevelCoeffs(
+//             (level < depth - 1) ? cv::Mat() : matrix(approx_rect(level))
+//             horizontal_submatrix,
+//             vertical_submatrix,
+//             diagonal_submatrix
+//         )
+
+//         coeffs.push_back(level_coeffs)
+//     }
+// }
+
+cv::Rect Dwt2dResults::approx_roi() const
+{
+    int row_size = coeffs.back().rows();
+    int col_size = coeffs.back().cols();
+    return cv::Rect(0, 0, col_size, row_size);
+}
+
+cv::Rect Dwt2dResults::horizontal_roi(int level) const
+{
+    int row_size = coeffs[level].rows();
+    int col_size = coeffs[level].cols();
+    return cv::Rect(0, row_size, col_size, row_size);
+}
+
+cv::Rect Dwt2dResults::vertical_roi(int level) const
+{
+    int row_size = coeffs[level].rows();
+    int col_size = coeffs[level].cols();
+    return cv::Rect(col_size, 0, col_size, row_size);
+}
+
+cv::Rect Dwt2dResults::diagonal_roi(int level) const
+{
+    int row_size = coeffs[level].rows();
+    int col_size = coeffs[level].cols();
+    return cv::Rect(col_size, row_size, col_size, row_size);
+}
+
+
+
+cv::Rect Dwt2dResults::approx_rect(const cv::Size& size, int level)
+{
+    int row_size = size.height / std::pow(2, level);
+    int col_size = size.width / std::pow(2, level);
+    return cv::Rect(0, 0, col_size, row_size);
+}
+
+cv::Rect Dwt2dResults::horizontal_rect(const cv::Size& size, int level)
+{
+    int row_size = size.height / std::pow(2, level);
+    int col_size = size.width / std::pow(2, level);
+    return cv::Rect(0, row_size, col_size, row_size);
+}
+
+cv::Rect Dwt2dResults::vertical_rect(const cv::Size& size, int level)
+{
+    int row_size = size.height / std::pow(2, level);
+    int col_size = size.width / std::pow(2, level);
+    return cv::Rect(col_size, 0, col_size, row_size);
+}
+
+cv::Rect Dwt2dResults::diagonal_rect(const cv::Size& size, int level)
+{
+    int row_size = size.height / std::pow(2, level);
+    int col_size = size.width / std::pow(2, level);
+    return cv::Rect(col_size, row_size, col_size, row_size);
+}
+
+
 Dwt2dResults::Dwt2dResults(const Dwt2dResults::Coefficients& coeffs) :
     coeffs(coeffs)
 {
+    check_for_consistent_sizes_accross_levels();
+}
+
+void Dwt2dResults::check_for_consistent_sizes_accross_levels() const
+{
+    if (!has_consistent_sizes_accross_levels()) {
+        std::stringstream message;
+        message << "The size of each level must be half the preceding level, got: ";
+        for (const auto& c : std::ranges::subrange(coeffs.begin(), coeffs.end() - 1))
+            message << c.size() << ", ";
+        message << coeffs.back().size() << ".";
+
+        throw std::runtime_error(message.str());
+    }
+}
+
+bool Dwt2dResults::has_consistent_sizes_accross_levels() const noexcept
+{
+    if (!coeffs.empty()) {
+        auto size = coeffs[0].size();
+        for (const auto& level_coeffs : coeffs) {
+            if (level_coeffs.size() != size)
+                return false;
+
+            size = size / 2;
+        }
+    }
+
+    return true;
 }
 
 Dwt2dResults::Dwt2dResults(int rows, int cols, int type, int max_depth) :
@@ -1797,37 +2081,27 @@ Dwt2dResults::Dwt2dResults(int rows, int cols, int type, int max_depth) :
 }
 
 Dwt2dResults::Dwt2dResults(const cv::Size& size, int type, int max_depth) :
-    Dwt2dResults(max_depth, size.height(), size.width(), type)
+    Dwt2dResults(max_depth, size.height, size.width, type)
 {
 }
-
-// Dwt2dResults::Dwt2dResults(const Dwt2dResults& other) :
-//     coeffs(coeffs)
-// {
-// }
-// Dwt2dResults::Dwt2dResults(Dwt2dResults&& other) :
-//     coeffs(std::move(coeffs))
-// {
-// }
 
 cv::Mat Dwt2dResults::approx() const
 {
-    return coeffs.back().approx();
+    return coeffs.empty() ? cv::Mat() : coeffs.back().approx();
 }
 
-std::vector<cv::Mat> Dwt2dResults::details(DWT2DCoeffCategory direction) const
+std::vector<cv::Mat> Dwt2dResults::details(int direction) const
 {
-    std::vector<cv::Mat> result(levels());
+    std::vector<cv::Mat> result(depth());
     std::transform(
         coeffs.cbegin(),
         coeffs.cend(),
         result.begin(),
-        [&](const Dwt2dLevelCoeffs& level) { return level.coeffs(direction); }
+        [&](const Dwt2dLevelCoeffs& level) { return level[direction]; }
     );
 
     return result;
 }
-
 
 cv::Mat Dwt2dResults::as_matrix() const
 {
@@ -1851,42 +2125,6 @@ cv::Mat Dwt2dResults::as_matrix() const
         |                                  |                                  |
         |                                  |                                  |
         |----------------------------------|----------------------------------|
-
-    {
-         0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15
-        {3a, 3v, 2v, 2v, 1v, 1v, 1v, 1v, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 0
-        {3a, 3v, 2v, 2v, 1v, 1v, 1v, 1v, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 1
-        {3h, 3d, 2v, 2v, 1v, 1v, 1v, 1v, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 2
-        {3h, 3d, 2v, 2v, 1v, 1v, 1v, 1v, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 3
-        {2h, 2h, 2d, 2d, 1v, 1v, 1v, 1v, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 4
-        {2h, 2h, 2d, 2d, 1v, 1v, 1v, 1v, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 5
-        {2h, 2h, 2d, 2d, 1v, 1v, 1v, 1v, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 6
-        {2h, 2h, 2d, 2d, 1v, 1v, 1v, 1v, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 7
-        {1h, 1h, 1h, 1h, 1d, 1d, 1d, 1d, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 8
-        {1h, 1h, 1h, 1h, 1d, 1d, 1d, 1d, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 9
-        {1h, 1h, 1h, 1h, 1d, 1d, 1d, 1d, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 10
-        {1h, 1h, 1h, 1h, 1d, 1d, 1d, 1d, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 11
-        {1h, 1h, 1h, 1h, 1d, 1d, 1d, 1d, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 12
-        {1h, 1h, 1h, 1h, 1d, 1d, 1d, 1d, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 13
-        {1h, 1h, 1h, 1h, 1d, 1d, 1d, 1d, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 14
-        {1h, 1h, 1h, 1h, 1d, 1d, 1d, 1d, 0v, 0v, 0v, 0v, 0v, 0v, 0v, 0v}, // 15
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 16
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 17
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 18
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 19
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 20
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 21
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 22
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 23
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 24
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 25
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 26
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 27
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 28
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 29
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 30
-        {0h, 0h, 0h, 0h, 0h, 0h, 0h, 0h, 0d, 0d, 0d, 0d, 0d, 0d, 0d, 0d}, // 31
-    };
     */
     int rows = coeffs[0].rows();
     int cols = coeffs[0].cols();
@@ -1897,8 +2135,10 @@ cv::Mat Dwt2dResults::as_matrix() const
     int col_size = cols;
     for (auto level_coeffs : coeffs) {
         auto approx_submatrix = result(cv::Rect(0, 0, col_size, row_size));
-        auto horizontal_submatrix = result(cv::Rect(col_size, 0, col_size, row_size));
-        auto vertical_submatrix = result(cv::Rect(0, row_size, col_size, row_size));
+        auto vertical_submatrix = result(cv::Rect(col_size, 0, col_size, row_size));
+        auto horizontal_submatrix = result(cv::Rect(0, row_size, col_size, row_size));
+        // auto horizontal_submatrix = result(cv::Rect(col_size, 0, col_size, row_size));
+        // auto vertical_submatrix = result(cv::Rect(0, row_size, col_size, row_size));
         auto diagonal_submatrix = result(cv::Rect(col_size, row_size, col_size, row_size));
 
         level_coeffs.approx().copyTo(approx_submatrix);
@@ -1912,6 +2152,7 @@ cv::Mat Dwt2dResults::as_matrix() const
 
     return result;
 }
+
 
 
 void Dwt2dResults::normalize(int approx_mode, int detail_mode)
@@ -1942,7 +2183,7 @@ double Dwt2dResults::maximum_abs_value() const
 {
     double result = std::numeric_limits<double>::min();
     for (const auto& level : coeffs) {
-        for (const auto& c : level.all_coeffs()) {
+        for (const auto& c : level) {
             double min = 0;
             double max = 0;
             cv::minMaxLoc(c, &min, &max);
@@ -1976,77 +2217,6 @@ std::pair<double, double> Dwt2dResults::normalization_constants(int normalizatio
 
 /**
  * -----------------------------------------------------------------------------
- * Dwt2dLevelCoeffs
- * -----------------------------------------------------------------------------
-*/
-Dwt2dLevelCoeffs::Dwt2dLevelCoeffs() :
-    _coeffs{cv::Mat(), cv::Mat(), cv::Mat(), cv::Mat()}
-{
-}
-
-Dwt2dLevelCoeffs::Dwt2dLevelCoeffs(
-    const cv::Mat& approx,
-    const cv::Mat& horizontal_detail,
-    const cv::Mat& vertical_detail,
-    const cv::Mat& diagonal_detail
-) :
-    _coeffs{approx, horizontal_detail, vertical_detail, diagonal_detail}
-{
-}
-
-Dwt2dLevelCoeffs::Dwt2dLevelCoeffs(const Coefficients& coeffs) :
-    _coeffs{coeffs}
-{
-}
-
-Dwt2dLevelCoeffs::Dwt2dLevelCoeffs(const Dwt2dLevelCoeffs& coeffs) :
-    _coeffs(coeffs._coeffs)
-{
-}
-
-int Dwt2dLevelCoeffs::rows() const
-{
-    auto first_nonempty = find_first_nonempty();
-    return first_nonempty.empty() ? 0 : first_nonempty.rows;
-}
-
-int Dwt2dLevelCoeffs::cols() const
-{
-    auto first_nonempty = find_first_nonempty();
-    return first_nonempty.empty() ? 0 : first_nonempty.cols;
-}
-
-cv::Size Dwt2dLevelCoeffs::size() const
-{
-    return cv::Size(cols(), rows());
-}
-
-int Dwt2dLevelCoeffs::type() const
-{
-    auto first_nonempty = find_first_nonempty();
-    return first_nonempty.empty() ? 0 : first_nonempty.type();
-}
-
-cv::Mat Dwt2dLevelCoeffs::find_first_nonempty() const
-{
-    for (auto coeff : _coeffs) {
-        if (!coeff.empty())
-            return coeff;
-    }
-    return cv::Mat();
-}
-
-
-
-
-
-
-
-
-
-
-/**
- * -----------------------------------------------------------------------------
  * DWT2D
  * -----------------------------------------------------------------------------
 */
@@ -2061,7 +2231,7 @@ Dwt2dResults DWT2D::operator()(cv::InputArray x, int max_depth) const
     return forward(x, max_depth);
 }
 
-Dwt2dResults DWT2D::forward(cv::InputArray x, int max_depth=0) const
+Dwt2dResults DWT2D::forward(cv::InputArray x, int max_depth) const
 {
     int depth = max_possible_depth(x);
     if (max_depth > 0)
@@ -2070,10 +2240,10 @@ Dwt2dResults DWT2D::forward(cv::InputArray x, int max_depth=0) const
     std::vector<Dwt2dLevelCoeffs> level_coeffs;
     if (depth > 0) {
         auto data = x.getMat();
-        level_coeffs.push_back(compute_single_level(data));
+        level_coeffs.push_back(forward_single_level(data));
         for (int level = 1; level < depth; ++level) {
             level_coeffs.push_back(
-                compute_single_level(level_coeffs.back().approx())
+                forward_single_level(level_coeffs.back().approx())
             );
         }
     }
@@ -2081,55 +2251,105 @@ Dwt2dResults DWT2D::forward(cv::InputArray x, int max_depth=0) const
     return Dwt2dResults(level_coeffs);
 }
 
-void DWT2D::inverse(const Dwt2dResults& coeffs, cv::OutputArray output) const
+Dwt2dLevelCoeffs DWT2D::forward_single_level(cv::InputArray x) const
 {
+    auto data = x.getMat();
+    const auto& lowpass_kernel = wavelet.analysis_filter_bank().lowpass;
+    const auto& highpass_kernel = wavelet.analysis_filter_bank().highpass;
+
+    auto approx = convolve_rows_and_downsample_cols(data, lowpass_kernel);
+    auto detail = convolve_rows_and_downsample_cols(data, highpass_kernel);
+
+    return Dwt2dLevelCoeffs{
+        convolve_cols_and_downsample_rows(approx, lowpass_kernel),
+        convolve_cols_and_downsample_rows(approx, highpass_kernel),
+        convolve_cols_and_downsample_rows(detail, lowpass_kernel),
+        convolve_cols_and_downsample_rows(detail, highpass_kernel),
+    };
 }
 
-int DWT2D::max_possible_depth(cv::InputArray x) const
+void DWT2D::inverse(const Dwt2dResults& coeffs, cv::OutputArray output) const
+{
+
+    cv::Mat cummulative_output = coeffs.approx();
+    for (const auto& level_coeffs : coeffs | std::views::reverse) {
+        cv::Mat level_output;
+        inverse_single_level(
+            cummulative_output,
+            level_coeffs.horizontal_detail(),
+            level_coeffs.vertical_detail(),
+            level_coeffs.diagonal_detail(),
+            level_output
+        );
+        cummulative_output = level_output;
+    }
+
+    cummulative_output.copyTo(output);
+}
+
+void DWT2D::inverse_single_level(const Dwt2dLevelCoeffs& level_coeffs, cv::OutputArray output) const
+{
+    inverse_single_level(
+        level_coeffs.approx(),
+        level_coeffs.horizontal_detail(),
+        level_coeffs.vertical_detail(),
+        level_coeffs.diagonal_detail(),
+        output
+    );
+}
+
+void DWT2D::inverse_single_level(
+    cv::InputArray approx,
+    cv::InputArray horizontal_detail,
+    cv::InputArray vertical_detail,
+    cv::InputArray diagonal_detail,
+    cv::OutputArray output
+) const
+{
+    const auto& lowpass_kernel = wavelet.synthesis_filter_bank().lowpass;
+    const auto& highpass_kernel = wavelet.synthesis_filter_bank().highpass;
+
+    auto x = convolve_cols_and_upsample_rows(approx.getMat(), lowpass_kernel)
+        + convolve_cols_and_upsample_rows(horizontal_detail.getMat(), highpass_kernel);
+
+    auto y = convolve_cols_and_upsample_rows(vertical_detail.getMat(), lowpass_kernel)
+        + convolve_cols_and_upsample_rows(diagonal_detail.getMat(), highpass_kernel);
+
+    output.setTo(
+        convolve_rows_and_upsample_cols(x, lowpass_kernel)
+        + convolve_rows_and_upsample_cols(y, highpass_kernel)
+    );
+}
+
+
+int DWT2D::max_possible_depth(cv::InputArray x)
 {
     return x.empty() ? 0 : std::log2(std::min(x.rows(), x.cols()));
 }
 
-Dwt2dLevelCoeffs DWT2D::compute_single_level(cv::InputArray x) const
+cv::Mat DWT2D::convolve_rows_and_downsample_cols(const cv::Mat& data, cv::InputArray kernel) const
 {
-    auto data = x.getMat();
-    auto lowpass_kernel = wavelet.analysis_lowpass_coeffs();
-    auto highpass_kernel = wavelet.analysis_highpass_coeffs();
-
-    auto approx = convolve_rows_and_decimate_cols(data, lowpass_kernel);
-    auto detail = convolve_rows_and_decimate_cols(data, highpass_kernel);
-
-    return Dwt2dLevelCoeffs{
-        convolve_cols_and_decimate_rows(approx, lowpass_kernel),
-        convolve_cols_and_decimate_rows(approx, highpass_kernel),
-        convolve_cols_and_decimate_rows(detail, lowpass_kernel),
-        convolve_cols_and_decimate_rows(detail, highpass_kernel),
-    };
-}
-
-cv::Mat DWT2D::convolve_rows_and_decimate_cols(const cv::Mat& data, cv::InputArray kernel) const
-{
-    return convolve_and_decimate(
+    return convolve_and_downsample(
         data,
         kernel,
         std::vector<double>{1},
-        data.rows / 2,
-        data.cols
-    );
-}
-
-cv::Mat DWT2D::convolve_cols_and_decimate_rows(const cv::Mat& data, cv::InputArray kernel) const
-{
-    return convolve_and_decimate(
-        data,
-        std::vector<double>{1},
-        kernel,
         data.rows,
         data.cols / 2
     );
 }
 
-cv::Mat DWT2D::convolve_and_decimate(
+cv::Mat DWT2D::convolve_cols_and_downsample_rows(const cv::Mat& data, cv::InputArray kernel) const
+{
+    return convolve_and_downsample(
+        data,
+        std::vector<double>{1},
+        kernel,
+        data.rows / 2,
+        data.cols
+    );
+}
+
+cv::Mat DWT2D::convolve_and_downsample(
         const cv::Mat& data,
         cv::InputArray kernel_x,
         cv::InputArray kernel_y,
@@ -2137,14 +2357,54 @@ cv::Mat DWT2D::convolve_and_decimate(
         int final_cols
     ) const
 {
-    int type = data.type();
-
-    auto filtered = cv::Mat(data.rows, data.cols, type);
+    cv::Mat filtered;
     cv::sepFilter2D(data, filtered, -1, kernel_x, kernel_y, cv::Point(-1, -1), 0.0, border_type);
-    // cv::sepFilter2D(data, filtered, -1, kernel_x, kernel_y);
 
-    auto result = cv::Mat(final_rows, final_cols, type);
-    cv::resize(filtered, result, result.size(), 0.0, 0.0, cv::INTER_NEAREST);
+    //  use resize without any smoothing to implement downsampling by 2
+    cv::Mat result;
+    cv::resize(filtered, result, cv::Size(final_cols, final_rows), 0.0, 0.0, cv::INTER_NEAREST);
+
+    return result;
+}
+
+
+
+cv::Mat DWT2D::convolve_rows_and_upsample_cols(const cv::Mat& data, cv::InputArray kernel) const
+{
+    return convolve_and_upsample(
+        data,
+        kernel,
+        std::vector<double>{1},
+        data.rows,
+        2 * data.cols
+    );
+}
+
+cv::Mat DWT2D::convolve_cols_and_upsample_rows(const cv::Mat& data, cv::InputArray kernel) const
+{
+    return convolve_and_upsample(
+        data,
+        std::vector<double>{1},
+        kernel,
+        2 * data.rows,
+        data.cols
+    );
+}
+
+cv::Mat DWT2D::convolve_and_upsample(
+        const cv::Mat& data,
+        cv::InputArray kernel_x,
+        cv::InputArray kernel_y,
+        int final_rows,
+        int final_cols
+    ) const
+{
+    cv::Mat filtered;
+    cv::sepFilter2D(data, filtered, -1, kernel_x, kernel_y, cv::Point(-1, -1), 0.0, border_type);
+
+    //  use resize without any smoothing to implement upsampling by 2
+    cv::Mat result;
+    cv::resize(filtered, result, cv::Size(final_cols, final_rows), 0.0, 0.0, cv::INTER_NEAREST);
 
     return result;
 }
@@ -2157,10 +2417,24 @@ Dwt2dResults dwt2d(cv::InputArray input, const Wavelet& wavelet, int max_depth, 
     return dwt(input, max_depth);
 }
 
-// Dwt2dResults dwt2d(cv::InputArray input, const std::string& wavelet, int max_levels=0)
-// {
-//     return dwt2d(input, create_wavelet(wavelet), max_levels);
-// }
+Dwt2dResults dwt2d(cv::InputArray input, const std::string& wavelet, int max_depth, int border_type)
+{
+    return dwt2d(input, create_wavelet(wavelet), max_depth, border_type);
+}
 
+
+void idwt2d(
+    const Dwt2dResults& input,
+    cv::OutputArray output,
+    const Wavelet& wavelet,
+    int border_type
+)
+{
+}
+
+void idwt2d(const Dwt2dResults& input, cv::OutputArray output, const std::string& wavelet, int border_type)
+{
+    idwt2d(input, output, create_wavelet(wavelet), border_type);
+}
 
 

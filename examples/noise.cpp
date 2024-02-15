@@ -52,7 +52,7 @@ void show(
         image
     );
     cv::imshow(
-        "DWT (" + wavelet.short_name + ", " + std::to_string(dwt_results.levels()) + " levels)",
+        "DWT (" + wavelet.short_name() + ", " + std::to_string(dwt_results.depth()) + " levels)",
         dwt_image
     );
     cv::waitKey(0);
@@ -175,9 +175,20 @@ int main(int argc, char* argv[])
             auto image = open_image(input_filename);
 
             auto wavelet = create_wavelet(wavelet_name);
-            auto dwt_results = dwt2d(image, wavelet, depth);
+            // auto dwt_results = dwt2d(image, wavelet, depth);
+            auto dwt_results = dwt2d(image, wavelet_name, depth);
             dwt_results.normalize();
             auto dwt_image = dwt_results.as_matrix();
+
+            // for (auto& level : dwt_results) {
+            //     threshold(level.horizontal, t);
+            //     threshold(level.horizontal, t);
+            //     threshold(level.horizontal, t);
+            //     threshold(level.horizontal, t);
+
+            //     for (auto& detail : level.details())
+            //         threshold(detail, h);
+            // }
 
             if (parsed_options.count("out")) {
                 auto output_filename = std::filesystem::canonical(
