@@ -8,7 +8,9 @@
 #include <cxxopts.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-#include <wavelet/wavelet.h>
+// #include <wavelet/wavelet.h>
+#include <wavelet/dwt2d.hpp>
+
 
 const std::string PROGRAM_NAME = "dwt2d";
 
@@ -42,7 +44,8 @@ void save_image(const cv::Mat& image, const std::filesystem::path& output_filena
 void show(
     const cv::Mat& image,
     const cv::Mat& dwt_image,
-    const Dwt2dResults& dwt_results,
+    // const Dwt2dResults& dwt_results,
+    const DWT2D::Coeffs& dwt_coeffs,
     const std::filesystem::path& input_filename,
     const Wavelet& wavelet
 )
@@ -52,7 +55,8 @@ void show(
         image
     );
     cv::imshow(
-        "DWT (" + wavelet.short_name() + ", " + std::to_string(dwt_results.depth()) + " levels)",
+        // "DWT (" + wavelet.short_name() + ", " + std::to_string(dwt_results.depth()) + " levels)",
+        "DWT (" + wavelet.short_name() + ", " + std::to_string(dwt_coeffs.depth()) + " levels)",
         dwt_image
     );
     cv::waitKey(0);
@@ -60,10 +64,10 @@ void show(
 
 void print_available_wavelets()
 {
-    std::cout << "Wavelets: ";
-    for (auto name : registered_wavelets())
-        std::cout << name << ' ';
-    std::cout << std::endl;
+    // std::cout << "Wavelets: ";
+    // for (auto name : registered_wavelets())
+    //     std::cout << name << ' ';
+    // std::cout << std::endl;
 }
 
 
@@ -174,11 +178,12 @@ int main(int argc, char* argv[])
 
             auto image = open_image(input_filename);
 
-            auto wavelet = create_wavelet(wavelet_name);
+            auto wavelet = Wavelet::create(wavelet_name);
             // auto dwt_results = dwt2d(image, wavelet, depth);
             auto dwt_results = dwt2d(image, wavelet_name, depth);
             dwt_results.normalize();
-            auto dwt_image = dwt_results.as_matrix();
+            // auto dwt_image = dwt_results.as_matrix();
+            cv::Mat dwt_image = dwt_results;
 
             // for (auto& level : dwt_results) {
             //     threshold(level.horizontal, t);

@@ -125,6 +125,11 @@ def make_vertical_lines(shape, dtype):
     )
 
 
+def test_pattern_zeros(wavelet, shape, dtype, border_mode):
+    pattern = np.zeros(shape, dtype=dtype)
+    run_test('zeros', pattern, wavelet, border_mode)
+
+
 def test_pattern_ones(wavelet, shape, dtype, border_mode):
     pattern = np.ones(shape, dtype=dtype)
     run_test('ones', pattern, wavelet, border_mode)
@@ -162,15 +167,14 @@ def test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode):
 
 
 
-def run_test(title, pattern, wavelet, border_mode):
+def run_test(title, pattern, wavelet, border_mode, level=None):
     np.set_printoptions(linewidth=240, precision=2)
 
     axes = (0, 1)
-    coeffs = pywt.wavedec2(pattern, wavelet, axes=axes, mode=border_mode)
+    coeffs = pywt.wavedec2(pattern, wavelet, axes=axes, mode=border_mode, level=level)
     coeffs, _ = pywt.coeffs_to_array(coeffs, axes=axes)
 
     print(title)
-    print('wavelet =', wavelet)
     print('pattern =')
     print(pattern)
     print(pattern.shape)
@@ -191,18 +195,20 @@ if __name__ == '__main__':
     dtype = np.float32
     shape = [16, 16]
     border_mode = 'reflect'
+    level = None
 
     wavelet = pywt.Wavelet('db1')
 
-    print(wavelet.filter_bank)
+    # print(wavelet.filter_bank)
 
-    # test_pattern_ones(wavelet, shape, dtype, border_mode)
-    # test_pattern_vertical_lines(wavelet, shape, dtype, border_mode)
-    # test_pattern_vertical_lines2(wavelet, shape, dtype, border_mode)
-    # test_pattern_horizontal_lines(wavelet, shape, dtype, border_mode)
-    # test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode)
-    # test_pattern_checkerboard(wavelet, shape, dtype, border_mode)
-    # test_pattern_checkerboard2(wavelet, shape, dtype, border_mode)
+    test_pattern_zeros(wavelet, shape, dtype, border_mode, level=level)
+    test_pattern_ones(wavelet, shape, dtype, border_mode, level=level)
+    test_pattern_horizontal_lines(wavelet, shape, dtype, border_mode, level=level)
+    test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode, level=level)
+    test_pattern_vertical_lines(wavelet, shape, dtype, border_mode, level=level)
+    test_pattern_vertical_lines2(wavelet, shape, dtype, border_mode, level=level)
+    test_pattern_checkerboard(wavelet, shape, dtype, border_mode, level=level)
+    test_pattern_checkerboard2(wavelet, shape, dtype, border_mode, level=level)
 
     # main()
 
