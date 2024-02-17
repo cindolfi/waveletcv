@@ -1,15 +1,25 @@
 #ifndef WAVELET_DWT2D_H
 #define WAVELET_DWT2D_H
 
+#include "wavelet/wavelet.hpp"
 #include <opencv2/core.hpp>
 #include <string>
 #include <vector>
-#include <array>
-#include <map>
-#include <functional>
-#include <span>
-#include "wavelet/wavelet.h"
 
+namespace wavelet
+{
+enum Dwt2DSubband {
+    APPROXIMATION = 0,
+    HORIZONTAL = 1,
+    VERTICAL = 2,
+    DIAGONAL = 3,
+};
+
+enum NormalizationMode {
+    DWT_NORMALIZE_NONE = 0,
+    DWT_NORMALIZE_ZERO_TO_HALF,
+    DWT_NORMALIZE_MAX,
+};
 
 namespace internal
 {
@@ -195,7 +205,6 @@ public:
     DWT2D(const DWT2D& other) = default;
 
     Coeffs operator()(cv::InputArray x, int levels=0) const;
-
     Coeffs forward(cv::InputArray x, int levels=0) const;
     void inverse(const Coeffs& coeffs, cv::OutputArray output, int levels=0) const;
     cv::Mat inverse(const Coeffs& coeffs, int levels=0) const;
@@ -271,6 +280,8 @@ cv::Mat idwt2d(
     int levels=0,
     int border_type=cv::BORDER_DEFAULT
 );
+
+} // namespace wavelet
 
 #endif  // WAVELET_DWT2D_H
 

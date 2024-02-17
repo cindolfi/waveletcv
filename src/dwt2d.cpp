@@ -1,22 +1,12 @@
-/**
- *
-*/
 #include "wavelet/dwt2d.hpp"
-#include "wavelet/wavelet.h"
 #include <opencv2/imgproc.hpp>
-#include <memory>
-#include <iostream>
-#include <limits>
-#include <ranges>
-#include <map>
 
-/**
- * =============================================================================
- * Internal API
- * =============================================================================
-*/
+namespace wavelet
+{
+
 namespace internal
 {
+
 Dwt2dCoeffs::Dwt2dCoeffs() :
     _coeff_matrix(),
     _depth(0)
@@ -550,6 +540,11 @@ cv::Mat DWT2D::inverse(const DWT2D::Coeffs& coeffs, int levels) const
 
 
 
+/**
+ * -----------------------------------------------------------------------------
+ * Functional Interface
+ * -----------------------------------------------------------------------------
+*/
 DWT2D::Coeffs dwt2d(
     cv::InputArray input,
     const Wavelet& wavelet,
@@ -637,6 +632,5 @@ cv::Mat idwt2d(
     return idwt2d(input, Wavelet::create(wavelet), border_type);
 }
 
-
-
+} // namespace wavelet
 

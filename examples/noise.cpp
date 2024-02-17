@@ -8,9 +8,9 @@
 #include <cxxopts.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-// #include <wavelet/wavelet.h>
 #include <wavelet/dwt2d.hpp>
 
+using namespace wavelet;
 
 const std::string PROGRAM_NAME = "dwt2d";
 
@@ -118,30 +118,6 @@ void print_minmax(const cv::Mat& x, const std::string& header)
 
 }
 
-
-
-
-
-
-
-// (512, 512, 3) uint8
-// 255 3
-// original:
-//     type = uint8
-//     min = 3 max = 255
-// image:
-//     type = float32
-//     min = -2.1231012 max = 2.149264
-
-// (133, 133, 3)
-// dwt_image:
-//     dwt_image = float32 (512, 512, 3)
-//     min = -9.546701 max = 10.078802
-//     h = 20.157604217529297
-
-// final_image:
-//     type = uint8 (525, 525, 3)
-//     min = 6 max = 255
 
 
 

@@ -5,13 +5,14 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <wavelet/wavelet.h>
+#include <wavelet/wavelet.hpp>
 #include <wavelet/dwt2d.hpp>
 #include <numeric>
 #include <vector>
 #include <iomanip>
 #include <opencv2/imgcodecs.hpp>
 
+using namespace wavelet;
 using namespace testing;
 
 cv::Mat create_matrix(int rows, int cols, int type, float initial_value = 0)
@@ -123,12 +124,12 @@ TEST_P(DaubechiesTest, Order)
 TEST_P(DaubechiesTest, VanisingMomentsPsi)
 {
     auto param = GetParam();
-    ASSERT_EQ(wavelet.vanising_moments_psi(), param.vanishing_moments_psi);
+    ASSERT_EQ(wavelet.vanishing_moments_psi(), param.vanishing_moments_psi);
 }
 
 TEST_P(DaubechiesTest, VanisingMomentsPhi)
 {
-    ASSERT_EQ(wavelet.vanising_moments_phi(), 0);
+    ASSERT_EQ(wavelet.vanishing_moments_phi(), 0);
 }
 
 TEST_P(DaubechiesTest, SupportWidth)
@@ -307,12 +308,12 @@ TEST_P(HaarTest, Order)
 TEST_P(HaarTest, VanisingMomentsPsi)
 {
     auto param = GetParam();
-    ASSERT_EQ(wavelet.vanising_moments_psi(), param.vanishing_moments_psi);
+    ASSERT_EQ(wavelet.vanishing_moments_psi(), param.vanishing_moments_psi);
 }
 
 TEST_P(HaarTest, VanisingMomentsPhi)
 {
-    ASSERT_EQ(wavelet.vanising_moments_phi(), 0);
+    ASSERT_EQ(wavelet.vanishing_moments_phi(), 0);
 }
 
 TEST_P(HaarTest, SupportWidth)

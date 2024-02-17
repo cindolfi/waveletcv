@@ -9,7 +9,12 @@ set(
 #   ----------------------------------------------------------------------------
 #   Add Library Target
 #   ----------------------------------------------------------------------------
-add_library(wavelet_library wavelet.cpp ${HEADER_LIST})
+add_library(
+    wavelet_library
+    wavelet.cpp
+    dwt2d.cpp
+    ${HEADER_LIST}
+)
 
 #   ----------------------------------------------------------------------------
 #   Target Settings
