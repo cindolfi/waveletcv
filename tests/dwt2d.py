@@ -8,6 +8,7 @@ import argparse
 import os
 import contextlib
 import shutil
+import matplotlib.pyplot as plt
 
 
 
@@ -186,11 +187,56 @@ def run_test(title, pattern, wavelet, border_mode, level=None):
     print('-' * 80)
     print()
 
+
+def sure(x, t, stdev):
+    y = abs(x / stdev)
+    thresh = t / stdev
+    return  len(y) + np.sum(np.minimum(y, thresh)**2) - 2 * np.sum(y <= thresh)
+
+
+
+def plot_sure():
+    n = 512 * 512
+    x = np.linspace(0, 2 * np.pi, n)
+    noise = 0.9 * np.random.randn(len(x))
+    # noise = 0
+    # y = np.sin(x) + noise
+    # y = np.sin(x) + np.sin(2 * x) + noise
+    w = np.linspace(0.5, 10, len(x))
+    y = np.sin(w * x) + noise
+
+    stdev = np.std(y)
+
+    y = y / stdev
+    risk = np.zeros_like(y)
+    a = np.zeros_like(y)
+    b = np.zeros_like(y)
+    # thresholds = sorted(abs(y)
+    print(max(abs(y)))
+
+    thresholds = np.linspace(0, max(abs(y)), len(y))
+    # thresholds = thresholds / stdev
+    for i, t in enumerate(thresholds):
+        risk[i] = sure(y, t, 1)
+        # a[i] = np.sum(np.minimum(y, t)**2)
+        # b[i] = -2 * np.sum(y <= t)
+
+
+    # plt.plot(x, y)
+    plt.plot(thresholds, risk)
+    # plt.plot(thresholds, a)
+    # plt.plot(thresholds, b)
+
+
+
 if __name__ == '__main__':
     # inputs = [
     #     np.ones([32, 32], dtype=np.float32),
     #     ('inputs/lena_gray.png', cv2.IMREAD_GRAYSCALE),
     # ]
+    plot_sure()
+    plt.show()
+    exit()
     wavelet = 'db1'
     dtype = np.float32
     shape = [16, 16]
@@ -201,14 +247,76 @@ if __name__ == '__main__':
 
     # print(wavelet.filter_bank)
 
-    test_pattern_zeros(wavelet, shape, dtype, border_mode, level=level)
-    test_pattern_ones(wavelet, shape, dtype, border_mode, level=level)
-    test_pattern_horizontal_lines(wavelet, shape, dtype, border_mode, level=level)
-    test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode, level=level)
-    test_pattern_vertical_lines(wavelet, shape, dtype, border_mode, level=level)
-    test_pattern_vertical_lines2(wavelet, shape, dtype, border_mode, level=level)
-    test_pattern_checkerboard(wavelet, shape, dtype, border_mode, level=level)
-    test_pattern_checkerboard2(wavelet, shape, dtype, border_mode, level=level)
+    # test_pattern_zeros(wavelet, shape, dtype, border_mode, level=level)
+    # test_pattern_ones(wavelet, shape, dtype, border_mode, level=level)
+    # test_pattern_horizontal_lines(wavelet, shape, dtype, border_mode, level=level)
+    # test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode, level=level)
+    # test_pattern_vertical_lines(wavelet, shape, dtype, border_mode, level=level)
+    # test_pattern_vertical_lines2(wavelet, shape, dtype, border_mode, level=level)
+    # test_pattern_checkerboard(wavelet, shape, dtype, border_mode, level=level)
+    # test_pattern_checkerboard2(wavelet, shape, dtype, border_mode, level=level)
+
+
+    # x = -7 + np.arange(16)
+    # stdev = np.std(x)
+
+    x = 1 + np.arange(16)
+    stdev = np.std(x)
+
+
+    # g = [0, 7, 15]
+    # h = [-0.5, 0, 0.5]
+    # offsets = set()
+    # for w in g:
+    #     for i in h:
+    #         offsets.add(w + i)
+
+    # offsets = sorted(offsets)
+
+    # x = np.ones(16)
+    # offsets = np.linspace(0, 1, 5)
+    # stdev = 1
+
+    # x = np.zeros(16)
+    # offsets = np.linspace(0, 1, 5) - 1
+    # stdev = 1
+
+
+
+    # print('x =', x)
+    # print('stdev =', stdev)
+    # print('t = 0.0: ', sure(x, 0, stdev))
+    # print()
+    # for i in offsets:
+    #     t = i + x[0]
+    #     t = i - 1
+    #     t = i
+    #     print(f't = {t:0.1f}: ', sure(x, t, stdev))
+
+
+    print('x =', x)
+    print('stdev =', stdev)
+    print()
+    for t in x:
+        print(f't = {t}: ', sure(x, t, stdev))
+
+
+    # print('x =', x)
+    # print('stdev =', stdev)
+    # print()
+    # for i in offsets:
+    #     t = i
+    #     print(f't = {t}: ', sure(x, t, stdev))
+
+    # print('t = 0.5: ', sure(x, 0.5, stdev))
+    # print('t = 1.0: ', sure(x, 1.0, stdev))
+    # print('t = 1.5: ', sure(x, 1.5, stdev))
+    # print('t = 7.5: ', sure(x, 7.5, stdev))
+    # print('t = 8.0: ', sure(x, 8.0, stdev))
+    # print('t = 8.5: ', sure(x, 8.5, stdev))
+    # print('t = 15.5:', sure(x, 15.5, stdev))
+    # print('t = 16.0:', sure(x, 16.0, stdev))
+    # print('t = 16.5:', sure(x, 16.5, stdev))
 
     # main()
 

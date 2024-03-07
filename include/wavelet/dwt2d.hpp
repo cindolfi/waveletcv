@@ -5,20 +5,21 @@
 #include <opencv2/core.hpp>
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace wavelet
 {
 enum Dwt2DSubband {
-    APPROXIMATION = 0,
-    HORIZONTAL = 1,
-    VERTICAL = 2,
-    DIAGONAL = 3,
+    // APPROXIMATION = 0,
+    HORIZONTAL = 0,
+    VERTICAL = 1,
+    DIAGONAL = 2,
 };
 
 enum NormalizationMode {
-    DWT_NORMALIZE_NONE = 0,
-    DWT_NORMALIZE_ZERO_TO_HALF,
-    DWT_NORMALIZE_MAX,
+    DWT_NO_NORMALIZE = 0,
+    DWT_ZERO_TO_HALF_NORMALIZE,
+    DWT_MAX_NORMALIZE,
 };
 
 namespace internal
@@ -130,12 +131,16 @@ public:
     void set_approx(const cv::Mat& coeffs);
     void set_approx(const cv::Scalar& scalar);
     void set_detail(const cv::Mat& coeffs, int direction, int level=0);
+    void set_detail(const cv::MatExpr& coeffs, int direction, int level=0);
     void set_detail(const cv::Scalar& scalar, int direction, int level=0);
     void set_horizontal_detail(const cv::Mat& coeffs, int level=0);
+    void set_horizontal_detail(const cv::MatExpr& coeffs, int level=0);
     void set_horizontal_detail(const cv::Scalar& scalar, int level=0);
     void set_vertical_detail(const cv::Mat& coeffs, int level=0);
+    void set_vertical_detail(const cv::MatExpr& coeffs, int level=0);
     void set_vertical_detail(const cv::Scalar& scalar, int level=0);
     void set_diagonal_detail(const cv::Mat& coeffs, int level=0);
+    void set_diagonal_detail(const cv::MatExpr& coeffs, int level=0);
     void set_diagonal_detail(const cv::Scalar& scalar, int level=0);
 
     Dwt2dCoeffs at(int level) const;
@@ -152,25 +157,43 @@ public:
     cv::Size size() const { return _coeff_matrix.size(); }
     int type() const { return _coeff_matrix.type(); }
     bool empty() const { return _coeff_matrix.empty(); }
+    int total() const { return _coeff_matrix.total(); }
+    int channels() const { return _coeff_matrix.channels(); }
+    size_t elemSize() const { return _coeff_matrix.elemSize(); }
+    size_t elemSize1() const { return _coeff_matrix.elemSize1(); }
+    void copyTo(cv::OutputArray other) const { _coeff_matrix.copyTo(other); }
+    void copyTo(cv::OutputArray other, cv::InputArray mask) const { _coeff_matrix.copyTo(other, mask); }
+    void convertTo(cv::OutputArray other, int type, double alpha=1.0, double beta=0.0) const { _coeff_matrix.convertTo(other, type, alpha, beta); }
+    bool isContinuous() const { return _coeff_matrix.isContinuous(); }
+    bool isSubmatrix() const { return _coeff_matrix.isSubmatrix(); }
+    // void setTo(cv::InputArray value, cv::InputArray mask) { _coeff_matrix.setTo(value, mask); }
 
     LevelIterator begin() const;
     LevelIterator end() const;
     LevelIterator begin();
     LevelIterator end();
 
-    void normalize(int approx_mode=DWT_NORMALIZE_MAX, int detail_mode=DWT_NORMALIZE_ZERO_TO_HALF);
+    void normalize(int approx_mode=DWT_MAX_NORMALIZE, int detail_mode=DWT_ZERO_TO_HALF_NORMALIZE);
     double maximum_abs_value() const;
 
     cv::Size level_size(int level) const;
     cv::Rect level_rect(int level) const;
     cv::Size detail_size(int level) const;
-    cv::Rect approx_rect(int level) const;
-    cv::Rect horizontal_rect(int level) const;
-    cv::Rect vertical_rect(int level) const;
-    cv::Rect diagonal_rect(int level) const;
+    cv::Rect approx_rect(int level=-1) const;
+    cv::Rect horizontal_rect(int level=0) const;
+    cv::Rect vertical_rect(int level=0) const;
+    cv::Rect diagonal_rect(int level=0) const;
+
+    cv::Mat detail_mask(int lower_level=0, int upper_level=-1) const;
+    cv::Mat approx_mask(int level=-1) const;
+    cv::Mat horizontal_detail_mask(int level=0) const;
+    cv::Mat vertical_detail_mask(int level=0) const;
+    cv::Mat diagonal_detail_mask(int level=0) const;
 
     bool shares_data(const Dwt2dCoeffs& other) const;
     bool shares_data(const cv::Mat& matrix) const;
+
+    friend std::ostream& operator<<(std::ostream& stream, const Dwt2dCoeffs& coeffs);
 
 protected:
     template <typename MatrixLike>
@@ -190,6 +213,8 @@ private:
     cv::Mat _coeff_matrix;
     int _depth;
 };
+
+std::ostream& operator<<(std::ostream& stream, const Dwt2dCoeffs& coeffs);
 } // namespace internal
 
 
@@ -218,7 +243,8 @@ public:
     int border_type;
 };
 
-
+// void split(DWT2D::Coeffs coeffs, std::vector<DWT2D::Coeffs>& channel_coeffs);
+// void merge(const std::vector<DWT2D::Coeffs>& channel_coeffs, DWT2D::Coeffs& coeffs);
 
 
 DWT2D::Coeffs dwt2d(

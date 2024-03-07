@@ -2,9 +2,18 @@
 #file(GLOB HEADER_LIST CONFIGURE_DEPENDS "${Wavelet_SOURCE_DIR}/include/wavelet/*.hpp")
 set(
     HEADER_LIST
-    "${Wavelet_SOURCE_DIR}/include/wavelet/wavelet.h"
+    "${Wavelet_SOURCE_DIR}/include/wavelet/wavelet.hpp"
     "${Wavelet_SOURCE_DIR}/include/wavelet/dwt2d.hpp"
+    "${Wavelet_SOURCE_DIR}/include/wavelet/shrinkage.hpp"
 )
+
+FetchContent_Declare(
+    nlopt
+    GIT_REPOSITORY "https://github.com/stevengj/nlopt.git"
+    GIT_TAG        v2.7.1
+)
+FetchContent_MakeAvailable(nlopt)
+
 
 #   ----------------------------------------------------------------------------
 #   Add Library Target
@@ -13,6 +22,7 @@ add_library(
     wavelet_library
     wavelet.cpp
     dwt2d.cpp
+    shrinkage.cpp
     ${HEADER_LIST}
 )
 
@@ -20,7 +30,11 @@ add_library(
 #   Target Settings
 #   ----------------------------------------------------------------------------
 target_include_directories(wavelet_library PUBLIC ../include)
-target_link_libraries(wavelet_library ${OpenCV_LIBS})
+target_link_libraries(
+    wavelet_library
+    ${OpenCV_LIBS}
+    nlopt
+)
 target_compile_features(wavelet_library PUBLIC cxx_std_20)
 
 #   ----------------------------------------------------------------------------

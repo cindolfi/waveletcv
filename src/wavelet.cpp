@@ -340,7 +340,7 @@ Wavelet::Wavelet(
 
 Wavelet Wavelet::create(const std::string& name)
 {
-    return _wavelet_factories[name]();
+    return _wavelet_factories.at(name)();
 }
 
 template<class... Args>
@@ -419,8 +419,8 @@ Wavelet haar()
         "Haar", // family_name
         "haar", // short_name
         Wavelet::FilterBank(
-            Wavelet::FilterBank::build_synthesis_kernels(DB_ORDER_FILTER_COEFFS[0]),
-            Wavelet::FilterBank::build_analysis_kernels(DB_ORDER_FILTER_COEFFS[0])
+            Wavelet::FilterBank::build_synthesis_kernels(DAUBECHIES_FILTER_COEFFS[0]),
+            Wavelet::FilterBank::build_analysis_kernels(DAUBECHIES_FILTER_COEFFS[0])
         )
     );
 }
@@ -439,8 +439,8 @@ Wavelet daubechies(int order)
         "Daubechies", // family_name
         "db" + std::to_string(order), // short_name
         Wavelet::FilterBank(
-            Wavelet::FilterBank::build_synthesis_kernels(DB_ORDER_FILTER_COEFFS[order - 1]),
-            Wavelet::FilterBank::build_analysis_kernels(DB_ORDER_FILTER_COEFFS[order - 1])
+            Wavelet::FilterBank::build_synthesis_kernels(DAUBECHIES_FILTER_COEFFS[order - 1]),
+            Wavelet::FilterBank::build_analysis_kernels(DAUBECHIES_FILTER_COEFFS[order - 1])
         )
     );
 }

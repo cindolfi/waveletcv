@@ -1,12 +1,12 @@
 #include "wavelet/dwt2d.hpp"
 #include <opencv2/imgproc.hpp>
+#include <iostream>
 
 namespace wavelet
 {
 
 namespace internal
 {
-
 Dwt2dCoeffs::Dwt2dCoeffs() :
     _coeff_matrix(),
     _depth(0)
@@ -175,12 +175,24 @@ void Dwt2dCoeffs::set_detail(const cv::Mat& coeffs, int direction, int level)
     convert_and_copy(coeffs, detail(direction, level));
 }
 
+void Dwt2dCoeffs::set_detail(const cv::MatExpr& coeffs, int direction, int level)
+{
+    check_size_for_set_detail(coeffs, level);
+    convert_and_copy(coeffs, detail(direction, level));
+}
+
 void Dwt2dCoeffs::set_detail(const cv::Scalar& scalar, int direction, int level)
 {
     detail(direction, level) = scalar;
 }
 
 void Dwt2dCoeffs::set_horizontal_detail(const cv::Mat& coeffs, int level)
+{
+    check_size_for_set_detail(coeffs, level);
+    convert_and_copy(coeffs, horizontal_detail(level));
+}
+
+void Dwt2dCoeffs::set_horizontal_detail(const cv::MatExpr& coeffs, int level)
 {
     check_size_for_set_detail(coeffs, level);
     convert_and_copy(coeffs, horizontal_detail(level));
@@ -197,12 +209,24 @@ void Dwt2dCoeffs::set_vertical_detail(const cv::Mat& coeffs, int level)
     convert_and_copy(coeffs, vertical_detail(level));
 }
 
+void Dwt2dCoeffs::set_vertical_detail(const cv::MatExpr& coeffs, int level)
+{
+    check_size_for_set_detail(coeffs, level);
+    convert_and_copy(coeffs, vertical_detail(level));
+}
+
 void Dwt2dCoeffs::set_vertical_detail(const cv::Scalar& scalar, int level)
 {
     vertical_detail(level) = scalar;
 }
 
 void Dwt2dCoeffs::set_diagonal_detail(const cv::Mat& coeffs, int level)
+{
+    check_size_for_set_detail(coeffs, level);
+    convert_and_copy(coeffs, diagonal_detail(level));
+}
+
+void Dwt2dCoeffs::set_diagonal_detail(const cv::MatExpr& coeffs, int level)
 {
     check_size_for_set_detail(coeffs, level);
     convert_and_copy(coeffs, diagonal_detail(level));
@@ -296,6 +320,9 @@ inline void Dwt2dCoeffs::check_size_for_set_detail(const MatrixLike& matrix, int
 
 cv::Size Dwt2dCoeffs::level_size(int level) const
 {
+    if (level < 0)
+        level += depth();
+
     //  TODO: throw exception
     if (level < 0 || level >= depth())
         return cv::Size(0, 0);
@@ -314,6 +341,9 @@ cv::Rect Dwt2dCoeffs::level_rect(int level) const
 
 cv::Size Dwt2dCoeffs::detail_size(int level) const
 {
+    if (level < 0)
+        level += depth();
+
     //  TODO: throw exception
     if (level < 0 || level >= depth())
         return cv::Size(0, 0);
@@ -357,6 +387,77 @@ cv::Rect Dwt2dCoeffs::diagonal_rect(int level) const
     return cv::Rect(cv::Point(size.width, size.height), size);
 }
 
+cv::Mat Dwt2dCoeffs::detail_mask(int lower_level, int upper_level) const
+{
+    if (empty())
+        return cv::Mat();
+
+    if (lower_level < 0)
+        lower_level += depth();
+
+    if (upper_level < 0)
+        upper_level += depth();
+
+    cv::Mat mask;
+    if (lower_level == 0 && upper_level == depth() - 1) {
+        mask = cv::Mat(size(), CV_8U, cv::Scalar(255));
+        mask(approx_rect()) = 0;
+    } else {
+        mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
+        for (int level = lower_level; level <= upper_level; ++level) {
+            mask(horizontal_rect(level)) = 255;
+            mask(vertical_rect(level)) = 255;
+            mask(diagonal_rect(level)) = 255;
+        }
+    }
+
+    return mask;
+}
+
+cv::Mat Dwt2dCoeffs::approx_mask(int level) const
+{
+    if (empty())
+        return cv::Mat();
+
+    auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
+    mask(approx_rect(level)) = 255;
+
+    return mask;
+}
+
+cv::Mat Dwt2dCoeffs::horizontal_detail_mask(int level) const
+{
+    if (empty())
+        return cv::Mat();
+
+    auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
+    mask(horizontal_rect(level)) = 255;
+
+    return mask;
+}
+
+cv::Mat Dwt2dCoeffs::vertical_detail_mask(int level) const
+{
+    if (empty())
+        return cv::Mat();
+
+    auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
+    mask(vertical_rect(level)) = 255;
+
+    return mask;
+}
+
+cv::Mat Dwt2dCoeffs::diagonal_detail_mask(int level) const
+{
+    if (empty())
+        return cv::Mat();
+
+    auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
+    mask(diagonal_rect(level)) = 255;
+
+    return mask;
+}
+
 Dwt2dCoeffs::LevelIterator Dwt2dCoeffs::begin() const
 {
     return LevelIterator(this, 0);
@@ -389,26 +490,28 @@ bool Dwt2dCoeffs::shares_data(const cv::Mat& matrix) const
 
 void Dwt2dCoeffs::normalize(int approx_mode, int detail_mode)
 {
-    // if (approx_mode == DWT_NORMALIZE_NONE && detail_mode == DWT_NORMALIZE_NONE)
-    //     return;
+    if (approx_mode == DWT_NO_NORMALIZE && detail_mode == DWT_NO_NORMALIZE)
+        return;
 
-    // auto max_abs_value = maximum_abs_value();
+    auto max_abs_value = maximum_abs_value();
+    if (approx_mode == detail_mode) {
+        auto [alpha, beta] = normalization_constants(detail_mode, max_abs_value);
+        _coeff_matrix = alpha * _coeff_matrix + beta;
+    } else {
+        auto original_approx = approx().clone();
 
-    // if (approx_mode != DWT_NORMALIZE_NONE) {
-    //     auto [alpha, beta] = normalization_constants(approx_mode, max_abs_value);
-    //     for (auto& level : coeffs) {
-    //         level.approx() = alpha * level.approx() + beta;
-    //     }
-    // }
+        if (detail_mode != DWT_NO_NORMALIZE) {
+            auto [alpha, beta] = normalization_constants(detail_mode, max_abs_value);
+            _coeff_matrix = alpha * _coeff_matrix + beta;
+        }
 
-    // if (approx_mode != DWT_NORMALIZE_NONE) {
-    //     auto [alpha, beta] = normalization_constants(detail_mode, max_abs_value);
-    //     for (auto& level : coeffs) {
-    //         level.horizontal_detail() = alpha * level.horizontal_detail() + beta;
-    //         level.vertical_detail() = alpha * level.vertical_detail() + beta;
-    //         level.diagonal_detail() = alpha * level.diagonal_detail() + beta;
-    //     }
-    // }
+        if (approx_mode != DWT_NO_NORMALIZE) {
+            auto [alpha, beta] = normalization_constants(approx_mode, max_abs_value);
+            set_approx(alpha * original_approx + beta);
+        } else {
+            set_approx(original_approx);
+        }
+    }
 }
 
 double Dwt2dCoeffs::maximum_abs_value() const
@@ -424,11 +527,11 @@ std::pair<double, double> Dwt2dCoeffs::normalization_constants(int normalization
     double alpha = 1.0;
     double beta = 0.0;
     switch (normalization_mode) {
-        case DWT_NORMALIZE_ZERO_TO_HALF:
+        case DWT_ZERO_TO_HALF_NORMALIZE:
             alpha = 0.5 / max_abs_value;
             beta = 0.5;
             break;
-        case DWT_NORMALIZE_MAX:
+        case DWT_MAX_NORMALIZE:
             alpha = 1.0 / max_abs_value;
             beta = 0.0;
             break;
@@ -437,6 +540,11 @@ std::pair<double, double> Dwt2dCoeffs::normalization_constants(int normalization
     return std::make_pair(alpha, beta);
 }
 
+std::ostream& operator<<(std::ostream& stream, const Dwt2dCoeffs& coeffs)
+{
+    stream << coeffs._coeff_matrix;
+    return stream;
+}
 } // namespace internal
 
 
@@ -447,6 +555,22 @@ std::pair<double, double> Dwt2dCoeffs::normalization_constants(int normalization
  * Public API
  * =============================================================================
 */
+// void split(DWT2D::Coeffs coeffs, std::vector<DWT2D::Coeffs>& channel_coeffs)
+// {
+//     cv::split(coeffs, channel_coeffs);
+//     // std::vector<cv::Mat> channels;
+//     // cv::split(coeffs, channels);
+//     // channel_coeffs.resize(channels.size());
+//     // for (int i = 0; i < channels.size(); ++i)
+//     //     channel_coeffs[i] = channels[i];
+// }
+
+// void merge(const std::vector<DWT2D::Coeffs>& channel_coeffs, DWT2D::Coeffs& coeffs)
+// {
+//     cv::merge(channel_coeffs, coeffs);
+// }
+
+
 DWT2D::DWT2D(const Wavelet& wavelet, int border_type) :
     wavelet(wavelet),
     border_type(border_type)
