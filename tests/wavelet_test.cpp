@@ -12,7 +12,7 @@ struct WaveletTestParam
     int order;
     int vanishing_moments_psi;
     int support_width;
-    std::string short_name;
+    std::string name;
     std::vector<double> analysis_lowpass;
     std::vector<double> analysis_highpass;
     std::vector<double> synthesis_lowpass;
@@ -88,13 +88,13 @@ TEST_P(DaubechiesTest, CompactSupport)
 
 TEST_P(DaubechiesTest, FamilyName)
 {
-    ASSERT_EQ(wavelet.family_name(), "Daubechies");
+    ASSERT_EQ(wavelet.family(), "Daubechies");
 }
 
 TEST_P(DaubechiesTest, ShortName)
 {
     auto param = GetParam();
-    ASSERT_EQ(wavelet.short_name(), param.short_name);
+    ASSERT_EQ(wavelet.name(), param.name);
 }
 
 TEST_P(DaubechiesTest, CoeffsSize)
@@ -163,7 +163,7 @@ INSTANTIATE_TEST_CASE_P(
             .order = 1,
             .vanishing_moments_psi = 2,
             .support_width = 1,
-            .short_name = "db1",
+            .name = "db1",
             .analysis_lowpass = {
                 7.071067811865475244008443621048490392848359376884740365883398e-01,
                 7.071067811865475244008443621048490392848359376884740365883398e-01,
@@ -185,7 +185,7 @@ INSTANTIATE_TEST_CASE_P(
             .order = 2,
             .vanishing_moments_psi = 4,
             .support_width = 3,
-            .short_name = "db2",
+            .name = "db2",
             .analysis_lowpass = {
                 -1.294095225512603811744494188120241641745344506599652569070016e-01,
                 2.241438680420133810259727622404003554678835181842717613871683e-01,
@@ -272,13 +272,13 @@ TEST_P(HaarTest, CompactSupport)
 
 TEST_P(HaarTest, FamilyName)
 {
-    ASSERT_EQ(wavelet.family_name(), "Haar");
+    ASSERT_EQ(wavelet.family(), "Haar");
 }
 
 TEST_P(HaarTest, ShortName)
 {
     auto param = GetParam();
-    ASSERT_EQ(wavelet.short_name(), param.short_name);
+    ASSERT_EQ(wavelet.name(), param.name);
 }
 
 TEST_P(HaarTest, AnalysisLowpassCoeffs)
@@ -325,7 +325,7 @@ INSTANTIATE_TEST_CASE_P(
             .order = 1,
             .vanishing_moments_psi = 2,
             .support_width = 1,
-            .short_name = "haar",
+            .name = "haar",
             .analysis_lowpass = {
                 7.071067811865475244008443621048490392848359376884740365883398e-01,
                 7.071067811865475244008443621048490392848359376884740365883398e-01,

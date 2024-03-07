@@ -10,7 +10,6 @@
 
 namespace wavelet
 {
-
 namespace internal
 {
 class WaveletFilterBank
@@ -151,8 +150,8 @@ protected:
         bool biorthogonal;
         Symmetry symmetry;
         bool compact_support;
-        std::string family_name;
-        std::string short_name;
+        std::string family;
+        std::string name;
         FilterBank filter_bank;
     };
 
@@ -166,8 +165,8 @@ public:
         bool biorthogonal,
         Symmetry symmetry,
         bool compact_support,
-        const std::string& family_name,
-        const std::string& short_name,
+        const std::string& family,
+        const std::string& name,
         const FilterBank& filter_bank
     );
     Wavelet() = delete;
@@ -180,8 +179,8 @@ public:
     bool biorthogonal() const { return _p->biorthogonal; }
     Symmetry symmetry() const { return _p->symmetry; }
     bool compact_support() const { return _p->compact_support; }
-    std::string family_name() const { return _p->family_name; }
-    std::string short_name() const { return _p->short_name; }
+    std::string family() const { return _p->family; }
+    std::string name() const { return _p->name; }
     const FilterBank& filter_bank() const { return _p->filter_bank; }
 
     static Wavelet create(const std::string& name);

@@ -316,8 +316,8 @@ Wavelet::Wavelet(
         bool biorthogonal,
         Wavelet::Symmetry symmetry,
         bool compact_support,
-        const std::string& family_name,
-        const std::string& short_name,
+        const std::string& family,
+        const std::string& name,
         const FilterBank& filter_bank
     ) :
     _p(
@@ -330,8 +330,8 @@ Wavelet::Wavelet(
             biorthogonal,
             symmetry,
             compact_support,
-            family_name,
-            short_name,
+            family,
+            name,
             filter_bank
         )
     )
@@ -416,8 +416,8 @@ Wavelet haar()
         true, // biorthogonal
         Wavelet::Symmetry::ASYMMETRIC, // symmetry
         true, // compact_support
-        "Haar", // family_name
-        "haar", // short_name
+        "Haar", // family
+        "haar", // name
         Wavelet::FilterBank(
             Wavelet::FilterBank::build_synthesis_kernels(DAUBECHIES_FILTER_COEFFS[0]),
             Wavelet::FilterBank::build_analysis_kernels(DAUBECHIES_FILTER_COEFFS[0])
@@ -436,8 +436,8 @@ Wavelet daubechies(int order)
         true, // biorthogonal
         Wavelet::Symmetry::ASYMMETRIC, // symmetry
         true, // compact_support
-        "Daubechies", // family_name
-        "db" + std::to_string(order), // short_name
+        "Daubechies", // family
+        "db" + std::to_string(order), // name
         Wavelet::FilterBank(
             Wavelet::FilterBank::build_synthesis_kernels(DAUBECHIES_FILTER_COEFFS[order - 1]),
             Wavelet::FilterBank::build_analysis_kernels(DAUBECHIES_FILTER_COEFFS[order - 1])
