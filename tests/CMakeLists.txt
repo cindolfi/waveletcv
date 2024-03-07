@@ -29,10 +29,12 @@ FetchContent_MakeAvailable(googletest)
 #   ----------------------------------------------------------------------------
 add_executable(
     wavelet_test
+    utils_test.cpp
     wavelet_test.cpp
+    dwt2d_test.cpp
     shrinkage_test.cpp
     common.cpp
-    common.h
+    common.hpp
 )
 
 #   ----------------------------------------------------------------------------

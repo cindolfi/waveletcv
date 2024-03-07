@@ -1,8 +1,12 @@
 /**
  * Common Helpers & Utilitites
 */
-#include <experimental/iterator>
+#include <iostream>
 #include <iomanip>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <experimental/iterator>
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <opencv2/core.hpp>
@@ -31,50 +35,6 @@ std::string join(std::vector<T> items, std::string delim)
 
     return stream.str();
 }
-
-
-template<template<typename T, int N> class Functor>
-void dispatch_on_pixel_type(int type, auto&&... args)
-{
-    switch (type) {
-        case CV_32FC1: Functor<float, 1>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32FC2: Functor<float, 2>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32FC3: Functor<float, 3>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32FC4: Functor<float, 4>()(std::forward<decltype(args)>(args)...); return;
-
-        case CV_64FC1: Functor<double, 1>()(std::forward<decltype(args)>(args)...); return;
-        case CV_64FC2: Functor<double, 2>()(std::forward<decltype(args)>(args)...); return;
-        case CV_64FC3: Functor<double, 3>()(std::forward<decltype(args)>(args)...); return;
-        case CV_64FC4: Functor<double, 4>()(std::forward<decltype(args)>(args)...); return;
-
-        case CV_32SC1: Functor<int, 1>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32SC2: Functor<int, 2>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32SC3: Functor<int, 3>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32SC4: Functor<int, 4>()(std::forward<decltype(args)>(args)...); return;
-
-        case CV_16SC1: Functor<short, 1>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16SC2: Functor<short, 2>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16SC3: Functor<short, 3>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16SC4: Functor<short, 4>()(std::forward<decltype(args)>(args)...); return;
-
-        case CV_16UC1: Functor<ushort, 1>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16UC2: Functor<ushort, 2>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16UC3: Functor<ushort, 3>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16UC4: Functor<ushort, 4>()(std::forward<decltype(args)>(args)...); return;
-
-        case CV_8SC1: Functor<int8_t, 1>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8SC2: Functor<int8_t, 2>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8SC3: Functor<int8_t, 3>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8SC4: Functor<int8_t, 4>()(std::forward<decltype(args)>(args)...); return;
-
-        case CV_8UC1: Functor<uint8_t, 1>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8UC2: Functor<uint8_t, 2>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8UC3: Functor<uint8_t, 3>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8UC4: Functor<uint8_t, 4>()(std::forward<decltype(args)>(args)...); return;
-    }
-}
-
-
 
 template<typename T, int CHANNELS>
 struct print_matrix_to
@@ -129,9 +89,7 @@ struct print_matrix_to
     }
 };
 
-
 cv::Mat create_matrix(int rows, int cols, int type, double initial_value = 0.0);
-void print_matrix(const cv::Mat& matrix, float zero_clamp=1e-7);
 
 bool matrix_equals(const cv::Mat& a, const cv::Mat& b);
 bool matrix_equals(const cv::Mat& a, const cv::Scalar& b);
@@ -229,8 +187,4 @@ MATCHER_P(ScalarDoubleEq, other, "") { return scalar_double_equals(arg, other); 
 
 bool scalar_near(const cv::Scalar& a, const cv::Scalar& b, double tolerance=1e-10);
 MATCHER_P2(ScalarNear, other, tolerance, "") { return scalar_near(arg, other, tolerance); }
-
-
-
-
 

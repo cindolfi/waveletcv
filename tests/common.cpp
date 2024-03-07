@@ -1,19 +1,9 @@
 /**
 */
-#include <iostream>
-#include <fstream>
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <numeric>
-#include <vector>
-#include <iomanip>
-#include <opencv2/imgcodecs.hpp>
-
-
-#include "common.h"
-#include <wavelet/wavelet.hpp>
 #include <wavelet/dwt2d.hpp>
-#include <wavelet/shrinkage.hpp>
+#include <wavelet/utils.hpp>
+#include "common.hpp"
 
 using namespace testing;
 
@@ -21,7 +11,7 @@ namespace wavelet::internal
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream)
 {
-    dispatch_on_pixel_type<print_matrix_to>(
+    wavelet::internal::dispatch_on_pixel_type<print_matrix_to>(
         coeffs.type(),
         coeffs,
         stream
@@ -29,12 +19,11 @@ void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream)
 }
 }   // namespace wavelet::internal
 
-
 namespace cv
 {
 void PrintTo(const cv::Mat& matrix, std::ostream* stream)
 {
-    dispatch_on_pixel_type<print_matrix_to>(
+    wavelet::internal::dispatch_on_pixel_type<print_matrix_to>(
         matrix.type(),
         matrix,
         stream
@@ -50,29 +39,6 @@ cv::Mat create_matrix(int rows, int cols, int type, double initial_value)
     result.convertTo(result, type);
 
     return result;
-}
-
-void print_matrix(const cv::Mat& matrix, float zero_clamp) {
-    if (matrix.type() == CV_32F || matrix.type() == CV_64F) {
-        // matrix
-        cv::Mat clamped;
-        matrix.copyTo(clamped);
-        clamped.setTo(0, cv::abs(clamped) < zero_clamp);
-
-        for (int row = 0; row < clamped.rows; ++row) {
-            for (int col = 0; col < clamped.cols; ++col) {
-                std::cout << std::setfill(' ') << std::setw(3) << std::setprecision(3) << clamped.at<float>(row, col) << " ";
-            }
-            std::cout << std::endl;
-        }
-    } else {
-        for (int row = 0; row < matrix.rows; ++row) {
-            for (int col = 0; col < matrix.cols; ++col) {
-                std::cout << std::setfill(' ') << std::setw(3) << matrix.at<float>(row, col) << " ";
-            }
-            std::cout << std::endl;
-        }
-    }
 }
 
 bool multichannel_compare(const cv::Mat& a, const cv::Mat& b, int cmp_type)
