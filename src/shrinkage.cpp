@@ -8,55 +8,6 @@
 
 namespace wavelet
 {
-namespace internal
-{
-void flatten(cv::InputArray input, cv::OutputArray output)
-{
-    cv::Mat matrix;
-    if (input.isSubmatrix())
-        input.copyTo(matrix);
-    else
-        matrix = input.getMat();
-
-    matrix.reshape(0, 1).copyTo(output);
-}
-}
-
-void collect_masked(cv::InputArray input, cv::OutputArray output, cv::InputArray mask)
-{
-    internal::dispatch_on_pixel_type<internal::collect_masked2>(
-        input.type(),
-        input,
-        output,
-        mask
-    );
-}
-
-cv::Scalar median(cv::InputArray input)
-{
-    cv::Scalar result;
-    internal::dispatch_on_pixel_type<internal::median>(
-        input.type(),
-        input,
-        result
-    );
-
-    return result;
-}
-
-cv::Scalar median(cv::InputArray input, cv::InputArray mask)
-{
-    cv::Scalar result;
-    internal::dispatch_on_pixel_type<internal::median>(
-        input.type(),
-        input,
-        mask,
-        result
-    );
-
-    return result;
-}
-
 cv::Scalar estimate_stdev(cv::InputArray x)
 {
     return median(cv::abs(x.getMat())) / 0.675;
@@ -66,7 +17,6 @@ cv::Scalar estimate_stdev(cv::InputArray x, cv::InputArray mask)
 {
     return median(cv::abs(x.getMat()), mask) / 0.675;
 }
-
 
 /**
  * -----------------------------------------------------------------------------
@@ -358,7 +308,7 @@ cv::Mat4d sure_shrink_subband_thresholds(
 )
 {
     if (levels <= 0)
-        levels = coeffs.depth();
+        levels = coeffs.levels();
 
     cv::Mat4d thresholds(levels, 3);
     for (int level = 0; level < levels; ++level) {
@@ -380,7 +330,7 @@ cv::Mat4d sure_shrink_level_thresholds(
 )
 {
     if (levels <= 0)
-        levels = coeffs.depth();
+        levels = coeffs.levels();
 
     cv::Mat4d thresholds(levels, 1);
     for (int level = 0; level < levels; ++level) {

@@ -381,7 +381,7 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, IsEmpty)
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, DepthIsZero)
 {
-    ASSERT_EQ(coeffs.depth(), 0);
+    ASSERT_EQ(coeffs.levels(), 0);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxIsEmpty)
@@ -468,7 +468,7 @@ TEST_F(Dwt2dCoeffsTest, TypeIsCorrect)
 
 TEST_F(Dwt2dCoeffsTest, DepthIsCorrect)
 {
-    ASSERT_EQ(coeffs.depth(), expected_depth);
+    ASSERT_EQ(coeffs.levels(), expected_depth);
 }
 
 TEST_F(Dwt2dCoeffsTest, CastToMatrix)
@@ -499,7 +499,7 @@ TEST_F(Dwt2dCoeffsTest, ClonedTypeIsCorrect)
 TEST_F(Dwt2dCoeffsTest, ClonedDepthIsCorrect)
 {
     auto cloned_coeffs = coeffs.clone();
-    ASSERT_EQ(cloned_coeffs.depth(), coeffs.depth());
+    ASSERT_EQ(cloned_coeffs.levels(), coeffs.levels());
 }
 
 TEST_F(Dwt2dCoeffsTest, CloneCopiesData)
@@ -579,14 +579,14 @@ TEST_F(Dwt2dCoeffsTest, LevelIteratorConsistentWithAt)
     for (auto level_coeffs : coeffs) {
         EXPECT_THAT(
             level_coeffs,
-            MatrixEq(coeffs.at(level))
+            MatrixEq(coeffs.at_level(level))
         ) << "iterator and at() are inconsistent at level " << level;
         ++level;
     }
 
     EXPECT_EQ(
         level,
-        coeffs.depth()
+        coeffs.levels()
     ) << "iterator and depth() are inconsistent";
 }
 
@@ -601,23 +601,12 @@ TEST_F(Dwt2dCoeffsTest, LevelRectWithNegativeLevel)
     }
 }
 
-TEST_F(Dwt2dCoeffsTest, ApproxRectWithNegativeLevel)
-{
-    for (int level = -1; level >= -expected_depth; --level) {
-        EXPECT_EQ(
-            coeffs.approx_rect(level),
-            coeffs.approx_rect(level + expected_depth)
-        ) << "approx_rect() at level = " << level
-          << " and level = " << level + expected_depth << " are inconsistent";
-    }
-}
-
 TEST_F(Dwt2dCoeffsTest, HorizontalDetailRectWithNegativeLevel)
 {
     for (int level = -1; level >= -expected_depth; --level) {
         EXPECT_EQ(
-            coeffs.horizontal_rect(level),
-            coeffs.horizontal_rect(level + expected_depth)
+            coeffs.horizontal_detail_rect(level),
+            coeffs.horizontal_detail_rect(level + expected_depth)
         ) << "horizontal_rect() at level = " << level
           << " and level = " << level + expected_depth << " are inconsistent";
     }
@@ -627,8 +616,8 @@ TEST_F(Dwt2dCoeffsTest, VerticalDetailRectWithNegativeLevel)
 {
     for (int level = -1; level >= -expected_depth; --level) {
         EXPECT_EQ(
-            coeffs.vertical_rect(level),
-            coeffs.vertical_rect(level + expected_depth)
+            coeffs.vertical_detail_rect(level),
+            coeffs.vertical_detail_rect(level + expected_depth)
         ) << "vertical_rect() at level = " << level
           << " and level = " << level + expected_depth << " are inconsistent";
     }
@@ -638,8 +627,8 @@ TEST_F(Dwt2dCoeffsTest, DiagonalDetailRectWithNegativeLevel)
 {
     for (int level = -1; level >= -expected_depth; --level) {
         EXPECT_EQ(
-            coeffs.diagonal_rect(level),
-            coeffs.diagonal_rect(level + expected_depth)
+            coeffs.diagonal_detail_rect(level),
+            coeffs.diagonal_detail_rect(level + expected_depth)
         ) << "diagonal_rect() at level = " << level
           << " and level = " << level + expected_depth << " are inconsistent";
     }
@@ -647,13 +636,11 @@ TEST_F(Dwt2dCoeffsTest, DiagonalDetailRectWithNegativeLevel)
 
 TEST_F(Dwt2dCoeffsTest, ApproxMaskAndRectAreConsistent)
 {
-    for (int level = 0; level < expected_depth; ++level) {
-        assert_mask_and_rect_are_consistent(
-            coeffs.approx_mask(level),
-            coeffs.approx_rect(level),
-            level
-        );
-    }
+    assert_mask_and_rect_are_consistent(
+        coeffs.approx_mask(),
+        coeffs.approx_rect(),
+        0
+    );
 }
 
 TEST_F(Dwt2dCoeffsTest, HorizontalDetailMaskAndRectAreConsistent)
@@ -661,7 +648,7 @@ TEST_F(Dwt2dCoeffsTest, HorizontalDetailMaskAndRectAreConsistent)
     for (int level = 0; level < expected_depth; ++level) {
         assert_mask_and_rect_are_consistent(
             coeffs.horizontal_detail_mask(level),
-            coeffs.horizontal_rect(level),
+            coeffs.horizontal_detail_rect(level),
             level
         );
     }
@@ -672,7 +659,7 @@ TEST_F(Dwt2dCoeffsTest, VerticalDetailMaskAndRectAreConsistent)
     for (int level = 0; level < expected_depth; ++level) {
         assert_mask_and_rect_are_consistent(
             coeffs.vertical_detail_mask(level),
-            coeffs.vertical_rect(level),
+            coeffs.vertical_detail_rect(level),
             level
         );
     }
@@ -683,7 +670,7 @@ TEST_F(Dwt2dCoeffsTest, DiagonalDetailMaskAndRectAreConsistent)
     for (int level = 0; level < expected_depth; ++level) {
         assert_mask_and_rect_are_consistent(
             coeffs.diagonal_detail_mask(level),
-            coeffs.diagonal_rect(level),
+            coeffs.diagonal_detail_rect(level),
             level
         );
     }
@@ -888,7 +875,7 @@ protected:
 TEST_P(Dwt2dCoeffsLevelsTest, SizeIsCorrect)
 {
     int level = GetParam();
-    auto level_coeffs = coeffs.at(level);
+    auto level_coeffs = coeffs.at_level(level);
 
     EXPECT_EQ(level_coeffs.size(), expected_size);
 }
@@ -896,7 +883,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SizeIsCorrect)
 TEST_P(Dwt2dCoeffsLevelsTest, TypeIsCorrect)
 {
     int level = GetParam();
-    auto level_coeffs = coeffs.at(level);
+    auto level_coeffs = coeffs.at_level(level);
 
     EXPECT_EQ(level_coeffs.type(), expected_level_coeffs.type());
 }
@@ -904,15 +891,15 @@ TEST_P(Dwt2dCoeffsLevelsTest, TypeIsCorrect)
 TEST_P(Dwt2dCoeffsLevelsTest, DepthIsCorrect)
 {
     int level = GetParam();
-    auto level_coeffs = coeffs.at(level);
+    auto level_coeffs = coeffs.at_level(level);
 
-    EXPECT_EQ(level_coeffs.depth(), expected_depth);
+    EXPECT_EQ(level_coeffs.levels(), expected_depth);
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, ValuesAreCorrect)
 {
     int level = GetParam();
-    auto level_coeffs = coeffs.at(level);
+    auto level_coeffs = coeffs.at_level(level);
 
     EXPECT_THAT(level_coeffs, MatrixEq(expected_level_coeffs));
 }
@@ -920,7 +907,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, ValuesAreCorrect)
 TEST_P(Dwt2dCoeffsLevelsTest, LevelAccessDoesNotCauseCopy)
 {
     int level = GetParam();
-    auto level_coeffs = coeffs.at(level);
+    auto level_coeffs = coeffs.at_level(level);
 
     EXPECT_TRUE(
         level_coeffs.shares_data(coeffs)
@@ -931,8 +918,8 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAccessIsTransitive)
 {
     int i = GetParam();
     for (int j = 0; j < expected_depth - i; ++j) {
-        auto level_coeffs1 = coeffs.at(i).at(j);
-        auto level_coeffs2 = coeffs.at(i + j);
+        auto level_coeffs1 = coeffs.at_level(i).at_level(j);
+        auto level_coeffs2 = coeffs.at_level(i + j);
 
         EXPECT_THAT(
             level_coeffs1,
@@ -948,7 +935,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAccessIsTransitive)
 TEST_P(Dwt2dCoeffsLevelsTest, SetLevelToMatrix)
 {
     int level = GetParam();
-    DWT2D::Coeffs level_coeffs = coeffs.at(level);
+    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
     cv::Mat expected_level_matrix(expected_size, type, level);
 
     //  Set level coeffs
@@ -960,7 +947,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelToMatrix)
 TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentFromMatrix)
 {
     int level = GetParam();
-    DWT2D::Coeffs level_coeffs = coeffs.at(level);
+    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
     cv::Mat expected_level_matrix(expected_size, type, level);
 
     //  Assign level coeffs
@@ -989,7 +976,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentToWrongSizeMatrixIsError)
     EXPECT_THROW(
         {
             int level = GetParam();
-            DWT2D::Coeffs level_coeffs = coeffs.at(level);
+            DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
             level_coeffs = cv::Mat(cv::Size(1, 1) + expected_size, type, level);
         },
         cv::Exception
@@ -1000,7 +987,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentToWrongSizeMatrixIsError)
 TEST_P(Dwt2dCoeffsLevelsTest, SetLevelWritesIntoOriginalCoeffs)
 {
     int level = GetParam();
-    DWT2D::Coeffs level_coeffs = coeffs.at(level);
+    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
 
     cv::Mat expected_level_matrix(
         level_coeffs.rows(),
@@ -1017,7 +1004,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelWritesIntoOriginalCoeffs)
     ) << "assignment to level caused copy of original coeffs";
 
     EXPECT_THAT(
-        coeffs.at(level),
+        coeffs.at_level(level),
         MatrixEq(expected_level_matrix)
     ) << "assignment to level not reflected in original coeffs";
 }
@@ -1025,7 +1012,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelWritesIntoOriginalCoeffs)
 TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentWritesIntoOriginalCoeffs)
 {
     int level = GetParam();
-    DWT2D::Coeffs level_coeffs = coeffs.at(level);
+    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
 
     cv::Mat expected_level_matrix(
         level_coeffs.rows(),
@@ -1038,7 +1025,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentWritesIntoOriginalCoeffs)
     level_coeffs = expected_level_matrix;
 
     EXPECT_EQ(
-        level_coeffs.depth(),
+        level_coeffs.levels(),
         expected_depth
     ) << "assignment to level has wrong depth";
 
@@ -1047,7 +1034,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentWritesIntoOriginalCoeffs)
     ) << "assignment to level caused copy of original coeffs";
 
     EXPECT_THAT(
-        coeffs.at(level),
+        coeffs.at_level(level),
         MatrixEq(expected_level_matrix)
     ) << "assignment to level not reflected in original coeffs";
 }
@@ -1055,7 +1042,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentWritesIntoOriginalCoeffs)
 TEST_P(Dwt2dCoeffsLevelsTest, SetLevelDoesNotModifyDetailsAtLowerLevels)
 {
     int level = GetParam();
-    DWT2D::Coeffs level_coeffs = coeffs.at(level);
+    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
 
     auto [expected_horizontal_details, expected_vertical_details, expected_diagonal_details] = collect_and_clone_details(coeffs);
 
@@ -1076,7 +1063,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelDoesNotModifyDetailsAtLowerLevels)
 TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentDoesNotModifyDetailsAtLowerLevels)
 {
     int level = GetParam();
-    DWT2D::Coeffs level_coeffs = coeffs.at(level);
+    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
 
     auto [expected_horizontal_details, expected_vertical_details, expected_diagonal_details] = collect_and_clone_details(coeffs);
 
@@ -1096,7 +1083,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, HorizontalDetailRect)
     int level = GetParam();
 
     EXPECT_EQ(
-        coeffs.horizontal_rect(level),
+        coeffs.horizontal_detail_rect(level),
         expected_horizontal_detail_rect
     );
 }
@@ -1105,7 +1092,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, VerticalDetailRect)
 {
     int level = GetParam();
     EXPECT_EQ(
-        coeffs.vertical_rect(level),
+        coeffs.vertical_detail_rect(level),
         expected_vertical_detail_rect
     );
 }
@@ -1114,7 +1101,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, DiagonalDetailRect)
 {
     int level = GetParam();
     EXPECT_EQ(
-        coeffs.diagonal_rect(level),
+        coeffs.diagonal_detail_rect(level),
         expected_diagonal_detail_rect
     );
 }
@@ -1178,7 +1165,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToMatrix)
         auto expected_modified_full_matrix = expected_matrix.clone();
 
         DWT2D::Coeffs full_coeffs = expected_modified_full_matrix;
-        DWT2D::Coeffs level_coeffs = full_coeffs.at(level);
+        DWT2D::Coeffs level_coeffs = full_coeffs.at_level(level);
 
         auto detail_from_full_coeffs_before_assign = full_coeffs.detail(direction, level);
         auto detail_from_level_coeffs_before_assign = level_coeffs.detail(direction);
@@ -1215,7 +1202,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToScalar)
         auto expected_modified_full_matrix = expected_matrix.clone();
 
         DWT2D::Coeffs full_coeffs = expected_modified_full_matrix;
-        DWT2D::Coeffs level_coeffs = full_coeffs.at(level);
+        DWT2D::Coeffs level_coeffs = full_coeffs.at_level(level);
 
         auto detail_from_full_coeffs_before_assign = full_coeffs.detail(direction, level);
         auto detail_from_level_coeffs_before_assign = level_coeffs.detail(direction);
@@ -1252,7 +1239,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToDetails)
         auto expected_modified_full_matrix = expected_matrix.clone();
 
         DWT2D::Coeffs full_coeffs = expected_modified_full_matrix;
-        DWT2D::Coeffs level_coeffs = full_coeffs.at(level);
+        DWT2D::Coeffs level_coeffs = full_coeffs.at_level(level);
 
         auto detail_from_full_coeffs_before_assign = full_coeffs.detail(direction, level);
         auto detail_from_level_coeffs_before_assign = level_coeffs.detail(direction);
@@ -1333,8 +1320,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, CollectDiagonalDetails)
 INSTANTIATE_TEST_CASE_P(
     Dwt2dCoeffsGroup,
     Dwt2dCoeffsLevelsTest,
-    testing::Range(0, Dwt2dCoeffsLevelsTest::full_depth),
-    testing::PrintToStringParamName()
+    testing::Range(0, Dwt2dCoeffsLevelsTest::full_depth)
 );
 
 
@@ -1457,17 +1443,17 @@ void PrintTo(const Dwt2dCoeffsNormalizeTest::ParamType& param, std::ostream* str
         std::max(std::fabs(param.min_detail_value), std::fabs(param.max_detail_value))
     );
 
-    *stream << std::setprecision(2);
-    *stream << std::endl;
-    *stream << "APPROX: " << normalize_mode_string(param.approx_mode) << " ";
-    *stream << "[" << param.min_approx_value << ", " << param.max_approx_value << "] ";
-    *stream << "/ " << abs_max << " ";
-    *stream << "-> [" << param.expected_min_approx_value << ", " << param.expected_max_approx_value << "] ";
-    *stream << std::endl;
-    *stream << "DETAIL: " << normalize_mode_string(param.detail_mode) << " ";
-    *stream << "[" << param.min_detail_value << ", " << param.max_detail_value << "] ";
-    *stream << "/ " << abs_max << " ";
-    *stream << "-> [" << param.expected_min_detail_value << ", " << param.expected_max_detail_value << "] ";
+    *stream << std::setprecision(2)
+        << std::endl
+        << "APPROX: " << normalize_mode_string(param.approx_mode) << " "
+        << "[" << param.min_approx_value << ", " << param.max_approx_value << "] "
+        << "/ " << abs_max << " "
+        << "-> [" << param.expected_min_approx_value << ", " << param.expected_max_approx_value << "] "
+        << std::endl
+        << "DETAIL: " << normalize_mode_string(param.detail_mode) << " "
+        << "[" << param.min_detail_value << ", " << param.max_detail_value << "] "
+        << "/ " << abs_max << " "
+        << "-> [" << param.expected_min_detail_value << ", " << param.expected_max_detail_value << "] ";
 }
 
 
@@ -2275,14 +2261,14 @@ std::vector<std::tuple<T1, T2>> zip(const T1& input, const T2& output)
 
 
 std::vector<std::string> pattern_names = {
-    "ZerosPattern",
-    "OnesPattern",
-    "HorizontalLinesPattern",
-    "InvertedHorizontalLinesPattern",
-    "VerticalLinesPattern",
-    "InvertedVerticalLinesPattern",
-    "DiagonalLinesPattern",
-    "InvertedDiagonalLinesPattern",
+    "Zeros",
+    "Ones",
+    "HorizontalLines",
+    "InvertedHorizontalLines",
+    "VerticalLines",
+    "InvertedVerticalLines",
+    "DiagonalLines",
+    "InvertedDiagonalLines",
 };
 
 std::vector<cv::Mat> basic_test_patterns = {

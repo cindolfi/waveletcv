@@ -25,7 +25,7 @@ void show(
     normalized_coeffs.normalize();
     cv::imshow(
         make_title("DWT Coefficients(", wavelet.short_name(), ", ",
-                   coeffs.depth(), " levels)"),
+                   coeffs.levels(), " levels)"),
         normalized_coeffs
     );
 }

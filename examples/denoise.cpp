@@ -52,7 +52,7 @@ void show_coeffs(
     normalized_coeffs.normalize();
     cv::imshow(
         make_title("DWT Coefficients(", wavelet.short_name(), ", ",
-                   coeffs.depth(), " levels)"),
+                   coeffs.levels(), " levels)"),
         normalized_coeffs
     );
 
@@ -60,7 +60,7 @@ void show_coeffs(
     normalized_denoised_coeffs.normalize();
     cv::imshow(
         make_title("Shrunk DWT Coefficients(", wavelet.short_name(), ", ",
-                   coeffs.depth(), " levels, ", method, ")"),
+                   coeffs.levels(), " levels, ", method, ")"),
         normalized_denoised_coeffs
     );
 }
