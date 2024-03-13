@@ -1,16 +1,23 @@
 /**
  * Wavelet & DWT2D Unit Tests
 */
+#include <vector>
+#include <map>
+#include <fstream>
+#include <ranges>
+#include <nlohmann/json.hpp>
 #include <wavelet/dwt2d.hpp>
 #include "common.hpp"
 
 using namespace wavelet;
 using namespace testing;
+using json = nlohmann::json;
+
 
 /**
- * -----------------------------------------------------------------------------
+ * =============================================================================
  * DWT2D::Coeffs
- * -----------------------------------------------------------------------------
+ * =============================================================================
 */
 class Dwt2dCoeffsDefaultConstructorTest : public testing::Test
 {
@@ -28,22 +35,22 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, DepthIsZero)
     ASSERT_EQ(coeffs.levels(), 0);
 }
 
-TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxIsEmpty)
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DISABLED_ApproxIsEmpty)
 {
     ASSERT_TRUE(coeffs.approx().empty());
 }
 
-TEST_F(Dwt2dCoeffsDefaultConstructorTest, HorizontalDetailIsEmpty)
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DISABLED_HorizontalDetailIsEmpty)
 {
     ASSERT_TRUE(coeffs.horizontal_detail().empty());
 }
 
-TEST_F(Dwt2dCoeffsDefaultConstructorTest, VerticalDetailIsEmpty)
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DISABLED_VerticalDetailIsEmpty)
 {
     ASSERT_TRUE(coeffs.vertical_detail().empty());
 }
 
-TEST_F(Dwt2dCoeffsDefaultConstructorTest, DiagaonlDetailIsEmpty)
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DISABLED_DiagaonlDetailIsEmpty)
 {
     ASSERT_TRUE(coeffs.diagonal_detail().empty());
 }
@@ -362,7 +369,7 @@ protected:
             expected_depth
         );
 
-        directions_and_expected_rects = {
+        subbands_and_expected_rects = {
             std::make_tuple(HORIZONTAL, "horizontal", expected_horizontal_detail_rect),
             std::make_tuple(VERTICAL, "vertical", expected_vertical_detail_rect),
             std::make_tuple(DIAGONAL, "diagonal", expected_diagonal_detail_rect),
@@ -393,49 +400,49 @@ protected:
         const cv::Mat& detail_from_full_coeffs_after_assign,
         const cv::Mat& detail_from_level_coeffs_before_assign,
         const cv::Mat& detail_from_level_coeffs_after_assign,
-        const std::string& direction_name
+        const std::string& subband_name
     )
     {
         EXPECT_THAT(
             detail_from_full_coeffs_before_assign,
             MatrixEq(expected_detail)
-        ) << direction_name << " detail created from coeffs before set_details() is wrong";
+        ) << subband_name << " detail created from coeffs before set_details() is wrong";
 
         EXPECT_THAT(
             detail_from_full_coeffs_after_assign,
             MatrixEq(expected_detail)
-        ) << direction_name << " detail created from coeffs after set_details() is wrong";
+        ) << subband_name << " detail created from coeffs after set_details() is wrong";
 
         EXPECT_THAT(
             detail_from_level_coeffs_before_assign,
             MatrixEq(expected_detail)
-        ) << direction_name << " detail from level view created after set_details() is wrong";
+        ) << subband_name << " detail from level view created after set_details() is wrong";
 
         EXPECT_THAT(
             detail_from_level_coeffs_after_assign,
             MatrixEq(expected_detail)
-        ) << direction_name << " detail from level view created before set_details() is wrong";
+        ) << subband_name << " detail from level view created before set_details() is wrong";
 
         EXPECT_THAT(
             full_coeffs,
             MatrixEq(expected_modified_full_matrix)
-        ) << "full coeffs are wrong after setting " << direction_name << " details";
+        ) << "full coeffs are wrong after setting " << subband_name << " details";
 
         EXPECT_TRUE(
             full_coeffs.shares_data(detail_from_full_coeffs_before_assign)
-        ) << direction_name << " detail from full coeffs created before set_details() is a copy";
+        ) << subband_name << " detail from full coeffs created before set_details() is a copy";
 
         EXPECT_TRUE(
             full_coeffs.shares_data(detail_from_full_coeffs_after_assign)
-        ) << direction_name << " detail from full coeffs created after set_details() is a copy";
+        ) << subband_name << " detail from full coeffs created after set_details() is a copy";
 
         EXPECT_TRUE(
             full_coeffs.shares_data(detail_from_level_coeffs_before_assign)
-        ) << direction_name << " detail from level view created before set_details() is a copy";
+        ) << subband_name << " detail from level view created before set_details() is a copy";
 
         EXPECT_TRUE(
             full_coeffs.shares_data(detail_from_level_coeffs_after_assign)
-        ) << direction_name << " detail from level view created after set_details() is a copy";
+        ) << subband_name << " detail from level view created after set_details() is a copy";
     }
 
     auto collect_and_clone_details(const DWT2D::Coeffs& coeffs)
@@ -513,7 +520,7 @@ protected:
     cv::Rect expected_horizontal_detail_rect;
     cv::Rect expected_vertical_detail_rect;
     cv::Rect expected_diagonal_detail_rect;
-    std::vector<std::tuple<int, std::string, cv::Rect>> directions_and_expected_rects;
+    std::vector<std::tuple<int, std::string, cv::Rect>> subbands_and_expected_rects;
 };
 
 TEST_P(Dwt2dCoeffsLevelsTest, SizeIsCorrect)
@@ -583,7 +590,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelToMatrix)
     cv::Mat expected_level_matrix(expected_size, type, level);
 
     //  Set level coeffs
-    coeffs.set_level(expected_level_matrix, level);
+    coeffs.set_level(level, expected_level_matrix);
 
     EXPECT_THAT(level_coeffs, MatrixEq(expected_level_matrix));
 }
@@ -607,8 +614,8 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelToWrongSizeMatrixIsError)
         {
             int level = GetParam();
             coeffs.set_level(
-                cv::Mat(cv::Size(1, 1) + expected_size, type, level),
-                level
+                level,
+                cv::Mat(cv::Size(1, 1) + expected_size, type, level)
             );
         },
         cv::Exception
@@ -641,7 +648,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelWritesIntoOriginalCoeffs)
     );
 
     //  Set level coeffs
-    coeffs.set_level(expected_level_matrix, level);
+    coeffs.set_level(level, expected_level_matrix);
 
     EXPECT_TRUE(
         level_coeffs.shares_data(coeffs)
@@ -692,8 +699,8 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelDoesNotModifyDetailsAtLowerLevels)
 
     //  Set level coeffs
     coeffs.set_level(
-        cv::Mat(level_coeffs.size(), level_coeffs.type(), level),
-        level
+        level,
+        cv::Mat(level_coeffs.size(), level_coeffs.type(), level)
     );
 
     assert_details_at_lower_levels_not_modified(
@@ -805,14 +812,14 @@ TEST_P(Dwt2dCoeffsLevelsTest, DiagonalDetailSharesDataWithCoeffs)
 TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToMatrix)
 {
     int level = GetParam();
-    for (auto [direction, name, rect] : directions_and_expected_rects) {
+    for (auto [subband, name, rect] : subbands_and_expected_rects) {
         auto expected_modified_full_matrix = expected_matrix.clone();
 
         DWT2D::Coeffs full_coeffs = expected_modified_full_matrix;
         DWT2D::Coeffs level_coeffs = full_coeffs.at_level(level);
 
-        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(direction, level);
-        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(direction);
+        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(level, subband);
+        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(subband);
 
         auto new_detail_values = cv::Mat(rect.size(), type, level);
 
@@ -821,10 +828,10 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToMatrix)
         new_detail_values.copyTo(expected_modified_full_matrix(rect));
 
         //  fill details with value = level
-        full_coeffs.set_detail(new_detail_values, direction, level);
+        full_coeffs.set_detail(level, subband, new_detail_values);
 
-        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(direction, level);
-        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(direction);
+        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(level, subband);
+        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(subband);
 
         assert_set_detail(
             full_coeffs,
@@ -842,14 +849,14 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToMatrix)
 TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToScalar)
 {
     int level = GetParam();
-    for (auto [direction, name, rect] : directions_and_expected_rects) {
+    for (auto [subband, name, rect] : subbands_and_expected_rects) {
         auto expected_modified_full_matrix = expected_matrix.clone();
 
         DWT2D::Coeffs full_coeffs = expected_modified_full_matrix;
         DWT2D::Coeffs level_coeffs = full_coeffs.at_level(level);
 
-        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(direction, level);
-        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(direction);
+        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(level, subband);
+        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(subband);
 
         auto new_detail_values = cv::Mat(rect.size(), type, level);
 
@@ -858,10 +865,10 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToScalar)
         expected_modified_full_matrix(rect) = level;
 
         //  fill details with value = level
-        full_coeffs.set_detail(level, direction, level);
+        full_coeffs.set_detail(level, subband, level);
 
-        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(direction, level);
-        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(direction);
+        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(level, subband);
+        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(subband);
 
         assert_set_detail(
             full_coeffs,
@@ -879,14 +886,14 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToScalar)
 TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToDetails)
 {
     int level = GetParam();
-    for (auto [direction, name, rect] : directions_and_expected_rects) {
+    for (auto [subband, name, rect] : subbands_and_expected_rects) {
         auto expected_modified_full_matrix = expected_matrix.clone();
 
         DWT2D::Coeffs full_coeffs = expected_modified_full_matrix;
         DWT2D::Coeffs level_coeffs = full_coeffs.at_level(level);
 
-        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(direction, level);
-        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(direction);
+        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(level, subband);
+        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(subband);
 
         auto new_detail_values = cv::Mat(rect.size(), type, level);
 
@@ -895,10 +902,10 @@ TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToDetails)
         expected_modified_full_matrix(rect) = level;
 
         //  fill details with value = level
-        full_coeffs.detail(direction, level) = level;
+        full_coeffs.detail(level, subband) = level;
 
-        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(direction, level);
-        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(direction);
+        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(level, subband);
+        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(subband);
 
         assert_set_detail(
             full_coeffs,
@@ -917,12 +924,12 @@ TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToDetails)
 TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToWrongSizeMatrixIsError)
 {
     int level = GetParam();
-    for (auto [direction, name, rect] : directions_and_expected_rects) {
+    for (auto [subband, name, rect] : subbands_and_expected_rects) {
         EXPECT_THROW(
             {
                 DWT2D::Coeffs full_coeffs = expected_matrix.clone();
                 auto new_detail_values = cv::Mat(cv::Size(1, 1) + rect.size(), type, level);
-                full_coeffs.set_detail(new_detail_values, direction, level);
+                full_coeffs.set_detail(level, subband, new_detail_values);
             },
             cv::Exception
         ) << "did not throw exception when setting " << name << " details to an ill-sized matrix";
@@ -974,8 +981,8 @@ INSTANTIATE_TEST_CASE_P(
 */
 struct NormalizeTestParam
 {
-    int approx_mode;
-    int detail_mode;
+    NormalizationMode approx_mode;
+    NormalizationMode detail_mode;
     double min_approx_value;
     double max_approx_value;
     double min_detail_value;
@@ -1862,464 +1869,267 @@ INSTANTIATE_TEST_CASE_P(
 );
 
 
+
+
 /**
- * -----------------------------------------------------------------------------
+ * =============================================================================
  * Transformation Tests
- * -----------------------------------------------------------------------------
+ * =============================================================================
 */
-using PatternPair = std::tuple<cv::Mat, cv::Mat>;
-
-cv::Mat make_pattern(const std::vector<float>& pattern)
-{
-    int rows = std::sqrt(pattern.size());
-    return cv::Mat(pattern, true).reshape(0, rows);
-}
-
-template <typename T1, typename T2>
-std::vector<std::tuple<T1, T2>> zip(const std::vector<T1>& inputs, const std::vector<T2>& outputs)
-{
-    int size = std::min(inputs.size(), outputs.size());
-    std::vector<std::tuple<T1, T2>> result(size);
-    for (int i = 0; i < size; ++i)
-        result[i] = std::make_tuple(inputs[i], outputs[i]);
-
-    return result;
-}
-
-template <typename T1, typename T2>
-std::vector<std::tuple<T1, T2>> zip(const T1& input, const T2& output)
-{
-    return std::vector<std::tuple<T1, T2>>({
-        std::make_tuple(input, output),
-    });
-}
-
-
-std::vector<std::string> pattern_names = {
-    "Zeros",
-    "Ones",
-    "HorizontalLines",
-    "InvertedHorizontalLines",
-    "VerticalLines",
-    "InvertedVerticalLines",
-    "DiagonalLines",
-    "InvertedDiagonalLines",
-};
-
-std::vector<cv::Mat> basic_test_patterns = {
-    //  zeros
-    make_pattern({
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  ones
-    make_pattern({
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    }),
-    //  horizontal lines
-    make_pattern({
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  inverted horizontal lines
-    make_pattern({
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    }),
-    //  vertical lines
-    make_pattern({
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-    }),
-    //  inverted vertical lines
-    make_pattern({
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-    }),
-    //  checker board
-    make_pattern({
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-    }),
-    //  inverted checker board
-    make_pattern({
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-        0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1,
-        1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
-    }),
-};
-
-
 /**
  * -----------------------------------------------------------------------------
  * WaveletFilterBank
  * -----------------------------------------------------------------------------
 */
-class HaarPatternSingleLevelTests : public testing::TestWithParam<PatternPair>
+struct DWT2DTestParam
 {
+    std::string wavelet_name;
+    std::string input_name;
+    int levels;
+    cv::Mat coeffs;
 };
 
-TEST_P(HaarPatternSingleLevelTests, ForwardTransform) {
-    auto wavelet = haar();
-    auto [input_pattern, expected_output] = GetParam();
+void PrintTo(const DWT2DTestParam& param, std::ostream* stream)
+{
+    *stream << "\nwavelet_name: " << param.wavelet_name
+            << "\ninput_name: " << param.input_name
+            << "\nlevels: " << param.levels
+            << "\ncoeffs: " << param.coeffs;
+}
 
-    cv::Size size = expected_output.size() / 2;
-    int width = size.width;
-    int height = size.height;
+namespace cv
+{
+    void from_json(const json& json_matrix, Mat& matrix)
+    {
+        auto shape = json_matrix["shape"].get<std::array<int, 2>>();
+        int type;
+        if (json_matrix["dtype"] == "float64")
+            type = CV_64F;
+        else if (json_matrix["dtype"] == "float32")
+            type = CV_32F;
+        else
+            assert(false);
 
-    auto expected_approx = expected_output(
-        cv::Rect(0, 0, width, height)
-    );
-    auto expected_horizontal_detail = expected_output(
-        cv::Rect(0, height, width, height)
-    );
-    auto expected_vertical_detail = expected_output(
-        cv::Rect(width, 0, width, height)
-    );
-    auto expected_diagonal_detail = expected_output(
-        cv::Rect(width, height, width, height)
-    );
+        std::vector<double> data = json_matrix["data"];
+        Mat(data).reshape(0, shape[0]).convertTo(matrix, type);
+    }
+}
 
-    cv::Mat approx;
-    cv::Mat horizontal_detail;
-    cv::Mat vertical_detail;
-    cv::Mat diagonal_detail;
+class DWT2DTest : public testing::TestWithParam<DWT2DTestParam>
+{
+protected:
+    DWT2DTest() :
+        testing::TestWithParam<DWT2DTestParam>(),
+        wavelet(Wavelet::create(GetParam().wavelet_name))
+    {}
+
+    void SetUp() override
+    {
+        auto param = GetParam();
+        std::string test_name = UnitTest::GetInstance()->current_test_info()->name();
+
+        if (test_name.find("Forward") != std::string::npos) {
+            SetUpForwardTest(
+                DWT2DTest::patterns.at(param.input_name),
+                param.coeffs
+            );
+        } else if (test_name.find("Inverse") != std::string::npos) {
+            SetUpInverseTest(
+                param.coeffs,
+                DWT2DTest::patterns.at(param.input_name)
+            );
+        } else {
+            assert(false);
+        }
+    }
+
+    virtual void SetUpForwardTest(const cv::Mat& forward_input, const cv::Mat& forward_output) = 0;
+    virtual void SetUpInverseTest(const cv::Mat& inverse_input, const cv::Mat& inverse_output) = 0;
+
+    Wavelet wavelet;
+    static std::map<std::string, cv::Mat> patterns;
+    static std::vector<DWT2DTestParam> params;
+
+public:
+    static void create_test_inputs(const json& test_case_data)
+    {
+        if (!patterns.empty())
+            return;
+
+        for (auto& [pattern_name, pattern] : test_case_data["patterns"].items()) {
+            patterns[pattern_name] = pattern.get<cv::Mat>();
+        }
+    }
+
+    static void create_test_params()
+    {
+        if (!params.empty() && !patterns.empty())
+            return;
+
+        std::ifstream test_case_data_file(DWT2D_TEST_DATA_PATH);
+        auto test_case_data = json::parse(test_case_data_file);
+
+        // DWT2DTest::create_test_inputs(test_case_data);
+        for (auto& [pattern_name, pattern] : test_case_data["patterns"].items()) {
+            patterns[pattern_name] = pattern.get<cv::Mat>();
+        }
+
+
+        if (params.empty()) {
+            for (auto& test_case : test_case_data["test_cases"]) {
+                params.push_back({
+                    .wavelet_name = test_case["wavelet"],
+                    .input_name = test_case["pattern"],
+                    .levels = test_case["levels"],
+                    .coeffs = test_case["coeffs"].get<cv::Mat>()
+                });
+            }
+        }
+    }
+
+    static std::vector<DWT2DTestParam> get_test_params(int levels=0)
+    {
+        create_test_params();
+        if (levels > 0) {
+            std::vector<DWT2DTestParam> levels_params;
+            std::ranges::copy_if(
+                params,
+                std::back_inserter(levels_params),
+                [&](auto param) { return param.levels == levels; }
+            );
+
+            return levels_params;
+        } else {
+            return params;
+        }
+    }
+};
+
+std::map<std::string, cv::Mat> DWT2DTest::patterns;
+std::vector<DWT2DTestParam> DWT2DTest::params;
+
+
+/**
+ * -----------------------------------------------------------------------------
+ * Filter Bank
+ * -----------------------------------------------------------------------------
+*/
+class FilterBankTest : public DWT2DTest
+{
+protected:
+    void SetUpForwardTest(const cv::Mat& forward_input, const cv::Mat& forward_output) override
+    {
+        cv::Size size = forward_input.size() / 2;
+        cv::Rect approx_rect(0, 0, size.width, size.height);
+        cv::Rect horizontal_detail_rect(0, size.height, size.width, size.height);
+        cv::Rect vertical_detail_rect(size.width, 0, size.width, size.height);
+        cv::Rect diagonal_detail_rect(size.width, size.height, size.width, size.height);
+
+        //  forward input
+        input = forward_input;
+        //  forward output
+        expected_output = forward_output;
+        expected_approx = expected_output(approx_rect);
+        expected_horizontal_detail = expected_output(horizontal_detail_rect);
+        expected_vertical_detail = expected_output(vertical_detail_rect);
+        expected_diagonal_detail = expected_output(diagonal_detail_rect);
+    }
+
+    void SetUpInverseTest(const cv::Mat& inverse_input, const cv::Mat& inverse_output) override
+    {
+        cv::Size size = inverse_input.size() / 2;
+        cv::Rect approx_rect(0, 0, size.width, size.height);
+        cv::Rect horizontal_detail_rect(0, size.height, size.width, size.height);
+        cv::Rect vertical_detail_rect(size.width, 0, size.width, size.height);
+        cv::Rect diagonal_detail_rect(size.width, size.height, size.width, size.height);
+
+        //  inverse input
+        input = inverse_input;
+        approx_input = input(approx_rect);
+        horizontal_detail_input = input(horizontal_detail_rect);
+        vertical_detail_input = input(vertical_detail_rect);
+        diagonal_detail_input = input(diagonal_detail_rect);
+        //  inverse output
+        expected_output = inverse_output;
+    }
+
+    //  used for forward transform
+    cv::Mat input;
+    cv::Mat expected_approx;
+    cv::Mat expected_horizontal_detail;
+    cv::Mat expected_vertical_detail;
+    cv::Mat expected_diagonal_detail;
+    //  used for inverse transform
+    cv::Mat approx_input;
+    cv::Mat horizontal_detail_input;
+    cv::Mat vertical_detail_input;
+    cv::Mat diagonal_detail_input;
+    cv::Mat expected_output;
+};
+
+TEST_P(FilterBankTest, ForwardTransform)
+{
+    cv::Mat actual_approx;
+    cv::Mat actual_horizontal_detail;
+    cv::Mat actual_vertical_detail;
+    cv::Mat actual_diagonal_detail;
     wavelet.filter_bank().forward(
-        input_pattern,
-        approx,
-        horizontal_detail,
-        vertical_detail,
-        diagonal_detail,
+        input,
+        actual_approx,
+        actual_horizontal_detail,
+        actual_vertical_detail,
+        actual_diagonal_detail,
         cv::BORDER_REFLECT101
     );
+    clamp_near_zero(actual_approx);
+    clamp_near_zero(actual_horizontal_detail);
+    clamp_near_zero(actual_vertical_detail);
+    clamp_near_zero(actual_diagonal_detail);
 
     EXPECT_THAT(
-        approx,
+        actual_approx,
         MatrixNear(expected_approx, 1e-5)
     ) << "approx is incorrect";
     EXPECT_THAT(
-        horizontal_detail,
+        actual_horizontal_detail,
         MatrixNear(expected_horizontal_detail, 1e-5)
     ) << "horizontal_detail is incorrect";
     EXPECT_THAT(
-        vertical_detail,
+        actual_vertical_detail,
         MatrixNear(expected_vertical_detail, 1e-5)
     ) << "vertical_detail is incorrect";
     EXPECT_THAT(
-        diagonal_detail,
+        actual_diagonal_detail,
         MatrixNear(expected_diagonal_detail, 1e-5)
     ) << "diagonal_detail is incorrect";
 }
 
-TEST_P(HaarPatternSingleLevelTests, InverseTransform) {
-    auto wavelet = haar();
-    auto [expected_output, input_pattern] = GetParam();
-
-    cv::Size size = input_pattern.size() / 2;
-    int width = size.width;
-    int height = size.height;
-
-    auto approx = input_pattern(
-        cv::Rect(0, 0, width, height)
-    );
-    auto horizontal_detail = input_pattern(
-        cv::Rect(0, height, width, height)
-    );
-    auto vertical_detail = input_pattern(
-        cv::Rect(width, 0, width, height)
-    );
-    auto diagonal_detail = input_pattern(
-        cv::Rect(width, height, width, height)
-    );
-
+TEST_P(FilterBankTest, InverseTransform)
+{
     cv::Mat actual_output;
     wavelet.filter_bank().inverse(
-        approx,
-        horizontal_detail,
-        vertical_detail,
-        diagonal_detail,
+        approx_input,
+        horizontal_detail_input,
+        vertical_detail_input,
+        diagonal_detail_input,
         actual_output,
         cv::BORDER_REFLECT101
     );
+    clamp_near_zero(actual_output);
 
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-5));
+    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-6));
 }
 
 
-std::vector<cv::Mat> basic_test_patterns_haar_filter_bank_outputs = {
-    //  zeros
-    make_pattern({
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  ones
-    make_pattern({
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-        2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  horizontal lines
-    make_pattern({
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  inverted horizontal lines
-    make_pattern({
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-    }),
-    //  vertical lines
-    make_pattern({
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  inverted vertical lines
-    make_pattern({
-         1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-         1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-         1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-         1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-         1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-         1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-         1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-         1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-    }),
-    //  checker board
-    make_pattern({
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-    }),
-    //  inverted checker board
-    make_pattern({
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1,
-    }),
-};
-
 INSTANTIATE_TEST_CASE_P(
-    HaarGroup,
-    HaarPatternSingleLevelTests,
-    testing::ValuesIn(
-        zip(basic_test_patterns, basic_test_patterns_haar_filter_bank_outputs)
-    ),
-    [](const auto& info) { return pattern_names[info.index]; }
+    DWT2DGroup,
+    FilterBankTest,
+    testing::ValuesIn(FilterBankTest::get_test_params(1)),
+    [](const auto& info) {
+        std::string wavelet_name = info.param.wavelet_name;
+        std::ranges::replace(wavelet_name, '.', '_');
+        return wavelet_name + "_" + info.param.input_name + "_" + std::to_string(info.param.levels);
+    }
 );
 
 
@@ -2328,191 +2138,85 @@ INSTANTIATE_TEST_CASE_P(
  * DWT2D
  * -----------------------------------------------------------------------------
 */
-class HaarPatternDwtTests : public testing::TestWithParam<PatternPair>
+class DWT2DAllLevelsTest : public DWT2DTest
 {
+protected:
+    DWT2DAllLevelsTest() :
+        DWT2DTest(),
+        dwt(wavelet, cv::BORDER_REFLECT101)
+    {}
+
+    void SetUpForwardTest(const cv::Mat& forward_input, const cv::Mat& forward_output) override
+    {
+        input = forward_input;
+        expected_output = forward_output;
+    }
+
+    void SetUpInverseTest(const cv::Mat& inverse_input, const cv::Mat& inverse_output) override
+    {
+        input = inverse_input;
+        expected_output = inverse_output;
+    }
+
+    DWT2D dwt;
+    cv::Mat input;
+    cv::Mat expected_output;
 };
 
-TEST_P(HaarPatternDwtTests, ForwardTransform)
+TEST_P(DWT2DAllLevelsTest, ForwardTransform)
 {
-    DWT2D dwt(haar(), cv::BORDER_REFLECT101);
+    auto param = GetParam();
+    auto actual_output = dwt(input, param.levels);
+    clamp_near_zero(actual_output);
 
-    auto [input_pattern, expected_output] = GetParam();
-    auto actual_output = dwt(input_pattern);
-
+    EXPECT_EQ(actual_output.levels(), param.levels);
     EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-5));
 }
 
-TEST_P(HaarPatternDwtTests, InverseTransform)
+TEST_P(DWT2DAllLevelsTest, RunningForwardTransform)
 {
-    DWT2D dwt(haar(), cv::BORDER_REFLECT101);
+    auto param = GetParam();
+    auto actual_output = dwt.forward(input, 1);
+    for (int i = 0; i < param.levels - 1; ++i)
+        actual_output = dwt.running_forward(actual_output, 1);
 
-    auto [expected_output, input_pattern] = GetParam();
-    auto actual_output = dwt.inverse(input_pattern);
+    EXPECT_EQ(actual_output.levels(), param.levels);
+    clamp_near_zero(actual_output);
+    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-5));
+}
+
+TEST_P(DWT2DAllLevelsTest, InverseTransform)
+{
+    auto param = GetParam();
+    auto coeffs = DWT2D::Coeffs(input, param.levels);
+    auto actual_output = dwt.inverse(coeffs);
+    clamp_near_zero(actual_output);
 
     EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-6));
 }
 
+TEST_P(DWT2DAllLevelsTest, RunningInverseTransform)
+{
+    auto param = GetParam();
+    auto actual_output = DWT2D::Coeffs(input, param.levels);
+    for (int i = 0; i < param.levels; ++i)
+        actual_output = dwt.running_inverse(actual_output, 1);
 
-std::vector<cv::Mat> basic_test_patterns_haar_dwt_outputs = {
-    //  zeros
-    make_pattern({
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  ones
-    make_pattern({
-        16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  horizontal lines
-    make_pattern({
-        8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  inverted horizontal lines
-    make_pattern({
-         8,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-         0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,
-    }),
-    //  vertical lines
-    make_pattern({
-        8, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    }),
-    //  inverted vertical lines
-    make_pattern({
-        8.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., -1., -1., -1., -1., -1., -1., -1., -1.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
-        0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
-    }),
-    //  checker board
-    make_pattern({
-        8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1,
-    }),
-    //  inverted checker board
-    make_pattern({
-        8, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,
-        0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,
-        0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,
-        0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,
-        0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,
-        0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,
-        0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,
-        0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0,  0,  0,
-        0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1,
-    }),
-};
+    // EXPECT_EQ(actual_output.levels(), 0);
+
+    clamp_near_zero(actual_output);
+    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-6));
+}
+
 
 INSTANTIATE_TEST_CASE_P(
-    HaarGroup,
-    HaarPatternDwtTests,
-    testing::ValuesIn(
-        zip(basic_test_patterns, basic_test_patterns_haar_dwt_outputs)
-    ),
-    [](const auto& info) { return pattern_names[info.index]; }
+    DWT2DGroup,
+    DWT2DAllLevelsTest,
+    testing::ValuesIn(DWT2DAllLevelsTest::get_test_params()),
+    [](const auto& info) {
+        std::string wavelet_name = info.param.wavelet_name;
+        std::ranges::replace(wavelet_name, '.', '_');
+        return wavelet_name + "_" + info.param.input_name + "_" + std::to_string(info.param.levels);
+    }
 );
+

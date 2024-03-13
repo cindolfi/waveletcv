@@ -6,8 +6,11 @@ from pathlib import Path
 import json
 import argparse
 import os
+from collections import abc
 import contextlib
 import shutil
+import textwrap
+import mpmath
 import matplotlib.pyplot as plt
 
 
@@ -106,86 +109,252 @@ def main():
 
 
 
-def make_checkerboard(shape, dtype):
-    return np.tile(
-        np.array([[0, 1], [1, 0]], dtype=dtype),
-        (shape[0] // 2, shape[1] // 2),
-    )
-
-def make_horizontal_lines(shape, dtype):
-    return np.tile(
-        np.array([[1, 1], [0, 0]], dtype=dtype),
-        (shape[0] // 2, shape[1] // 2),
-    )
-
-
-def make_vertical_lines(shape, dtype):
-    return np.tile(
-        np.array([[1, 0], [1, 0]], dtype=dtype),
-        (shape[0] // 2, shape[1] // 2),
-    )
-
-
-def test_pattern_zeros(wavelet, shape, dtype, border_mode):
-    pattern = np.zeros(shape, dtype=dtype)
-    run_test('zeros', pattern, wavelet, border_mode)
-
-
-def test_pattern_ones(wavelet, shape, dtype, border_mode):
-    pattern = np.ones(shape, dtype=dtype)
-    run_test('ones', pattern, wavelet, border_mode)
-
-
-def test_pattern_checkerboard(wavelet, shape, dtype, border_mode):
-    pattern = make_checkerboard(shape, dtype)
-    run_test('checkerboard', pattern, wavelet, border_mode)
-
-
-def test_pattern_checkerboard2(wavelet, shape, dtype, border_mode):
-    pattern = make_checkerboard(shape, dtype)
-    run_test('checkerboard2', 1 - pattern, wavelet, border_mode)
-
-
-def test_pattern_vertical_lines(wavelet, shape, dtype, border_mode):
-    pattern = make_vertical_lines(shape, dtype)
-    run_test('vertical_lines', pattern, wavelet, border_mode)
-
-
-def test_pattern_vertical_lines2(wavelet, shape, dtype, border_mode):
-    pattern = make_vertical_lines(shape, dtype)
-    run_test('vertical_lines2', 1 - pattern, wavelet, border_mode)
-
-
-def test_pattern_horizontal_lines(wavelet, shape, dtype, border_mode):
-    pattern = make_horizontal_lines(shape, dtype)
-    run_test('horizontal_lines', pattern, wavelet, border_mode)
-
-
-def test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode):
-    pattern = make_horizontal_lines(shape, dtype)
-    run_test('horizontal_lines2', 1 - pattern, wavelet, border_mode)
 
 
 
+INDENT = 4 * ' '
+OUTPUT_FILENAME = 'dwt_test_cases.hpp'
+COEFFICIENT_PRECISION = 20
 
-def run_test(title, pattern, wavelet, border_mode, level=None):
-    np.set_printoptions(linewidth=240, precision=2)
+class PatternsTest:
+    def __init__(
+            self,
+            wavelets: abc.Sequence[str | pywt.Wavelet] | str | pywt.Wavelet,
+            patterns: dict[str, np.ndarray],
+            border_mode: str = 'reflect',
+            levels: abc.Sequence[int] | int | None = None,
+            dtype: np.dtype = np.float64,
+            precision: int = 8,
+            zero_tolerance: float = 1e-7,
+            base_variable_name: str = 'dwt2d_test_cases',
+            header_guard: str = 'WAVELET_DWT2D_TEST_HPP',
+        ):
+        if isinstance(wavelets, str):
+            wavelets = [pywt.Wavelet(wavelets)]
+        elif isinstance(wavelets, pywt.Wavelet):
+            wavelets = [wavelets]
+        else:
+            wavelets = [
+                pywt.Wavelet(wavelet) if isinstance(wavelet, str) else wavelet
+                for wavelet in wavelets
+            ]
 
-    axes = (0, 1)
-    coeffs = pywt.wavedec2(pattern, wavelet, axes=axes, mode=border_mode, level=level)
-    coeffs, _ = pywt.coeffs_to_array(coeffs, axes=axes)
+        if not isinstance(levels, (list, tuple)):
+            levels = [levels]
 
-    print(title)
-    print('pattern =')
-    print(pattern)
-    print(pattern.shape)
-    print()
-    print('coeffs =')
-    print(coeffs)
-    print(coeffs.shape)
-    print()
-    print('-' * 80)
-    print()
+        self.wavelets = wavelets
+        self.patterns = patterns
+        self.dtype = dtype
+        self.border_mode = border_mode
+        self.levels = levels
+        self.precision = precision
+        self.zero_tolerance = zero_tolerance
+        self.base_variable_name = base_variable_name
+        self.header_guard = header_guard
+        self._indent = 0
+
+
+    @staticmethod
+    def make_horizontal_lines(shape, inverted=False, dtype=np.float64):
+        pattern = np.tile(
+            np.array([[1, 1], [0, 0]], dtype=dtype),
+            (shape[0] // 2, shape[1] // 2),
+        )
+        return pattern if not inverted else 1 - pattern
+
+
+    @staticmethod
+    def make_vertical_lines(shape, inverted=False, dtype=np.float64):
+        pattern = np.tile(
+            np.array([[1, 0], [1, 0]], dtype=dtype),
+            (shape[0] // 2, shape[1] // 2),
+        )
+        return pattern if not inverted else 1 - pattern
+
+
+    @staticmethod
+    def make_diagonal_lines(shape, inverted=False, dtype=np.float64):
+        pattern = np.tile(
+            np.array([[1, 0], [0, 1]], dtype=dtype),
+            (shape[0] // 2, shape[1] // 2),
+        )
+        return pattern if not inverted else 1 - pattern
+
+
+    def transform_pattern(self, wavelet, pattern, level):
+        axes = (0, 1)
+        coeffs = pywt.wavedec2(
+            pattern,
+            wavelet,
+            axes=axes,
+            mode=self.border_mode,
+            level=level,
+        )
+        coeffs = pywt.coeffs_to_array(coeffs, axes=axes)[0]
+        self._clamp_zero(coeffs, self.zero_tolerance)
+        return self._trim_coeffs_to_match_pattern(wavelet, pattern, coeffs)
+
+
+    def _clamp_zero(self, coeffs, zero_tolerance):
+        if zero_tolerance > 0:
+            coeffs[abs(coeffs) <= zero_tolerance] = 0
+
+
+    def _trim_coeffs_to_match_pattern(self, wavelet, pattern, coeffs):
+        if coeffs.shape != pattern.shape:
+            padding = np.asarray(coeffs.shape) - np.asarray(pattern.shape)
+            front_padding = padding // 2
+            back_padding = front_padding + (padding % 2)
+
+            trimmed_coeffs = coeffs[
+                front_padding[0]: -back_padding[0],
+                front_padding[1]: -back_padding[1],
+            ]
+            assert trimmed_coeffs.shape == pattern.shape, \
+                f'\ncoeffs.shape = {coeffs.shape}\npattern.shape = {pattern.shape}\ntrimmed_coeffs.shape = {trimmed_coeffs.shape}\nwavelet =\n{wavelet}'
+        else:
+            trimmed_coeffs = coeffs
+
+        return trimmed_coeffs
+
+
+    def run(self):
+        def print_run(wavelet, pattern_name, pattern, coeffs):
+            print(wavelet.name, '-', pattern_name)
+            print('pattern =')
+            print(pattern)
+            print(pattern.shape)
+            print()
+            print('coeffs =')
+            print(coeffs)
+            print(coeffs.shape)
+            print()
+            print('-' * 80)
+            print()
+
+        for wavelet in self.wavelets:
+            for pattern_name, pattern in self.patterns.items():
+                coeffs = self.transform_pattern(wavelet, pattern)
+                print_run(wavelet, pattern_name, pattern, coeffs)
+
+
+    @contextlib.contextmanager
+    def indent(self):
+        self._indent += 4
+        yield
+        self._indent -= 4
+
+
+    def write(self, *lines):
+        print(textwrap.indent('\n'.join(lines), self._indent * ' '))
+
+
+    def generate_test_cases_hpp(self, filename):
+        with open(filename, 'w') as file:
+            with contextlib.redirect_stdout(file):
+                self.write(
+                    f'#ifndef {self.header_guard}',
+                    f'#define {self.header_guard}',
+                    '',
+                    '#include <vector>',
+                    '#include <map>',
+                    '#include <string>',
+                    '',
+                )
+                self._write_input_patterns()
+                self._write_all_test_cases()
+                self.write(f'#endif  // {self.header_guard}')
+                self.write()
+
+
+    def _write_input_patterns(self):
+        variable_name = f'{self.base_variable_name}_inputs'
+        self.write(f'std::map<std::string, std::vector<double>> {variable_name} = {{')
+        for pattern_name, pattern in self.patterns.items():
+            with self.indent():
+                self._write_name_array_pair(
+                    name=pattern_name,
+                    array=pattern,
+                    comment=f'{variable_name}["{pattern_name}"]',
+                )
+        self.write(f'}}; // {variable_name}')
+        self.write()
+
+
+    def _write_all_test_cases(self):
+        for level in self.levels:
+            self.write(f'//  {"=" * 76}')
+            self.write()
+            self._write_test_cases_for_level(level)
+            self.write()
+
+
+    def _write_test_cases_for_level(self, level):
+        if level is None:
+            variable_name = f'{self.base_variable_name}_all_levels'
+        else:
+            variable_name = f'{self.base_variable_name}_{level}_levels'
+        self.write(
+            f'std::map<std::string, std::map<std::string, std::vector<double>>> {variable_name} = {{'
+        )
+        for wavelet in self.wavelets:
+            with self.indent():
+                self.write(f'//  {"-" * (76 - self._indent)}')
+                self.write(f'{{  //  {variable_name}["{wavelet.name}"]')
+                with self.indent():
+                    self.write(f'"{wavelet.name}",',)
+                    self.write('{')
+                    with self.indent():
+                        for pattern_name, pattern in self.patterns.items():
+                            self._write_single_test_case(
+                                wavelet=wavelet,
+                                pattern_name=pattern_name,
+                                pattern=pattern,
+                                level=level,
+                                variable_name=variable_name,
+                            )
+                    self.write('},')
+                self.write(f'}}, //  {variable_name}["{wavelet.name}"]')
+        self.write(f'}}; // {variable_name}')
+
+
+    def _write_single_test_case(
+            self,
+            wavelet,
+            pattern_name,
+            pattern,
+            level,
+            variable_name,
+        ):
+        self._write_name_array_pair(
+            name=pattern_name,
+            array=self.transform_pattern(wavelet, pattern.astype(self.dtype), level),
+            comment=f'{variable_name}["{wavelet.name}"]["{pattern_name}"]',
+        )
+
+
+    def _write_name_array_pair(self, name, array, comment):
+        self.write(f'{{  // {comment}')
+        with self.indent():
+            self.write(f'"{name}",')
+            self._write_array(array)
+
+        self.write('},')
+
+
+    def _write_array(self, array):
+        array = np.array2string(
+            array,
+            max_line_width=2000,
+            precision=self.precision,
+            suppress_small=True,
+            separator=', ',
+        )
+        self.write('{')
+        with self.indent():
+            self.write(array.replace('[[', '').replace(' [', '').replace(']', ''))
+        self.write('},')
+
 
 
 def sure(x, t, stdev):
@@ -229,33 +398,46 @@ def plot_sure():
 
 
 
+
+
 if __name__ == '__main__':
     # inputs = [
     #     np.ones([32, 32], dtype=np.float32),
     #     ('inputs/lena_gray.png', cv2.IMREAD_GRAYSCALE),
     # ]
-    plot_sure()
-    plt.show()
-    exit()
-    wavelet = 'db1'
-    dtype = np.float32
+    # plot_sure()
+    # plt.show()
+
     shape = [16, 16]
-    border_mode = 'reflect'
-    level = None
+    patterns_test = PatternsTest(
+        wavelets=[
+            'db2',
+            'db3',
+            # 'db4',
+        ],
+        patterns = dict(
+            zeros=np.zeros(shape),
+            ones=np.ones(shape),
+            horizontal_lines=PatternsTest.make_horizontal_lines(shape),
+            inverted_horizontal_lines=PatternsTest.make_horizontal_lines(shape, inverted=True),
+            vertical_lines=PatternsTest.make_vertical_lines(shape),
+            inverted_vertical_lines=PatternsTest.make_vertical_lines(shape, inverted=True),
+            diagonal_lines=PatternsTest.make_diagonal_lines(shape),
+            inverted_diagonal_lines=PatternsTest.make_diagonal_lines(shape, inverted=True),
+        ),
+        dtype=np.float64,
+        border_mode='reflect',
+        precision=8,
+        levels=[1, None],
+    )
 
-    wavelet = pywt.Wavelet('db1')
+    # np.set_printoptions(linewidth=240, precision=2)
+    # patterns_test.run()
+    patterns_test.generate_test_cases_hpp(
+        filename=OUTPUT_FILENAME,
+    )
 
-    # print(wavelet.filter_bank)
-
-    # test_pattern_zeros(wavelet, shape, dtype, border_mode, level=level)
-    # test_pattern_ones(wavelet, shape, dtype, border_mode, level=level)
-    # test_pattern_horizontal_lines(wavelet, shape, dtype, border_mode, level=level)
-    # test_pattern_horizontal_lines2(wavelet, shape, dtype, border_mode, level=level)
-    # test_pattern_vertical_lines(wavelet, shape, dtype, border_mode, level=level)
-    # test_pattern_vertical_lines2(wavelet, shape, dtype, border_mode, level=level)
-    # test_pattern_checkerboard(wavelet, shape, dtype, border_mode, level=level)
-    # test_pattern_checkerboard2(wavelet, shape, dtype, border_mode, level=level)
-
+    exit()
 
     # x = -7 + np.arange(16)
     # stdev = np.std(x)

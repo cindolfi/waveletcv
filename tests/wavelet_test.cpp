@@ -1,348 +1,189 @@
 /**
  * Wavelet & DWT2D Unit Tests
 */
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include <wavelet/wavelet.hpp>
 #include "common.hpp"
 
 using namespace wavelet;
 using namespace testing;
+using json = nlohmann::json;
 
 struct WaveletTestParam
 {
-    int order;
     int vanishing_moments_psi;
-    int support_width;
+    int vanishing_moments_phi;
+    bool orthogonal;
+    bool biorthogonal;
+    wavelet::Wavelet::Symmetry symmetry;
+    std::string family;
     std::string name;
-    std::vector<double> analysis_lowpass;
-    std::vector<double> analysis_highpass;
-    std::vector<double> synthesis_lowpass;
-    std::vector<double> synthesis_highpass;
+    std::vector<double> decompose_lowpass;
+    std::vector<double> decompose_highpass;
+    std::vector<double> reconstruct_lowpass;
+    std::vector<double> reconstruct_highpass;
 };
+
+void from_json(const json& json_param, WaveletTestParam& param)
+{
+    param.vanishing_moments_psi = json_param["vanishing_moments_psi"];
+    param.vanishing_moments_phi = json_param["vanishing_moments_phi"];
+    param.orthogonal = json_param["orthogonal"];
+    param.biorthogonal = json_param["biorthogonal"];
+    if (json_param["symmetry"] == "symmetric")
+        param.symmetry = Wavelet::Symmetry::SYMMETRIC;
+    else if (json_param["symmetry"] == "asymmetric")
+        param.symmetry = Wavelet::Symmetry::ASYMMETRIC;
+    else if (json_param["symmetry"] == "near symmetric")
+        param.symmetry = Wavelet::Symmetry::NEAR_SYMMETRIC;
+    else
+        assert(false);
+    param.family = json_param["family"];
+    param.name = json_param["name"];
+    param.decompose_lowpass = json_param["decompose_lowpass"].get<std::vector<double>>();
+    param.decompose_highpass = json_param["decompose_highpass"].get<std::vector<double>>();
+    param.reconstruct_lowpass = json_param["reconstruct_lowpass"].get<std::vector<double>>();
+    param.reconstruct_highpass = json_param["reconstruct_highpass"].get<std::vector<double>>();
+}
+
+void PrintTo(const WaveletTestParam& param, std::ostream* stream)
+{
+    std::string symmetry;
+    switch (param.symmetry) {
+    case Wavelet::Symmetry::ASYMMETRIC:
+        symmetry = "ASYMMETRIC";
+        break;
+    case Wavelet::Symmetry::NEAR_SYMMETRIC:
+        symmetry = "NEAR_SYMMETRIC";
+        break;
+    case Wavelet::Symmetry::SYMMETRIC:
+        symmetry = "SYMMETRIC";
+        break;
+    }
+    *stream << "\n"
+        << "vanishing_moments_psi: " << param.vanishing_moments_psi << "\n"
+        << "vanishing_moments_phi: " << param.vanishing_moments_phi << "\n"
+        << "orthogonal: " << param.orthogonal << "\n"
+        << "biorthogonal: " << param.biorthogonal << "\n"
+        << "symmetry: " << symmetry << "\n"
+        << "family: " << param.family << "\n"
+        << "name: " << param.name << "\n";
+}
 
 class WaveletTest : public testing::TestWithParam<WaveletTestParam>
 {
 protected:
-    WaveletTest(const Wavelet& wavelet) :
+    WaveletTest() :
         testing::TestWithParam<WaveletTestParam>(),
-        wavelet(wavelet)
+        wavelet(wavelet::Wavelet::create(GetParam().name))
     {}
 
-    Wavelet wavelet;
+    wavelet::Wavelet wavelet;
+
+public:
+    static std::vector<WaveletTestParam> create_test_params()
+    {
+        std::ifstream test_case_data_file(WAVELET_TEST_DATA_PATH);
+        auto test_case_data = json::parse(test_case_data_file);
+
+        std::vector<WaveletTestParam> params;
+        for (auto& test_case : test_case_data)
+            params.push_back(test_case.get<WaveletTestParam>());
+
+        return params;
+    }
 };
 
-
-/**
- * -----------------------------------------------------------------------------
- * Daubechies
- * -----------------------------------------------------------------------------
-*/
-class DaubechiesTest : public WaveletTest
-{
-protected:
-    DaubechiesTest() : WaveletTest(daubechies(GetParam().order))
-    {}
-};
-
-TEST_P(DaubechiesTest, Order)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.order(), param.order);
-}
-
-TEST_P(DaubechiesTest, VanisingMomentsPsi)
+TEST_P(WaveletTest, VanisingMomentsPsi)
 {
     auto param = GetParam();
     ASSERT_EQ(wavelet.vanishing_moments_psi(), param.vanishing_moments_psi);
 }
 
-TEST_P(DaubechiesTest, VanisingMomentsPhi)
-{
-    ASSERT_EQ(wavelet.vanishing_moments_phi(), 0);
-}
-
-TEST_P(DaubechiesTest, SupportWidth)
+TEST_P(WaveletTest, VanisingMomentsPhi)
 {
     auto param = GetParam();
-    ASSERT_EQ(wavelet.support_width(), param.support_width);
+    ASSERT_EQ(wavelet.vanishing_moments_phi(), param.vanishing_moments_phi);
 }
 
-TEST_P(DaubechiesTest, Orthogonal)
+TEST_P(WaveletTest, Orthogonal)
 {
-    ASSERT_EQ(wavelet.orthogonal(), true);
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.orthogonal(), param.orthogonal);
 }
 
-TEST_P(DaubechiesTest, Biorthogonal)
+TEST_P(WaveletTest, Biorthogonal)
 {
-    ASSERT_EQ(wavelet.biorthogonal(), true);
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.biorthogonal(), param.biorthogonal);
 }
 
-TEST_P(DaubechiesTest, Symmetry)
+TEST_P(WaveletTest, Symmetry)
 {
-    ASSERT_EQ(wavelet.symmetry(), Wavelet::Symmetry::ASYMMETRIC);
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.symmetry(), param.symmetry);
 }
 
-TEST_P(DaubechiesTest, CompactSupport)
+TEST_P(WaveletTest, Family)
 {
-    ASSERT_EQ(wavelet.compact_support(), true);
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.family(), param.family);
 }
 
-TEST_P(DaubechiesTest, FamilyName)
-{
-    ASSERT_EQ(wavelet.family(), "Daubechies");
-}
-
-TEST_P(DaubechiesTest, ShortName)
+TEST_P(WaveletTest, Name)
 {
     auto param = GetParam();
     ASSERT_EQ(wavelet.name(), param.name);
 }
 
-TEST_P(DaubechiesTest, CoeffsSize)
-{
-    auto param = GetParam();
-    EXPECT_EQ(
-        wavelet.filter_bank().analysis_kernels().lowpass().total(),
-        2 * param.order
-    );
-    EXPECT_EQ(
-        wavelet.filter_bank().analysis_kernels().highpass().total(),
-        2 * param.order
-    );
-    EXPECT_EQ(
-        wavelet.filter_bank().synthesis_kernels().lowpass().total(),
-        2 * param.order
-    );
-    EXPECT_EQ(
-        wavelet.filter_bank().synthesis_kernels().highpass().total(),
-        2 * param.order
-    );
-}
-
-TEST_P(DaubechiesTest, AnalysisLowpassCoeffs)
+TEST_P(WaveletTest, DecomposeLowpassCoeffs)
 {
     auto param = GetParam();
     EXPECT_THAT(
-        wavelet.filter_bank().analysis_kernels().lowpass(),
-        MatrixEq(cv::Mat(param.analysis_lowpass))
+        wavelet.filter_bank().decompose_kernels().lowpass(),
+        MatrixFloatEq(cv::Mat(param.decompose_lowpass))
     );
 }
 
-TEST_P(DaubechiesTest, AnalysisHighpassCoeffs)
+TEST_P(WaveletTest, DecomposeHighpassCoeffs)
 {
     auto param = GetParam();
     EXPECT_THAT(
-        wavelet.filter_bank().analysis_kernels().highpass(),
-        MatrixEq(cv::Mat(param.analysis_highpass))
+        wavelet.filter_bank().decompose_kernels().highpass(),
+        MatrixFloatEq(cv::Mat(param.decompose_highpass))
     );
 }
 
-TEST_P(DaubechiesTest, SynthesisLowpassCoeffs)
+TEST_P(WaveletTest, ReconstructLowpassCoeffs)
 {
     auto param = GetParam();
     EXPECT_THAT(
-        wavelet.filter_bank().synthesis_kernels().lowpass(),
-        MatrixEq(cv::Mat(param.synthesis_lowpass))
+        wavelet.filter_bank().reconstruct_kernels().lowpass(),
+        MatrixFloatEq(cv::Mat(param.reconstruct_lowpass))
     );
 }
 
-TEST_P(DaubechiesTest, SynthesisHighpassCoeffs)
+TEST_P(WaveletTest, ReconstructHighpassCoeffs)
 {
     auto param = GetParam();
     EXPECT_THAT(
-        wavelet.filter_bank().synthesis_kernels().highpass(),
-        MatrixEq(cv::Mat(param.synthesis_highpass))
+        wavelet.filter_bank().reconstruct_kernels().highpass(),
+        MatrixFloatEq(cv::Mat(param.reconstruct_highpass))
     );
 }
 
 
 INSTANTIATE_TEST_CASE_P(
     WaveletGroup,
-    DaubechiesTest,
-    testing::Values(
-        WaveletTestParam{
-            .order = 1,
-            .vanishing_moments_psi = 2,
-            .support_width = 1,
-            .name = "db1",
-            .analysis_lowpass = {
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-            },
-            .analysis_highpass = {
-                -7.071067811865475244008443621048490392848359376884740365883398e-01,
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-            },
-            .synthesis_lowpass = {
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-            },
-            .synthesis_highpass = {
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-                -7.071067811865475244008443621048490392848359376884740365883398e-01,
-            },
-        },
-        WaveletTestParam{
-            .order = 2,
-            .vanishing_moments_psi = 4,
-            .support_width = 3,
-            .name = "db2",
-            .analysis_lowpass = {
-                -1.294095225512603811744494188120241641745344506599652569070016e-01,
-                2.241438680420133810259727622404003554678835181842717613871683e-01,
-                8.365163037378079055752937809168732034593703883484392934953414e-01,
-                4.829629131445341433748715998644486838169524195042022752011715e-01,
-            },
-            .analysis_highpass = {
-                -4.829629131445341433748715998644486838169524195042022752011715e-01,
-                8.365163037378079055752937809168732034593703883484392934953414e-01,
-                -2.241438680420133810259727622404003554678835181842717613871683e-01,
-                -1.294095225512603811744494188120241641745344506599652569070016e-01,
-            },
-            .synthesis_lowpass = {
-                4.829629131445341433748715998644486838169524195042022752011715e-01,
-                8.365163037378079055752937809168732034593703883484392934953414e-01,
-                2.241438680420133810259727622404003554678835181842717613871683e-01,
-                -1.294095225512603811744494188120241641745344506599652569070016e-01,
-            },
-            .synthesis_highpass = {
-                -1.294095225512603811744494188120241641745344506599652569070016e-01,
-                -2.241438680420133810259727622404003554678835181842717613871683e-01,
-                8.365163037378079055752937809168732034593703883484392934953414e-01,
-                -4.829629131445341433748715998644486838169524195042022752011715e-01,
-            },
-        }
-    )
-);
-
-
-/**
- * -----------------------------------------------------------------------------
- * Haar
- * -----------------------------------------------------------------------------
-*/
-class HaarTest : public WaveletTest
-{
-protected:
-    HaarTest() : WaveletTest(haar())
-    {}
-};
-
-TEST_P(HaarTest, Order)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.order(), param.order);
-}
-
-TEST_P(HaarTest, VanisingMomentsPsi)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.vanishing_moments_psi(), param.vanishing_moments_psi);
-}
-
-TEST_P(HaarTest, VanisingMomentsPhi)
-{
-    ASSERT_EQ(wavelet.vanishing_moments_phi(), 0);
-}
-
-TEST_P(HaarTest, SupportWidth)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.support_width(), param.support_width);
-}
-
-TEST_P(HaarTest, Orthogonal)
-{
-    ASSERT_EQ(wavelet.orthogonal(), true);
-}
-
-TEST_P(HaarTest, Biorthogonal)
-{
-    ASSERT_EQ(wavelet.biorthogonal(), true);
-}
-
-TEST_P(HaarTest, Symmetry)
-{
-    ASSERT_EQ(wavelet.symmetry(), Wavelet::Symmetry::ASYMMETRIC);
-}
-
-TEST_P(HaarTest, CompactSupport)
-{
-    ASSERT_EQ(wavelet.compact_support(), true);
-}
-
-TEST_P(HaarTest, FamilyName)
-{
-    ASSERT_EQ(wavelet.family(), "Haar");
-}
-
-TEST_P(HaarTest, ShortName)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.name(), param.name);
-}
-
-TEST_P(HaarTest, AnalysisLowpassCoeffs)
-{
-    auto param = GetParam();
-    EXPECT_THAT(
-        wavelet.filter_bank().analysis_kernels().lowpass(),
-        MatrixEq(cv::Mat(param.analysis_lowpass))
-    );
-}
-
-TEST_P(HaarTest, AnalysisHighpassCoeffs)
-{
-    auto param = GetParam();
-    EXPECT_THAT(
-        wavelet.filter_bank().analysis_kernels().highpass(),
-        MatrixEq(cv::Mat(param.analysis_highpass))
-    );
-}
-
-TEST_P(HaarTest, SynthesisLowpassCoeffs)
-{
-    auto param = GetParam();
-    EXPECT_THAT(
-        wavelet.filter_bank().synthesis_kernels().lowpass(),
-        MatrixEq(cv::Mat(param.synthesis_lowpass))
-    );
-}
-
-TEST_P(HaarTest, SynthesisHighpassCoeffs)
-{
-    auto param = GetParam();
-    EXPECT_THAT(
-        wavelet.filter_bank().synthesis_kernels().highpass(),
-        MatrixEq(cv::Mat(param.synthesis_highpass))
-    );
-}
-
-INSTANTIATE_TEST_CASE_P(
-    WaveletGroup,
-    HaarTest,
-    testing::Values(
-        WaveletTestParam{
-            .order = 1,
-            .vanishing_moments_psi = 2,
-            .support_width = 1,
-            .name = "haar",
-            .analysis_lowpass = {
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-            },
-            .analysis_highpass = {
-                -7.071067811865475244008443621048490392848359376884740365883398e-01,
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-            },
-            .synthesis_lowpass = {
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-            },
-            .synthesis_highpass = {
-                7.071067811865475244008443621048490392848359376884740365883398e-01,
-                -7.071067811865475244008443621048490392848359376884740365883398e-01,
-            },
-        }
-    )
+    WaveletTest,
+    testing::ValuesIn(
+        WaveletTest::create_test_params()
+    ),
+    [](const auto& info) {
+        auto name = info.param.name;
+        std::ranges::replace(name, '.', '_');
+        return name;
+    }
 );
 

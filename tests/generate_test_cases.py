@@ -1,191 +1,562 @@
+"""
+Generates test case for wavelet unit tests
+"""
+import contextlib
+from collections import abc
+import textwrap
+from pathlib import Path
+from dataclasses import dataclass
+import json
 
 import numpy as np
 import pywt
-import cv2
-from pathlib import Path
-import json
-import argparse
-import os
-import contextlib
-import shutil
+import mpmath
+
 
 class TestCaseGenerator:
     def __init__(
-            self, 
-            manifest_path: Path | str, 
-            root_path: Path | str, 
-            input_filename: str = 'input.tiff', 
-            coeffs_filename: str = 'coeffs.tiff',
-            dry_run=False,
-            verbose=False,
-        ) -> None:
-        self.manifest_path = Path(manifest_path)
-        self.root_path = Path(root_path)
-        self.input_filename = input_filename
-        self.coeffs_filename = coeffs_filename
-        self.dry_run = dry_run
-        self.verbose = verbose
-
-        self.manifest = list()
-        if not self.dry_run:
-            self.manifest_path.unlink(missing_ok=True)
-            shutil.rmtree(self.root_path)
-            self.root_path.mkdir(parents=True)
-
-        # try:
-        #     with open(self.manifest_path) as file:
-        #         self.manifest = json.load(file)
-        # except FileNotFoundError:
-        #     self.manifest = list()
-
-        
-
-        
-    def discard_existing_cases(self):
-        for item in self.manifest:
-            Path(item['path']).unlink()
-
-        self.manifest = list()
+            self,
+            filename: str,
+            header_guard: str,
+            precision: int = 8,
+        ):
+        self.filename = filename
+        self.precision = precision
+        self.header_guard = header_guard
+        self._indent = 0
 
 
-    def create_manifest_entry(self, name, wavelet, mode, flags):
-        path = self.create_path(name, wavelet, mode)
-        return dict(
-            wavelet=wavelet,
-            mode=mode,
-            name=name,
-            flags=flags,
-            path=str(path),
-            input_filename=self.input_filename,
-            coeffs_filename=self.coeffs_filename,
-        )
-    
-
-    def format_manifest_entry(self, entry):
-        return '\n'.join(f'{key}: {value}' for key, value in entry.items())
-        
-            
-    def create_path(self, name, wavelet, mode) -> Path:
-        return self.root_path / wavelet / mode / str(name)
-    
-
-    def generate_case(self, data, name, wavelet, mode, flags=-1):
-        if isinstance(data, (str, os.PathLike)):
-            data_path = data
-            data = cv2.imread(str(data), flags)
-        else:
-            data_path = None
-
-        #   Update the manifest
-        manifest_entry = self.create_manifest_entry(
-            name=name,
-            wavelet=wavelet,
-            mode=mode,
-            flags=flags,
-        )
-        self.manifest.append(manifest_entry)
-
-        #   Perform the DWT
-        coeffs = pywt.wavedec2(data, wavelet, mode)
-        coeffs, _ = pywt.coeffs_to_array(coeffs)
-        
-        if self.verbose:
-            print(self.format_manifest_entry(manifest_entry))
-            print('-' * 80)
-
-        #   Write files
-        if not self.dry_run:
-            path = Path(manifest_entry['path'])
-            input_path = path / self.input_filename
-            coeffs_path = path / self.coeffs_filename
-            path.mkdir(parents=True, exist_ok=True)
-            
-            cv2.imwrite(str(coeffs_path), coeffs)
-            if data_path:
-                input_path.unlink(missing_ok=True)
-                # input_path.symlink_to(data_path)
-                shutil.copy(data_path, input_path)
-            else:
-                cv2.imwrite(str(input_path), data)
-
-            with open(self.manifest_path, 'w') as file:
-                json.dump(self.manifest, file, indent=4)
+    @contextlib.contextmanager
+    def indent(self):
+        self._indent += 4
+        yield
+        self._indent -= 4
 
 
-
-def doit():
-    # image = cv2.imread('inputs/lena.png')
-    # gray_image = cv2.cvtColor(image, cv2.IMREAD_GRAYSCALE)
-    # gray_image = gray_image.astype(float) / 255
-    # print(gray_image.shape, gray_image.dtype)
-    # cv2.imwrite('inputs/lena_gray.png', gray_image, )
-    pass
+    def write(self, *lines):
+        print(textwrap.indent('\n'.join(lines), self._indent * ' '))
 
 
-def main(inputs):
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        action='append',
-        dest='wavelets',
-        help='Wavelet used to generate test cases',
-    )
-    parser.add_argument(
-        '--mode', '-m',
-        action='append',
-        default=['symmetric'],
-        type=list,
-        dest='modes',
-        help='Boundary mode used to generate test cases',
-    )
-    parser.add_argument(
-        '--dry-run', '-d',
-        action='store_true', 
-        help='Generate test cases, but do not save files',
-    )
-    parser.add_argument(
-        '--verbose', '-v', 
-        action='store_true',
-        help='Print manifest entries generation',
-    )
-    parser.add_argument(
-        '--manifest',
-        default='cases_manifest.json',
-        help='The JSON manifest path',
-    )
-    parser.add_argument(
-        '--root',
-        default='data',
-        help='The root path for generated test case data',
-    )
-    args = parser.parse_args()
-    
-    generator = TestCaseGenerator(
-        manifest_path=args.manifest,
-        root_path=args.root,
-        dry_run=args.dry_run,
-        verbose=args.verbose,
-    )
-    for wavelet in args.wavelets:
-        for mode in args.modes:
-            for name, data in enumerate(inputs):
-                data, flags = data if isinstance(data, (tuple, list)) else (data, cv2.IMREAD_UNCHANGED)
-                generator.generate_case(
-                    data=data,
-                    name=name,
-                    wavelet=wavelet,
-                    mode=mode,
-                    flags=flags,
+    def generate(self, *, filename=None, header_guard=None, **kwds):
+        if not filename:
+            filename = self.filename
+        if not header_guard:
+            header_guard = self.header_guard
+
+        with open(filename, 'w') as file:
+            with contextlib.redirect_stdout(file):
+                self.write(
+                    '/*',
+                    f'    THIS FILE WAS GENERATED BY {Path(__file__).name}',
+                    '*/',
+                    f'#ifndef {header_guard}',
+                    f'#define {header_guard}',
+                    '',
+                    '#include <vector>',
+                    '#include <map>',
+                    '#include <string>',
                 )
+                self.write_body(**kwds)
+                self.write(f'#endif  // {header_guard}')
+                self.write()
 
 
+    def write_divider(self, divider='-', width=80):
+        num_copies = (width - 4 - self._indent) // len(divider)
+        divider = num_copies * divider
+        self.write(f'//  {divider}')
+
+
+    def _write_name_array_pair(self, name, array, comment):
+        self.write(f'{{  // {comment}')
+        with self.indent():
+            self.write(f'"{name}",')
+            self._write_array(array)
+
+        self.write('},')
+
+
+    def _write_array(self, array):
+        array = np.array2string(
+            array,
+            max_line_width=20000,
+            threshold=20000,
+            precision=self.precision,
+            suppress_small=True,
+            separator=', ',
+        )
+        self.write('{')
+        with self.indent():
+            self.write(array.replace('[[', '').replace(' [', '').replace(']]', ',').replace(']', ''))
+        self.write('},')
+
+
+
+@dataclass
+class CoeffsTestCase:
+    wavelet: str
+    patterns: str
+    levels: abc.Sequence[int]
+
+@dataclass
+class CoeffsTestCaseData:
+    wavelet: str
+    pattern: str
+    levels: int
+    coeffs: np.ndarray
+
+
+class TestCaseJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, pywt.Wavelet):
+            result = dict(
+                vanishing_moments_psi=obj.vanishing_moments_psi,
+                vanishing_moments_phi=obj.vanishing_moments_phi,
+                orthogonal=obj.orthogonal,
+                biorthogonal=obj.biorthogonal,
+                symmetry=obj.symmetry,
+                family=obj.family_name,
+                name=obj.name,
+                decompose_lowpass=obj.dec_lo,
+                decompose_highpass=obj.dec_hi,
+                reconstruct_lowpass=obj.rec_lo,
+                reconstruct_highpass=obj.rec_hi,
+            )
+        elif isinstance(obj, TestCaseData):
+            result = dict(
+                wavelet=obj.wavelet,
+                pattern=obj.pattern,
+                coeffs=obj.coeffs,
+                levels=obj.levels,
+            )
+        elif isinstance(obj, np.ndarray):
+            result = dict(
+                shape=obj.shape,
+                dtype=str(obj.dtype),
+                data=obj.ravel().tolist(),
+            )
+        else:
+            result = super().default(obj)
+
+        return result
+
+
+
+class CoefficientTestCases:
+    def __init__(self, families: abc.Sequence[str] | str):
+        if isinstance(families, str):
+            families = [families]
+
+        self.families = families
+
+
+    def generate(self, filename):
+        wavelets = [
+            pywt.Wavelet(name)
+            for family in self.families
+            for name in pywt.wavelist(family)
+        ]
+
+        with open(filename, 'w') as file:
+            json.dump(
+                wavelets,
+                file,
+                cls=TestCaseJsonEncoder,
+            )
+
+
+
+
+
+
+
+
+
+
+
+@dataclass
+class TestCase:
+    wavelet: str
+    patterns: str
+    levels: abc.Sequence[int]
+
+@dataclass
+class TestCaseData:
+    wavelet: str
+    pattern: str
+    levels: int
+    coeffs: np.ndarray
+
+
+
+
+class DWT2DTestCases:
+    def __init__(
+            self,
+            test_cases: abc.Sequence[TestCase],
+            patterns: dict[str, dict[str, np.ndarray]],
+            border_mode: str = 'periodization',
+            dtype: np.dtype = np.float64,
+        ):
+        self.test_cases = test_cases
+        self.patterns = patterns
+        self.dtype = dtype
+        self.border_mode = border_mode
+
+
+    @staticmethod
+    def make_horizontal_lines(shape, inverted=False, dtype=np.float64):
+        pattern = np.tile(
+            np.array([[1, 1], [0, 0]], dtype=dtype),
+            (shape[0] // 2, shape[1] // 2),
+        )
+        return pattern if not inverted else 1 - pattern
+
+
+    @staticmethod
+    def make_vertical_lines(shape, inverted=False, dtype=np.float64):
+        pattern = np.tile(
+            np.array([[1, 0], [1, 0]], dtype=dtype),
+            (shape[0] // 2, shape[1] // 2),
+        )
+        return pattern if not inverted else 1 - pattern
+
+
+    @staticmethod
+    def make_diagonal_lines(shape, inverted=False, dtype=np.float64):
+        pattern = np.tile(
+            np.array([[1, 0], [0, 1]], dtype=dtype),
+            (shape[0] // 2, shape[1] // 2),
+        )
+        return pattern if not inverted else 1 - pattern
+
+
+    def transform_pattern(self, wavelet, pattern, level):
+        axes = (0, 1)
+        coeffs = pywt.wavedec2(
+            pattern,
+            wavelet,
+            axes=axes,
+            mode=self.border_mode,
+            level=level,
+        )
+        coeffs = pywt.coeffs_to_array(coeffs, axes=axes)[0]
+        coeffs = coeffs.astype(self.dtype)
+
+        return coeffs
+
+
+    def generate(self, filename):
+        def make_pattern_key(set_name, name):
+            return f'{set_name}_{name}'
+
+        patterns = {
+            make_pattern_key(pattern_set_name, pattern_name): pattern
+            for pattern_set_name, patterns in self.patterns.items()
+            for pattern_name, pattern in patterns.items()
+        }
+
+        test_cases = list()
+        for test_case in self.test_cases:
+            wavelet = pywt.Wavelet(test_case.wavelet)
+            for levels in test_case.levels:
+                for pattern_name in self.patterns[test_case.patterns]:
+                    pattern_key = make_pattern_key(test_case.patterns, pattern_name)
+                    pattern = patterns[pattern_key]
+                    test_cases.append(
+                        TestCaseData(
+                            wavelet=wavelet.name,
+                            pattern=pattern_key,
+                            coeffs=self.transform_pattern(wavelet, pattern, levels),
+                            levels=levels,
+                        )
+                    )
+
+        with open(filename, 'w') as file:
+            json.dump(
+                dict(patterns=patterns, test_cases=test_cases),
+                file,
+                cls=TestCaseJsonEncoder,
+            )
+
+
+
+
+
+
+
+def main():
+    #   ------------------------------------------------------------------------
+    coeffs_test_cases = CoefficientTestCases(
+        families=[
+            'haar',
+            'db',
+            'sym',
+            'coif',
+            'bior',
+            # 'rbior',
+        ],
+    )
+    coeffs_test_cases.generate('wavelet_test_data.json')
+    exit()
+    #   ------------------------------------------------------------------------
+    # shape = [96, 96]
+    # dwt2d_test_cases = DWT2DTestCases(
+    #     filename='dwt2d_test_cases.hpp',
+    #     wavelets=[
+    #         'haar',
+    #         'db1',
+    #         'db2',
+    #         'db3',
+    #         # 'db4',
+    #         'sym2',
+    #         # 'sym3',
+    #         'coif1',
+    #         # 'coif2',
+    #         # 'coif3',
+    #         'bior1.1',
+    #         'bior2.2',
+    #         # 'bior2.4',
+    #         # 'bior3.1',
+    #         # 'bior3.3',
+    #         # 'bior4.4',
+    #         # 'bior5.5',
+    #         # 'bior6.8',
+    #     ],
+    #     patterns = dict(
+    #         zeros=np.zeros(shape),
+    #         ones=np.ones(shape),
+    #         horizontal_lines=DWT2DTestCases.make_horizontal_lines(shape),
+    #         inverted_horizontal_lines=DWT2DTestCases.make_horizontal_lines(shape, inverted=True),
+    #         vertical_lines=DWT2DTestCases.make_vertical_lines(shape),
+    #         inverted_vertical_lines=DWT2DTestCases.make_vertical_lines(shape, inverted=True),
+    #         diagonal_lines=DWT2DTestCases.make_diagonal_lines(shape),
+    #         inverted_diagonal_lines=DWT2DTestCases.make_diagonal_lines(shape, inverted=True),
+    #         # random=np.random.randn(*shape),
+    #     ),
+    #     dtype=np.float64,
+    #     precision=8,
+    #     levels=[1, 2, 3, 4],
+    # )
+
+
+    def create_patterns(*shape):
+        return dict(
+            zeros=np.zeros(shape, dtype=np.float64),
+            ones=np.ones(shape, dtype=np.float64),
+            horizontal_lines=DWT2DTestCases.make_horizontal_lines(shape),
+            inverted_horizontal_lines=DWT2DTestCases.make_horizontal_lines(shape, inverted=True),
+            vertical_lines=DWT2DTestCases.make_vertical_lines(shape),
+            inverted_vertical_lines=DWT2DTestCases.make_vertical_lines(shape, inverted=True),
+            diagonal_lines=DWT2DTestCases.make_diagonal_lines(shape),
+            inverted_diagonal_lines=DWT2DTestCases.make_diagonal_lines(shape, inverted=True),
+            # random=np.random.randn(*shape),
+        )
+
+    small_size = 16
+    medium_size = 64
+    large_size = 128
+
+    dwt2d_test_cases = DWT2DTestCases(
+        patterns=dict(
+            small_square=create_patterns(small_size, small_size),
+            small_tall=create_patterns(small_size, small_size // 2),
+            small_wide=create_patterns(small_size // 2, small_size),
+            medium_square=create_patterns(medium_size, medium_size),
+            medium_tall=create_patterns(medium_size, medium_size // 2),
+            medium_wide=create_patterns(medium_size // 2, medium_size),
+            large_square=create_patterns(large_size, large_size),
+            large_tall=create_patterns(large_size, large_size // 2),
+            large_wide=create_patterns(large_size // 2, large_size),
+        ),
+        test_cases=[
+            TestCase(
+                wavelet='haar',
+                patterns='small_square',
+                levels=[1, 2, 3, 4],
+            ),
+            TestCase(
+                wavelet='haar',
+                patterns='small_tall',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='haar',
+                patterns='small_wide',
+                levels=[1, 2, 3],
+            ),
+            #   ----------------------------------------------------------------
+            TestCase(
+                wavelet='db1',
+                patterns='small_square',
+                levels=[1, 2, 3, 4],
+            ),
+            TestCase(
+                wavelet='db1',
+                patterns='small_tall',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='db1',
+                patterns='small_wide',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='db2',
+                patterns='medium_square',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='db2',
+                patterns='medium_tall',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='db2',
+                patterns='medium_wide',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='db4',
+                patterns='large_square',
+                levels=[1, 2, 3, 4],
+            ),
+            TestCase(
+                wavelet='db4',
+                patterns='large_tall',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='db4',
+                patterns='large_wide',
+                levels=[1, 2, 3],
+            ),
+            #   ----------------------------------------------------------------
+            TestCase(
+                wavelet='sym2',
+                patterns='medium_square',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='sym2',
+                patterns='medium_tall',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='sym2',
+                patterns='medium_wide',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='sym3',
+                patterns='large_square',
+                levels=[1, 2, 3, 4],
+            ),
+            TestCase(
+                wavelet='sym3',
+                patterns='large_tall',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='sym3',
+                patterns='large_wide',
+                levels=[1, 2, 3],
+            ),
+            #   ----------------------------------------------------------------
+            TestCase(
+                wavelet='coif1',
+                patterns='medium_square',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='coif1',
+                patterns='medium_tall',
+                levels=[1, 2],
+            ),
+            TestCase(
+                wavelet='coif1',
+                patterns='medium_wide',
+                levels=[1, 2],
+            ),
+            TestCase(
+                wavelet='coif2',
+                patterns='large_square',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='coif2',
+                patterns='large_tall',
+                levels=[1, 2],
+            ),
+            TestCase(
+                wavelet='coif2',
+                patterns='large_wide',
+                levels=[1, 2],
+            ),
+            #   ----------------------------------------------------------------
+            TestCase(
+                wavelet='bior1.1',
+                patterns='small_square',
+                levels=[1, 2, 3, 4],
+            ),
+            TestCase(
+                wavelet='bior1.1',
+                patterns='small_tall',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='bior1.1',
+                patterns='small_wide',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='bior2.2',
+                patterns='medium_square',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='bior2.2',
+                patterns='medium_tall',
+                levels=[1, 2],
+            ),
+            TestCase(
+                wavelet='bior2.2',
+                patterns='medium_wide',
+                levels=[1, 2],
+            ),
+            TestCase(
+                wavelet='bior4.4',
+                patterns='large_square',
+                levels=[1, 2, 3],
+            ),
+            TestCase(
+                wavelet='bior4.4',
+                patterns='large_tall',
+                levels=[1, 2],
+            ),
+            TestCase(
+                wavelet='bior4.4',
+                patterns='large_wide',
+                levels=[1, 2],
+            ),
+        ],
+        dtype=np.float64,
+    )
+
+    dwt2d_test_cases.generate(filename='dwt2d_test_data.json')
+
+    # w = pywt.Wavelet('haar')
+    # print(w)
+    # print(w.vanishing_moments_psi)
+    # print(w.vanishing_moments_phi)
+    # # print(w.dec_hi)
+    # print(w.rec_hi)
 
 
 if __name__ == '__main__':
-    inputs = [
-        np.ones([32, 32], dtype=np.float32),
-        ('inputs/lena_gray.png', cv2.IMREAD_GRAYSCALE),
-    ]
-    main(inputs)
+    main()
+
+
 
 
 

@@ -6,6 +6,10 @@ set(
     "${Wavelet_SOURCE_DIR}/include/wavelet/dwt2d.hpp"
     "${Wavelet_SOURCE_DIR}/include/wavelet/shrinkage.hpp"
     "${Wavelet_SOURCE_DIR}/include/wavelet/utils.hpp"
+    "${Wavelet_SOURCE_DIR}/include/wavelet/daubechies.hpp"
+    "${Wavelet_SOURCE_DIR}/include/wavelet/symlets.hpp"
+    "${Wavelet_SOURCE_DIR}/include/wavelet/coiflets.hpp"
+    "${Wavelet_SOURCE_DIR}/include/wavelet/biorthogonal.hpp"
 )
 
 FetchContent_Declare(

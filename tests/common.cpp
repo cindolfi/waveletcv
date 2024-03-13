@@ -1,6 +1,7 @@
 /**
 */
 #include <numeric>
+#include <opencv2/imgproc.hpp>
 #include <wavelet/dwt2d.hpp>
 #include <wavelet/utils.hpp>
 #include "common.hpp"
@@ -11,13 +12,24 @@ namespace wavelet::internal
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream)
 {
-    wavelet::internal::dispatch_on_pixel_type<print_matrix_to>(
-        coeffs.type(),
-        coeffs,
-        stream
-    );
+    PrintTo(cv::Mat(coeffs), stream);
 }
 }   // namespace wavelet::internal
+
+void clamp_near_zero(cv::InputArray input, cv::OutputArray output, double tolerance)
+{
+    std::vector<cv::Mat> channels(input.channels());
+    cv::split(input.getMat(), channels);
+    for (auto& channel : channels)
+        channel.setTo(0, cv::abs(channel) <= tolerance);
+
+    cv::merge(channels, output);
+}
+
+void clamp_near_zero(cv::InputOutputArray array, double tolerance)
+{
+    clamp_near_zero(array, array, tolerance);
+}
 
 namespace cv
 {
@@ -93,12 +105,98 @@ bool multichannel_compare(const cv::Mat& a, double b, int cmp_type)
     return true;
 }
 
-bool matrix_equals(const cv::Mat& a, const cv::Mat& b)
+bool multichannel_equal_within_ulps(const cv::Mat& a, const cv::Mat& b, std::size_t num_ulps)
+{
+    if (a.size() != b.size() || a.channels() != b.channels())
+        return false;
+
+    if (a.empty() && b.empty())
+        return true;
+
+    cv::Mat double_a;
+    a.convertTo(double_a, CV_64F);
+    std::vector<cv::Mat> a_channels(a.channels());
+    cv::split(double_a, a_channels);
+
+    cv::Mat double_b;
+    b.convertTo(double_b, CV_64F);
+    std::vector<cv::Mat> b_channels(b.channels());
+    cv::split(double_b, b_channels);
+
+    for (int i = 0; i < a.channels(); ++i) {
+        std::vector<double> a_values = a_channels[i];
+        std::vector<double> b_values = b_channels[i];
+        for (int j = 0; j < a_values.size(); ++j)
+            if (!equal_within_ulps(a_values[j], b_values[j], num_ulps))
+                return false;
+    }
+
+    return true;
+}
+
+bool multichannel_equal_within_ulps(const cv::Mat& a, const cv::Scalar& b, std::size_t num_ulps)
+{
+    if (a.empty())
+        return false;
+
+    cv::Mat double_a;
+    a.convertTo(double_a, CV_64F);
+
+    std::vector<cv::Mat> a_channels(a.channels());
+    cv::split(double_a, a_channels);
+
+    for (int i = 0; i < a.channels(); ++i) {
+        std::vector<double> a_values = a_channels[i];
+        for (int j = 0; j < a_values.size(); ++j)
+            if (!equal_within_ulps(a_values[j], b[i], num_ulps))
+                return false;
+    }
+
+    return true;
+}
+
+bool matrix_equals(const cv::Mat& a, const cv::Mat& b, testing::MatchResultListener* result_listener)
 {
     if (a.empty() && b.empty())
         return true;
 
+    if (result_listener)
+        *result_listener << "where the difference is\n" << cv::Mat(a - b);
+
     return multichannel_compare(a, b, cv::CMP_EQ);
+}
+
+bool matrix_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener)
+{
+    if (a.empty())
+        return false;
+
+    if (result_listener)
+        *result_listener << "where the difference is\n" << cv::Mat(a - b);
+
+    return multichannel_compare(a, b, cv::CMP_EQ);
+}
+
+bool matrix_float_equals(const cv::Mat& a, const cv::Mat& b, std::size_t num_ulps, testing::MatchResultListener* result_listener)
+{
+    if (a.empty() && b.empty())
+        return true;
+
+    if (result_listener)
+        *result_listener << "where the difference is\n" << cv::Mat(a - b);
+
+    return multichannel_equal_within_ulps(a, b, num_ulps);
+}
+
+bool matrix_float_equals(const cv::Mat& a, const cv::Scalar& b, std::size_t num_ulps, testing::MatchResultListener* result_listener)
+{
+    if (a.empty())
+        return false;
+
+    if (result_listener)
+        *result_listener << "where the difference is\n" << cv::Mat(a - b);
+
+    return multichannel_equal_within_ulps(a, b, num_ulps);
 }
 
 bool matrix_less_than(const cv::Mat& a, const cv::Scalar& b)
@@ -159,5 +257,23 @@ bool scalar_near(const cv::Scalar& a, const cv::Scalar& b, double tolerance)
         && a[1] - b[1] <= tolerance
         && a[2] - b[2] <= tolerance
         && a[3] - b[3] <= tolerance;
+}
+
+bool equal_within_ulps(float a, float b, int num_ulps)
+{
+    assert(sizeof(float) == sizeof(int));
+    if (a == b)
+        return true;
+
+    return abs(*(int*)&a - *(int*)&b) <= num_ulps;
+}
+
+bool equal_within_ulps(double a, double b, int num_ulps)
+{
+    assert(sizeof(double) == sizeof(long));
+    if (a == b)
+        return true;
+
+    return abs(*(long*)&a - *(long*)&b) <= num_ulps;
 }
 
