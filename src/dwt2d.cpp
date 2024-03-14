@@ -528,6 +528,21 @@ void DWT2D::running_forward(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output, 
     output._levels += levels;
 }
 
+DWT2D::Coeffs DWT2D::running_forward(const cv::Mat& x, int levels) const
+{
+    return (levels == 1) ? forward(x, 1) : running_forward(forward(x, 1), levels - 1);
+}
+
+void DWT2D::running_forward(const cv::Mat& x, Coeffs& output, int levels) const
+{
+    if (levels == 1) {
+        forward(x, output, 1);
+    } else {
+        forward(x, output, 1);
+        running_forward(output, output, levels - 1);
+    }
+}
+
 void DWT2D::_forward(cv::InputArray x, DWT2D::Coeffs& output, int levels) const
 {
     auto running_approx = x.getMat();
@@ -595,6 +610,7 @@ void DWT2D::running_inverse(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output, 
 
     int stop_level = coeffs.levels() - levels;
     if (stop_level == 0) {
+        create_like(coeffs, output);
         inverse(coeffs, output);
     } else {
         copy_if_not_identical(coeffs, output);
@@ -621,6 +637,11 @@ void DWT2D::create_like(cv::InputArray x, DWT2D::Coeffs& output, int levels) con
         output._levels = levels;
 }
 
+void DWT2D::create_like(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output) const
+{
+    if (&output != &coeffs)
+        create_like(coeffs, output, coeffs.levels());
+}
 
 void DWT2D::check_levels_in_range(int levels, int min_levels, int max_levels) const
 {

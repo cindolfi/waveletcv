@@ -324,8 +324,8 @@ public:
     void forward(cv::InputArray x, Coeffs& output) const;
     void forward(cv::InputArray x, Coeffs& output, int levels) const;
     Coeffs running_forward(const Coeffs& coeffs, int levels) const;
-    Coeffs running_forward(const cv::Mat& x, int levels) const;
     void running_forward(const Coeffs& coeffs, Coeffs& output, int levels) const;
+    Coeffs running_forward(const cv::Mat& x, int levels) const;
     void running_forward(const cv::Mat& x, Coeffs& output, int levels) const;
 
     cv::Mat inverse(const Coeffs& coeffs) const;

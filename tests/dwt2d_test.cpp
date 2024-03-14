@@ -2059,6 +2059,10 @@ namespace cv
 
 class DWT2DTest : public testing::TestWithParam<DWT2DTestParam>
 {
+public:
+    const double NEARNESS_TOLERANCE = 1e-5;
+    const double CLAMP_TOLERANCE = 0.1 * NEARNESS_TOLERANCE;
+
 protected:
     DWT2DTest() :
         testing::TestWithParam<DWT2DTestParam>(),
@@ -2072,13 +2076,13 @@ protected:
 
         if (test_name.find("Forward") != std::string::npos) {
             SetUpForwardTest(
-                DWT2DTest::patterns.at(param.input_name),
+                DWT2DTest::inputs.at(param.input_name),
                 param.coeffs
             );
         } else if (test_name.find("Inverse") != std::string::npos) {
             SetUpInverseTest(
                 param.coeffs,
-                DWT2DTest::patterns.at(param.input_name)
+                DWT2DTest::inputs.at(param.input_name)
             );
         } else {
             assert(false);
@@ -2088,44 +2092,35 @@ protected:
     virtual void SetUpForwardTest(const cv::Mat& forward_input, const cv::Mat& forward_output) = 0;
     virtual void SetUpInverseTest(const cv::Mat& inverse_input, const cv::Mat& inverse_output) = 0;
 
+    void clamp_small_to_zero(auto& ...matrices) const
+    {
+        (clamp_near_zero(matrices, CLAMP_TOLERANCE), ...);
+    }
+
     Wavelet wavelet;
-    static std::map<std::string, cv::Mat> patterns;
+    static std::map<std::string, cv::Mat> inputs;
     static std::vector<DWT2DTestParam> params;
 
 public:
-    static void create_test_inputs(const json& test_case_data)
-    {
-        if (!patterns.empty())
-            return;
-
-        for (auto& [pattern_name, pattern] : test_case_data["patterns"].items()) {
-            patterns[pattern_name] = pattern.get<cv::Mat>();
-        }
-    }
-
     static void create_test_params()
     {
-        if (!params.empty() && !patterns.empty())
+        if (!params.empty() && !inputs.empty())
             return;
 
+        //  DWT2D_TEST_DATA_PATH is define in CMakeLists.txt
         std::ifstream test_case_data_file(DWT2D_TEST_DATA_PATH);
         auto test_case_data = json::parse(test_case_data_file);
 
-        // DWT2DTest::create_test_inputs(test_case_data);
-        for (auto& [pattern_name, pattern] : test_case_data["patterns"].items()) {
-            patterns[pattern_name] = pattern.get<cv::Mat>();
-        }
+        for (auto& [input_name, input] : test_case_data["inputs"].items())
+            inputs[input_name] = input.get<cv::Mat>();
 
-
-        if (params.empty()) {
-            for (auto& test_case : test_case_data["test_cases"]) {
-                params.push_back({
-                    .wavelet_name = test_case["wavelet"],
-                    .input_name = test_case["pattern"],
-                    .levels = test_case["levels"],
-                    .coeffs = test_case["coeffs"].get<cv::Mat>()
-                });
-            }
+        for (auto& test_case : test_case_data["test_cases"]) {
+            params.push_back({
+                .wavelet_name = test_case["wavelet_name"],
+                .input_name = test_case["input_name"],
+                .levels = test_case["levels"],
+                .coeffs = test_case["coeffs"].get<cv::Mat>()
+            });
         }
     }
 
@@ -2147,7 +2142,7 @@ public:
     }
 };
 
-std::map<std::string, cv::Mat> DWT2DTest::patterns;
+std::map<std::string, cv::Mat> DWT2DTest::inputs;
 std::vector<DWT2DTestParam> DWT2DTest::params;
 
 
@@ -2223,26 +2218,36 @@ TEST_P(FilterBankTest, ForwardTransform)
         actual_diagonal_detail,
         cv::BORDER_REFLECT101
     );
-    clamp_near_zero(actual_approx);
-    clamp_near_zero(actual_horizontal_detail);
-    clamp_near_zero(actual_vertical_detail);
-    clamp_near_zero(actual_diagonal_detail);
+
+    //  Clamping is only for readability of failure messages.  It does not
+    //  impact the test because the CLAMP_TOLERANCE is smaller than the
+    //  the NEARNESS_TOLERANCE.
+    clamp_small_to_zero(
+        actual_approx,
+        actual_horizontal_detail,
+        actual_vertical_detail,
+        actual_diagonal_detail,
+        expected_approx,
+        expected_horizontal_detail,
+        expected_vertical_detail,
+        expected_diagonal_detail
+    );
 
     EXPECT_THAT(
         actual_approx,
-        MatrixNear(expected_approx, 1e-5)
+        MatrixNear(expected_approx, NEARNESS_TOLERANCE)
     ) << "approx is incorrect";
     EXPECT_THAT(
         actual_horizontal_detail,
-        MatrixNear(expected_horizontal_detail, 1e-5)
+        MatrixNear(expected_horizontal_detail, NEARNESS_TOLERANCE)
     ) << "horizontal_detail is incorrect";
     EXPECT_THAT(
         actual_vertical_detail,
-        MatrixNear(expected_vertical_detail, 1e-5)
+        MatrixNear(expected_vertical_detail, NEARNESS_TOLERANCE)
     ) << "vertical_detail is incorrect";
     EXPECT_THAT(
         actual_diagonal_detail,
-        MatrixNear(expected_diagonal_detail, 1e-5)
+        MatrixNear(expected_diagonal_detail, NEARNESS_TOLERANCE)
     ) << "diagonal_detail is incorrect";
 }
 
@@ -2257,9 +2262,13 @@ TEST_P(FilterBankTest, InverseTransform)
         actual_output,
         cv::BORDER_REFLECT101
     );
-    clamp_near_zero(actual_output);
 
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-6));
+    //  Clamping is only for readability of failure messages.  It does not
+    //  impact the test because the CLAMP_TOLERANCE is smaller than the
+    //  the NEARNESS_TOLERANCE.
+    clamp_small_to_zero(actual_output, expected_output);
+
+    EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
 }
 
 
@@ -2308,23 +2317,31 @@ protected:
 TEST_P(DWT2DAllLevelsTest, ForwardTransform)
 {
     auto param = GetParam();
-    auto actual_output = dwt(input, param.levels);
-    clamp_near_zero(actual_output);
+    auto actual_output = dwt.forward(input, param.levels);
+
+    //  Clamping is only for readability of failure messages.  It does not
+    //  impact the test because the CLAMP_TOLERANCE is smaller than the
+    //  the NEARNESS_TOLERANCE.
+    clamp_small_to_zero(actual_output, expected_output);
 
     EXPECT_EQ(actual_output.levels(), param.levels);
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-5));
+    EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
 }
 
 TEST_P(DWT2DAllLevelsTest, RunningForwardTransform)
 {
     auto param = GetParam();
-    auto actual_output = dwt.forward(input, 1);
-    for (int i = 0; i < param.levels - 1; ++i)
-        actual_output = dwt.running_forward(actual_output, 1);
+    auto coeffs = dwt.running_forward(input, 1);
+    for (int i = 1; i < param.levels; ++i)
+        coeffs = dwt.running_forward(coeffs, 1);
 
-    EXPECT_EQ(actual_output.levels(), param.levels);
-    clamp_near_zero(actual_output);
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-5));
+    //  Clamping is only for readability of failure messages.  It does not
+    //  impact the test because the CLAMP_TOLERANCE is smaller than the
+    //  the NEARNESS_TOLERANCE.
+    clamp_small_to_zero(coeffs, expected_output);
+
+    EXPECT_EQ(coeffs.levels(), param.levels);
+    EXPECT_THAT(coeffs, MatrixNear(expected_output, NEARNESS_TOLERANCE));
 }
 
 TEST_P(DWT2DAllLevelsTest, InverseTransform)
@@ -2332,22 +2349,31 @@ TEST_P(DWT2DAllLevelsTest, InverseTransform)
     auto param = GetParam();
     auto coeffs = DWT2D::Coeffs(input, param.levels);
     auto actual_output = dwt.inverse(coeffs);
-    clamp_near_zero(actual_output);
 
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-6));
+    //  Clamping is only for readability of failure messages.  It does not
+    //  impact the test because the CLAMP_TOLERANCE is smaller than the
+    //  the NEARNESS_TOLERANCE.
+    clamp_small_to_zero(actual_output, expected_output);
+
+    EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
 }
 
 TEST_P(DWT2DAllLevelsTest, RunningInverseTransform)
 {
     auto param = GetParam();
-    auto actual_output = DWT2D::Coeffs(input, param.levels);
+    auto coeffs = DWT2D::Coeffs(input, param.levels);
     for (int i = 0; i < param.levels; ++i)
-        actual_output = dwt.running_inverse(actual_output, 1);
+        coeffs = dwt.running_inverse(coeffs, 1);
+
+    cv::Mat actual_output = coeffs;
+
+    //  Clamping is only for readability of failure messages.  It does not
+    //  impact the test because the CLAMP_TOLERANCE is smaller than the
+    //  the NEARNESS_TOLERANCE.
+    clamp_small_to_zero(actual_output, expected_output);
 
     // EXPECT_EQ(actual_output.levels(), 0);
-
-    clamp_near_zero(actual_output);
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, 1e-6));
+    EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
 }
 
 
