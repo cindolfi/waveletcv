@@ -13,6 +13,7 @@ namespace wavelet::internal
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream)
 {
     PrintTo(cv::Mat(coeffs), stream);
+    *stream << "(" << coeffs.levels() << " levels)\n";
 }
 }   // namespace wavelet::internal
 
@@ -224,7 +225,7 @@ bool matrix_is_all_zeros(const cv::Mat& a)
     return cv::countNonZero(a == 0.0) == a.total();
 }
 
-bool matrix_near(const cv::Mat& a, const cv::Mat& b, float tolerance)
+bool matrix_near(const cv::Mat& a, const cv::Mat& b, float tolerance, testing::MatchResultListener* result_listener)
 {
     if (a.size() != b.size() || a.channels() != b.channels())
         return false;
@@ -234,6 +235,43 @@ bool matrix_near(const cv::Mat& a, const cv::Mat& b, float tolerance)
 
     cv::Mat diff;
     cv::absdiff(a, b, diff);
+
+    if (result_listener) {
+        std::vector<cv::Mat> diff_channels(diff.channels());
+        cv::split(diff, diff_channels);
+        bool is_multichannel = (diff_channels.size() > 1);
+        auto endline = is_multichannel ? "\n" : " ";
+        *result_listener << "where " << endline;
+
+        for (int i = 0; i < diff_channels.size(); ++i) {
+            double min_above_tolerance, min_above_zero, max;
+            cv::Point min_above_tolerance_point, min_above_zero_point, max_point;
+            cv::minMaxLoc(
+                diff,
+                &min_above_tolerance,
+                &max,
+                &min_above_tolerance_point,
+                &max_point,
+                diff > tolerance
+            );
+            cv::minMaxLoc(
+                diff,
+                &min_above_zero,
+                &max,
+                &min_above_zero_point,
+                &max_point,
+                diff > 0
+            );
+
+            if (is_multichannel)
+                *result_listener << "    channel " << i << ": ";
+
+            *result_listener << "max abs diff is " << max << " at " << max_point << ", "
+                << "min abs diff > tolerance is " << min_above_tolerance << " at " << min_above_tolerance_point << ", "
+                << "min abs diff > 0 is " << min_above_zero << " at " << min_above_zero_point
+                << endline;
+        }
+    }
     return multichannel_compare(diff, tolerance, cv::CMP_LE);
 }
 

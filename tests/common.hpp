@@ -176,8 +176,8 @@ bool matrix_greater_than_or_equal(const cv::Mat& a, const cv::Scalar& b);
 MATCHER_P(MatrixGreaterOrEqual, other, "") { return matrix_greater_than_or_equal(arg, other); }
 
 bool matrix_is_all_zeros(const cv::Mat& a);
-bool matrix_near(const cv::Mat& a, const cv::Mat& b, float tolerance=0.0);
-MATCHER_P2(MatrixNear, other, error, "") { return matrix_near(arg, other, error); }
+bool matrix_near(const cv::Mat& a, const cv::Mat& b, float tolerance=0.0, testing::MatchResultListener* result_listener=nullptr);
+MATCHER_P2(MatrixNear, other, tolerance, "") { return matrix_near(arg, other, tolerance, result_listener); }
 
 template <typename ResultListener>
 bool is_matrix_min(

@@ -333,7 +333,7 @@ void Dwt2dCoeffs::check_size_for_assignment(cv::InputArray matrix) const
     if (matrix.size() != size()) {
         std::stringstream message;
         message
-            << "Cannot assign the matrix to this Dwt2dCoeffs.  "
+            << "DWT2D::Coeffs: Cannot assign the matrix to this Dwt2dCoeffs.  "
             << "The size of the matrix must be " << size() << "), "
             << "got size = " << matrix.size() << ".";
         CV_Error(cv::Error::StsBadSize, message.str());
@@ -345,7 +345,7 @@ void Dwt2dCoeffs::check_size_for_set_level(const cv::Mat& matrix, int level) con
     if (matrix.size() != level_size(level)) {
         std::stringstream message;
         message
-            << "Cannot set the coeffs at level " << level << ".  "
+            << "DWT2D::Coeffs: Cannot set the coeffs at level " << level << ".  "
             << "The size of the matrix must be " << level_size(level) << ", "
             << "got size = " << matrix.size() << ".";
         CV_Error(cv::Error::StsBadSize, message.str());
@@ -371,7 +371,7 @@ void Dwt2dCoeffs::check_size_for_set_detail(const cv::Mat& matrix, int level, in
         }
         std::stringstream message;
         message
-            << "Cannot set the " << subband_name << " detail coefficients at level " << level << ".  "
+            << "DWT2D::Coeffs: Cannot set the " << subband_name << " detail coefficients at level " << level << ".  "
             << "The size of the matrix must be " << detail_size(level) << ", "
             << "got size = " << matrix.size() << ".";
         CV_Error(cv::Error::StsBadSize, message.str());
@@ -383,7 +383,7 @@ void Dwt2dCoeffs::check_size_for_set_approx(const cv::Mat& matrix) const
     if (matrix.size() != detail_size(levels() - 1)) {
         std::stringstream message;
         message
-            << "Cannot set the approx coefficients.  "
+            << "DWT2D::Coeffs: Cannot set the approx coefficients.  "
             << "The size of the matrix must be " << detail_size(levels() - 1) << ", "
             << "got size = " << matrix.size() << ".";
         CV_Error(cv::Error::StsBadSize, message.str());
@@ -395,7 +395,7 @@ void Dwt2dCoeffs::check_level_in_range(int level, const std::string level_name) 
     if (level < -levels() || level >= levels()) {
         std::stringstream message;
         message
-            << level_name << " is out of range. "
+            << "DWT2D::Coeffs: " << level_name << " is out of range. "
             << "Must be " << -levels() << " <= " << level_name << " < " << levels() << ", "
             << "got " << level_name << " = " << level << ".";
         CV_Error(cv::Error::StsOutOfRange, message.str());
@@ -407,7 +407,7 @@ void Dwt2dCoeffs::check_constructor_level(int level, int max_level) const
     if (level > max_level) {
         std::stringstream message;
         message
-            << "level is out of range. "
+            << "DWT2D::Coeffs: level is out of range. "
             << "Must be " << -levels() << " <= level < " << levels() << ", "
             << "got level = " << level << ".";
         CV_Error(cv::Error::StsOutOfRange, message.str());
@@ -417,7 +417,7 @@ void Dwt2dCoeffs::check_constructor_level(int level, int max_level) const
 void Dwt2dCoeffs::check_nonempty() const
 {
     if (empty()) {
-        CV_Error(cv::Error::StsBadSize, "Coefficients are empty.");
+        CV_Error(cv::Error::StsBadSize, "DWT2D::Coeffs: Coefficients are empty.");
     }
 }
 
@@ -431,7 +431,7 @@ void Dwt2dCoeffs::check_subband(int subband) const
         default:
             std::stringstream message;
             message
-                << "Invalid subband.  "
+                << "DWT2D::Coeffs: Invalid subband.  "
                 << "Must be 0 (HORIZONTAL), 1 (VERTICAL), or 2 (DIAGONAL), "
                 << "got " << subband << ".";
             CV_Error(cv::Error::StsBadArg, message.str());
@@ -449,7 +449,7 @@ inline void Dwt2dCoeffs::check_subband(int subband) const {}
 
 std::ostream& operator<<(std::ostream& stream, const Dwt2dCoeffs& coeffs)
 {
-    stream << coeffs._coeff_matrix;
+    stream << coeffs._coeff_matrix << "\n(" << coeffs.levels() << " levels)";
     return stream;
 }
 } // namespace internal
@@ -504,7 +504,7 @@ DWT2D::Coeffs DWT2D::forward(cv::InputArray x, int levels) const
 
 void DWT2D::forward(cv::InputArray x, DWT2D::Coeffs& output, int levels) const
 {
-    check_levels_in_range(levels, 1, max_possible_levels(x));
+    check_levels_in_range(levels, 1, x);
     create_like(x, output, levels);
     _forward(x, output, levels);
 }
@@ -518,7 +518,7 @@ DWT2D::Coeffs DWT2D::running_forward(const DWT2D::Coeffs& coeffs, int levels) co
 
 void DWT2D::running_forward(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output, int levels) const
 {
-    check_levels_in_range(levels, 1, max_possible_levels(coeffs.approx()));
+    check_levels_in_range(levels, 0, coeffs.approx());
     copy_if_not_identical(coeffs, output);
 
     //  We are using output.approx() as a buffer to write into here.  That is,
@@ -593,8 +593,10 @@ void DWT2D::inverse(const DWT2D::Coeffs& coeffs, cv::OutputArray output) const
         );
         approx = result;
     }
-
-    output.assign(approx);
+    if (output.isContinuous())
+        output.assign(approx);
+    else
+        approx.copyTo(output);
 }
 
 DWT2D::Coeffs DWT2D::running_inverse(const DWT2D::Coeffs& coeffs, int levels) const
@@ -606,17 +608,21 @@ DWT2D::Coeffs DWT2D::running_inverse(const DWT2D::Coeffs& coeffs, int levels) co
 
 void DWT2D::running_inverse(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output, int levels) const
 {
-    check_levels_in_range(levels, 1, coeffs.levels());
+    check_levels_in_range(levels, 0, coeffs.levels());
 
-    int stop_level = coeffs.levels() - levels;
-    if (stop_level == 0) {
-        create_like(coeffs, output);
-        inverse(coeffs, output);
-    } else {
+    if (levels == 0) {
         copy_if_not_identical(coeffs, output);
-        inverse(coeffs.at_level(stop_level), output.at_level(stop_level));
+    } else {
+        int stop_level = coeffs.levels() - levels;
+        if (stop_level == 0) {
+            create_like(coeffs, output);
+            inverse(coeffs, output);
+        } else {
+            copy_if_not_identical(coeffs, output);
+            inverse(coeffs.at_level(stop_level), output.at_level(stop_level));
+        }
+        output._levels = stop_level;
     }
-    output._levels = stop_level;
 }
 
 void DWT2D::copy_if_not_identical(const DWT2D::Coeffs& x, DWT2D::Coeffs& output) const
@@ -643,17 +649,27 @@ void DWT2D::create_like(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output) cons
         create_like(coeffs, output, coeffs.levels());
 }
 
+#ifndef DISABLE_ARG_CHECKS
 void DWT2D::check_levels_in_range(int levels, int min_levels, int max_levels) const
 {
     if (levels < min_levels || levels > max_levels) {
         std::stringstream message;
         message
-            << "levels is out of range. "
+            << "DWT2D: levels is out of range. "
             << "Must be " << min_levels << " <= levels <= " << max_levels << ", "
             << "got levels = " << levels << ".";
         CV_Error(cv::Error::StsOutOfRange, message.str());
     }
 }
+
+void DWT2D::check_levels_in_range(int levels, int min_levels, cv::InputArray x) const
+{
+    check_levels_in_range(levels, min_levels, max_possible_levels(x));
+}
+#else
+inline void DWT2D::check_levels_in_range(int levels, int min_levels, int max_levels) const {}
+inline void DWT2D::check_levels_in_range(int levels, int min_levels, cv::InputArray x) const {}
+#endif // DISABLE_ARG_CHECKS
 
 
 

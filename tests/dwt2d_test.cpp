@@ -2365,14 +2365,14 @@ TEST_P(DWT2DAllLevelsTest, RunningInverseTransform)
     for (int i = 0; i < param.levels; ++i)
         coeffs = dwt.running_inverse(coeffs, 1);
 
-    cv::Mat actual_output = coeffs;
+    EXPECT_EQ(coeffs.levels(), 0);
 
     //  Clamping is only for readability of failure messages.  It does not
     //  impact the test because the CLAMP_TOLERANCE is smaller than the
     //  the NEARNESS_TOLERANCE.
+    cv::Mat actual_output = coeffs;
     clamp_small_to_zero(actual_output, expected_output);
 
-    // EXPECT_EQ(actual_output.levels(), 0);
     EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
 }
 
