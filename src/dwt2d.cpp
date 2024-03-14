@@ -518,14 +518,17 @@ DWT2D::Coeffs DWT2D::running_forward(const DWT2D::Coeffs& coeffs, int levels) co
 
 void DWT2D::running_forward(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output, int levels) const
 {
-    auto approx = DWT2D::Coeffs(coeffs.approx(), 0);
-    check_levels_in_range(levels, 1, max_possible_levels(approx));
+    check_levels_in_range(levels, 1, max_possible_levels(coeffs.approx()));
     copy_if_not_identical(coeffs, output);
 
-    auto output_approx = DWT2D::Coeffs(output.approx(), 0);
+    //  We are using output.approx() as a buffer to write into here.  That is,
+    //  we are not interpreting output.approx() as a full set of cofficients.
+    //  Its just a matter of not incurring another allocation.
+    auto new_levels_coeffs = DWT2D::Coeffs(output.approx(), levels);
 
-    _forward(approx, output_approx, levels);
-    output._levels += levels;
+    _forward(coeffs.approx(), new_levels_coeffs, levels);
+    output._levels = coeffs.levels() + levels;
+    output.set_level(coeffs.levels(), new_levels_coeffs);
 }
 
 DWT2D::Coeffs DWT2D::running_forward(const cv::Mat& x, int levels) const
@@ -566,10 +569,7 @@ void DWT2D::_forward(cv::InputArray x, DWT2D::Coeffs& output, int levels) const
         output.set_diagonal_detail(level, diagonal_detail);
     }
 
-    if (levels == output.levels())
-        output.set_approx(running_approx);
-    else
-        output.set_level(levels, running_approx);
+    output.set_approx(running_approx);
 }
 
 cv::Mat DWT2D::inverse(const DWT2D::Coeffs& coeffs) const
