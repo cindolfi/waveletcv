@@ -48,6 +48,8 @@ namespace internal
 */
 class Dwt2dCoeffs
 {
+    friend class wavelet::DWT2D;
+
 public:
     class LevelIterator
     {
@@ -92,13 +94,17 @@ public:
 public:
     Dwt2dCoeffs();
     Dwt2dCoeffs(const cv::Mat& matrix);
+    Dwt2dCoeffs(const cv::Mat& matrix, int levels);
+    Dwt2dCoeffs(int rows, int cols, int type);
+    Dwt2dCoeffs(int rows, int cols, int type, int levels);
+    Dwt2dCoeffs(const cv::Size& size, int type);
+    Dwt2dCoeffs(const cv::Size& size, int type, int levels);
     Dwt2dCoeffs(cv::Mat&& matrix);
-    Dwt2dCoeffs(const cv::Mat& matrix, int depth);
-    Dwt2dCoeffs(int rows, int cols, int type, int depth=-1);
-    Dwt2dCoeffs(const cv::Size& size, int type, int depth=-1);
+    Dwt2dCoeffs(cv::Mat&& matrix, int levels);
     Dwt2dCoeffs(const Dwt2dCoeffs& other) = default;
     Dwt2dCoeffs(Dwt2dCoeffs&& other) = default;
 
+    //  assignment
     Dwt2dCoeffs& operator=(const Dwt2dCoeffs& coeffs) = default;
     Dwt2dCoeffs& operator=(Dwt2dCoeffs&& coeffs) = default;
     Dwt2dCoeffs& operator=(const cv::Mat& matrix);
@@ -106,62 +112,17 @@ public:
     Dwt2dCoeffs& operator=(const cv::Scalar& scalar);
     Dwt2dCoeffs& operator=(cv::Mat&& matrix);
 
+    //  casting
     operator cv::Mat() const { return _coeff_matrix; }
     operator cv::_InputArray() const { return _coeff_matrix; }
     operator cv::_OutputArray() const { return _coeff_matrix; }
     operator cv::_InputOutputArray() const { return _coeff_matrix; }
 
+    //  copy
     Dwt2dCoeffs clone() const;
 
-    cv::Mat detail(int level, int subband) const;
-    cv::Mat detail(int subband) const { return detail(0, subband); }
-
-    cv::Mat approx() const
-    {
-        return _coeff_matrix(approx_rect());
-    }
-
-    cv::Mat horizontal_detail(int level) const
-    {
-        return _coeff_matrix(horizontal_detail_rect(level));
-    }
-    cv::Mat horizontal_detail() const { return horizontal_detail(0); }
-
-    cv::Mat vertical_detail(int level) const
-    {
-        return _coeff_matrix(vertical_detail_rect(level));
-    }
-    cv::Mat vertical_detail() const { return vertical_detail(0); }
-
-    cv::Mat diagonal_detail(int level) const
-    {
-        return _coeff_matrix(diagonal_detail_rect(level));
-    }
-    cv::Mat diagonal_detail() const { return diagonal_detail(0); }
-
-    // cv::Mat approx() const
-    // {
-    //     return !empty() ? _coeff_matrix(approx_rect()) : cv::Mat(0, 0, type());
-    // }
-
-    // cv::Mat horizontal_detail(int level) const
-    // {
-    //     return !empty() ? _coeff_matrix(horizontal_detail_rect(level)) : cv::Mat(0, 0, type());
-    // }
-    // cv::Mat horizontal_detail() const { return horizontal_detail(0); }
-
-    // cv::Mat vertical_detail(int level) const
-    // {
-    //     return !empty() ? _coeff_matrix(vertical_detail_rect(level)) : cv::Mat(0, 0, type());
-    // }
-    // cv::Mat vertical_detail() const { return vertical_detail(0); }
-
-    // cv::Mat diagonal_detail(int level) const
-    // {
-    //     return !empty() ? _coeff_matrix(diagonal_detail_rect(level)) : cv::Mat(0, 0, type());
-    // }
-    // cv::Mat diagonal_detail() const { return diagonal_detail(0); }
-
+    //  get & set sub-coefficients
+    Dwt2dCoeffs at_level(int level) const;
     void set_level(int level, const cv::Mat& coeffs)
     {
         check_size_for_set_level(coeffs, level);
@@ -169,6 +130,11 @@ public:
     }
     void set_level(int level, const cv::Scalar& scalar) { _coeff_matrix(level_rect(level)) = scalar; }
 
+    //  get & set approx
+    cv::Mat approx() const
+    {
+        return _coeff_matrix(approx_rect());
+    }
     void set_approx(const cv::Mat& coeffs)
     {
         check_size_for_set_approx(coeffs);
@@ -176,6 +142,9 @@ public:
     }
     void set_approx(const cv::Scalar& scalar) { approx() = scalar; }
 
+    //  get & set detail coefficients via parameter
+    cv::Mat detail(int level, int subband) const;
+    cv::Mat detail(int subband) const { return detail(0, subband); }
     void set_detail(int level, int subband, const cv::Mat& coeffs)
     {
         check_size_for_set_detail(coeffs, level, subband);
@@ -188,6 +157,12 @@ public:
     void set_detail(int level, int subband, const cv::Scalar& scalar) { detail(level, subband) = scalar; }
     void set_detail(int subband, const cv::Scalar& scalar) { set_detail(0, subband, scalar); }
 
+    //  get & set horizontal details
+    cv::Mat horizontal_detail(int level) const
+    {
+        return _coeff_matrix(horizontal_detail_rect(level));
+    }
+    cv::Mat horizontal_detail() const { return horizontal_detail(0); }
     void set_horizontal_detail(int level, const cv::Mat& coeffs)
     {
         check_size_for_set_detail(coeffs, level, HORIZONTAL);
@@ -199,6 +174,12 @@ public:
     void set_horizontal_detail(int level, const cv::Scalar& scalar) { horizontal_detail(level) = scalar; }
     void set_horizontal_detail(const cv::Scalar& scalar) { set_horizontal_detail(0, scalar); }
 
+    //  get & set vertical details
+    cv::Mat vertical_detail(int level) const
+    {
+        return _coeff_matrix(vertical_detail_rect(level));
+    }
+    cv::Mat vertical_detail() const { return vertical_detail(0); }
     void set_vertical_detail(int level, const cv::Mat& coeffs)
     {
         check_size_for_set_detail(coeffs, level, VERTICAL);
@@ -210,6 +191,12 @@ public:
     void set_vertical_detail(int level, const cv::Scalar& scalar) { vertical_detail(level) = scalar; }
     void set_vertical_detail(const cv::Scalar& scalar) { set_vertical_detail(0, scalar); }
 
+    //  get & set diagonal details
+    cv::Mat diagonal_detail(int level) const
+    {
+        return _coeff_matrix(diagonal_detail_rect(level));
+    }
+    cv::Mat diagonal_detail() const { return diagonal_detail(0); }
     void set_diagonal_detail(int level, const cv::Mat& coeffs)
     {
         check_size_for_set_detail(coeffs, level, DIAGONAL);
@@ -221,13 +208,31 @@ public:
     void set_diagonal_detail(int level, const cv::Scalar& scalar) { diagonal_detail(level) = scalar; }
     void set_diagonal_detail(const cv::Scalar& scalar) { set_diagonal_detail(0, scalar); }
 
-    Dwt2dCoeffs at_level(int level) const;
-
+    //  collect details
     std::vector<cv::Mat> collect_details(int subband) const;
     std::vector<cv::Mat> collect_horizontal_details() const { return collect_details(HORIZONTAL); }
     std::vector<cv::Mat> collect_vertical_details() const { return collect_details(VERTICAL); }
     std::vector<cv::Mat> collect_diagonal_details() const { return collect_details(DIAGONAL); }
 
+    //  sizes & rects
+    cv::Size level_size(int level) const;
+    cv::Rect level_rect(int level) const;
+    cv::Size detail_size(int level=0) const;
+    cv::Rect detail_rect(int level, int subband) const;
+    cv::Rect detail_rect(int subband) const { return detail_rect(0, subband); }
+    cv::Rect approx_rect() const;
+    cv::Rect horizontal_detail_rect(int level=0) const;
+    cv::Rect vertical_detail_rect(int level=0) const;
+    cv::Rect diagonal_detail_rect(int level=0) const;
+
+    //  masks
+    cv::Mat approx_mask() const;
+    cv::Mat detail_mask(int lower_level=0, int upper_level=-1) const;
+    cv::Mat horizontal_detail_mask(int level=0) const;
+    cv::Mat vertical_detail_mask(int level=0) const;
+    cv::Mat diagonal_detail_mask(int level=0) const;
+
+    //  convience cv::Mat wrappers
     int levels() const { return _levels; }
     int rows() const { return _coeff_matrix.rows; }
     int cols() const { return _coeff_matrix.cols; }
@@ -244,35 +249,21 @@ public:
     bool isContinuous() const { return _coeff_matrix.isContinuous(); }
     bool isSubmatrix() const { return _coeff_matrix.isSubmatrix(); }
 
+    //  level coefficients iterators
     auto begin() const { return ConstLevelIterator(this, 0); }
     auto end() const { return ConstLevelIterator(this, levels()); }
     auto begin() { return LevelIterator(this, 0); }
     auto end() { return LevelIterator(this, levels()); }
-
     auto cbegin() const { return ConstLevelIterator(this, 0); }
     auto cend() const { return ConstLevelIterator(this, levels()); }
     auto cbegin() { return ConstLevelIterator(this, 0); }
     auto cend() { return ConstLevelIterator(this, levels()); }
 
+    //  other
     void normalize(
         NormalizationMode approx_mode=DWT_MAX_NORMALIZE,
         NormalizationMode detail_mode=DWT_ZERO_TO_HALF_NORMALIZE
     );
-    double maximum_abs_value() const;
-
-    cv::Size level_size(int level) const;
-    cv::Rect level_rect(int level) const;
-    cv::Size detail_size(int level) const;
-    cv::Rect approx_rect() const;
-    cv::Rect horizontal_detail_rect(int level=0) const;
-    cv::Rect vertical_detail_rect(int level=0) const;
-    cv::Rect diagonal_detail_rect(int level=0) const;
-
-    cv::Mat approx_mask() const;
-    cv::Mat detail_mask(int lower_level=0, int upper_level=-1) const;
-    cv::Mat horizontal_detail_mask(int level=0) const;
-    cv::Mat vertical_detail_mask(int level=0) const;
-    cv::Mat diagonal_detail_mask(int level=0) const;
 
     bool shares_data(const Dwt2dCoeffs& other) const;
     bool shares_data(const cv::Mat& matrix) const;
@@ -280,20 +271,20 @@ public:
     friend std::ostream& operator<<(std::ostream& stream, const Dwt2dCoeffs& wavelet);
 
 protected:
-    int resolve_level(int level) const
-    {
-        return (level >= 0) ? level : level + levels();
-    }
-    template <typename MatrixLike>
-    void check_size_for_assignment(const MatrixLike& matrix) const;
-
+    //  argument checkers - these all raise execeptions and can be disabled by
+    //  defining DISABLE_ARG_CHECKS
+    void check_size_for_assignment(cv::InputArray matrix) const;
     void check_size_for_set_level(const cv::Mat& matrix, int level) const;
     void check_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const;
     void check_size_for_set_approx(const cv::Mat& matrix) const;
-    void check_level_nonnegative(int level, const std::string level_name = "level") const;
     void check_level_in_range(int level, const std::string level_name = "level") const;
+    void check_constructor_level(int level, int max_level) const;
     void check_nonempty() const;
     void check_subband(int subband) const;
+
+    //  helpers
+    int resolve_level(int level) const { return (level >= 0) ? level : level + levels(); }
+    double maximum_abs_value() const;
 
     std::pair<double, double> normalization_constants(
         NormalizationMode normalization_mode,
@@ -302,7 +293,6 @@ protected:
 
     void convert_and_copy(const cv::Mat& source, const cv::Mat& destination);
 
-    friend class wavelet::DWT2D;
 private:
     cv::Mat _coeff_matrix;
     int _levels;
@@ -334,7 +324,9 @@ public:
     void forward(cv::InputArray x, Coeffs& output) const;
     void forward(cv::InputArray x, Coeffs& output, int levels) const;
     Coeffs running_forward(const Coeffs& coeffs, int levels) const;
+    Coeffs running_forward(const cv::Mat& x, int levels) const;
     void running_forward(const Coeffs& coeffs, Coeffs& output, int levels) const;
+    void running_forward(const cv::Mat& x, Coeffs& output, int levels) const;
 
     cv::Mat inverse(const Coeffs& coeffs) const;
     void inverse(const Coeffs& coeffs, cv::OutputArray output) const;
@@ -345,19 +337,21 @@ public:
     static int max_possible_levels(int rows, int cols);
     static int max_possible_levels(const cv::Size& size);
 
+    static int max_levels_without_border_effects(int rows, int cols, int filter_length);
+    static int max_levels_without_border_effects(const cv::Size& size, int filter_length);
+    static int max_levels_without_border_effects(cv::InputArray x, int filter_length);
+
 protected:
     void _forward(cv::InputArray x, DWT2D::Coeffs& output, int levels) const;
 
-    // void check_levels_nonnegative(int levels, const std::string levels_name="levels") const;
-    void check_levels_in_range(
-        int levels,
-        int min_levels,
-        int max_levels,
-        const std::string levels_name="levels"
-    ) const;
+    //  argument checkers - these all raise execeptions and can be disabled by
+    //  defining DISABLE_ARG_CHECKS
+    void check_levels_in_range(int levels, int min_levels, int max_levels) const;
+    void check_levels_in_range(int levels, int min_levels, cv::InputArray x) const;
 
-    void copy_or_clone_if_not_identical(const DWT2D::Coeffs& x, DWT2D::Coeffs& output) const;
+    void copy_if_not_identical(const DWT2D::Coeffs& x, DWT2D::Coeffs& output) const;
     void create_like(cv::InputArray x, DWT2D::Coeffs& output, int levels) const;
+    void create_like(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output) const;
 
 public:
     Wavelet wavelet;

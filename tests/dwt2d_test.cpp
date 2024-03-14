@@ -35,26 +35,168 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, DepthIsZero)
     ASSERT_EQ(coeffs.levels(), 0);
 }
 
-TEST_F(Dwt2dCoeffsDefaultConstructorTest, DISABLED_ApproxIsEmpty)
+//  ----------------------------------------------------------------------------
+//  getters
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, AtLevelIsError)
 {
-    ASSERT_TRUE(coeffs.approx().empty());
+    EXPECT_THROW({ coeffs.at_level(0); }, cv::Exception);
 }
 
-TEST_F(Dwt2dCoeffsDefaultConstructorTest, DISABLED_HorizontalDetailIsEmpty)
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxIsError)
 {
-    ASSERT_TRUE(coeffs.horizontal_detail().empty());
+    EXPECT_THROW({ coeffs.approx(); }, cv::Exception);
 }
 
-TEST_F(Dwt2dCoeffsDefaultConstructorTest, DISABLED_VerticalDetailIsEmpty)
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, HorizontalDetailIsError)
 {
-    ASSERT_TRUE(coeffs.vertical_detail().empty());
+    EXPECT_THROW({ coeffs.horizontal_detail(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.horizontal_detail(0); }, cv::Exception);
 }
 
-TEST_F(Dwt2dCoeffsDefaultConstructorTest, DISABLED_DiagaonlDetailIsEmpty)
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, VerticalDetailIsError)
 {
-    ASSERT_TRUE(coeffs.diagonal_detail().empty());
+    EXPECT_THROW({ coeffs.vertical_detail(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.vertical_detail(0); }, cv::Exception);
 }
 
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DiagaonlDetailIsError)
+{
+    EXPECT_THROW({ coeffs.diagonal_detail(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.diagonal_detail(0); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailIsError)
+{
+    EXPECT_THROW({ coeffs.detail(HORIZONTAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail(VERTICAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail(DIAGONAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail(0, HORIZONTAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail(0, VERTICAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail(0, DIAGONAL); }, cv::Exception);
+}
+
+//  ----------------------------------------------------------------------------
+//  setters
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetLevelIsError)
+{
+    EXPECT_THROW({ coeffs.set_level(0, cv::Mat()); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetApproxIsError)
+{
+    EXPECT_THROW({ coeffs.set_approx(cv::Mat()); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetHorizontalDetailIsError)
+{
+    EXPECT_THROW({ coeffs.set_horizontal_detail(cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_horizontal_detail(0, cv::Mat()); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetVerticalDetailIsError)
+{
+    EXPECT_THROW({ coeffs.set_vertical_detail(cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_vertical_detail(0, cv::Mat()); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetDiagaonlDetailIsError)
+{
+    EXPECT_THROW({ coeffs.set_diagonal_detail(cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_diagonal_detail(0, cv::Mat()); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetDetailIsError)
+{
+    EXPECT_THROW({ coeffs.set_detail(HORIZONTAL, cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_detail(VERTICAL, cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_detail(DIAGONAL, cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_detail(0, HORIZONTAL, cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_detail(0, VERTICAL, cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_detail(0, DIAGONAL, cv::Mat()); }, cv::Exception);
+}
+
+//  ----------------------------------------------------------------------------
+//  sizes & rects
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, LevelSizeIsError)
+{
+    EXPECT_THROW({ coeffs.level_size(0); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, LevelRectIsError)
+{
+    EXPECT_THROW({ coeffs.level_rect(0); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxRectIsError)
+{
+    EXPECT_THROW({ coeffs.approx_rect(); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, HorizontalDetailRectIsError)
+{
+    EXPECT_THROW({ coeffs.horizontal_detail_rect(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.horizontal_detail_rect(0); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, VerticalDetailRectIsError)
+{
+    EXPECT_THROW({ coeffs.vertical_detail_rect(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.vertical_detail_rect(0); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DiagaonlDetailRectIsError)
+{
+    EXPECT_THROW({ coeffs.diagonal_detail_rect(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.diagonal_detail_rect(0); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailSizeIsError)
+{
+    EXPECT_THROW({ coeffs.detail_size(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail_size(0); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailRectIsError)
+{
+    EXPECT_THROW({ coeffs.detail_rect(HORIZONTAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail_rect(VERTICAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail_rect(DIAGONAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail_rect(0, HORIZONTAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail_rect(0, VERTICAL); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail_rect(0, DIAGONAL); }, cv::Exception);
+}
+
+//  ----------------------------------------------------------------------------
+//  mask
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxMaskIsError)
+{
+    EXPECT_THROW({ coeffs.approx_mask(); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, HorizontalDetailMaskIsError)
+{
+    EXPECT_THROW({ coeffs.horizontal_detail_mask(); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, VerticalDetailMaskIsError)
+{
+    EXPECT_THROW({ coeffs.vertical_detail_mask(); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DiagaonlDetailMaskIsError)
+{
+    EXPECT_THROW({ coeffs.diagonal_detail_mask(); }, cv::Exception);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailMaskIsError)
+{
+    EXPECT_THROW({ coeffs.detail_mask(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail_mask(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.detail_mask(); }, cv::Exception);
+}
+
+//  ----------------------------------------------------------------------------
+//  collect details
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, CollectHorizontalDetailsIsEmpty)
 {
     ASSERT_TRUE(coeffs.collect_horizontal_details().empty());
