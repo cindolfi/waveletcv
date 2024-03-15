@@ -172,7 +172,7 @@ void shrink_detail_levels(
         [&](const auto& threshold, const auto position) {
             int level = position[1];
             for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL}) {
-                auto subband_detail = coeffs.detail(subband, level);
+                auto subband_detail = coeffs.detail(level, subband);
                 threshold_function(subband_detail, threshold);
             }
         }
@@ -202,7 +202,7 @@ void shrink_detail_subbands(
         [&](const auto& threshold, auto position) {
             int level = position[0];
             int subband = position[1];
-            auto subband_detail = coeffs.detail(subband, level);
+            auto subband_detail = coeffs.detail(level, subband);
             threshold_function(subband_detail, threshold);
         }
     );
@@ -313,7 +313,7 @@ cv::Mat4d sure_shrink_subband_thresholds(
     cv::Mat4d thresholds(levels, 3);
     for (int level = 0; level < levels; ++level) {
         for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL}) {
-            auto detail_coeffs = coeffs.detail(subband, level);
+            auto detail_coeffs = coeffs.detail(level, subband);
             auto stdev = estimate_stdev(detail_coeffs);
             thresholds(level, subband) = compute_sure_threshold(detail_coeffs, stdev, variant, algorithm);
         }

@@ -27,14 +27,10 @@ FetchContent_MakeAvailable(json)
 #   ----------------------------------------------------------------------------
 add_executable(
     wavelet_test
-    # utils_test.cpp
-    # wavelet_test.hpp
-    # wavelet_test_cases.hpp
+    utils_test.cpp
     wavelet_test.cpp
-    # dwt2d_test.hpp
-    # dwt2d_test_cases.hpp
     dwt2d_test.cpp
-    # shrinkage_test.cpp
+    shrinkage_test.cpp
     common.cpp
     common.hpp
 )

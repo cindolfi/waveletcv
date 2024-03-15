@@ -18,11 +18,11 @@ Dwt2dCoeffs::Dwt2dCoeffs(const cv::Mat& matrix, int levels) :
     _coeff_matrix(matrix),
     _levels(levels)
 {
-    check_constructor_level(levels, DWT2D::max_possible_levels(matrix));
+    check_constructor_level(_levels, DWT2D::max_possible_levels(_coeff_matrix));
 }
 
 Dwt2dCoeffs::Dwt2dCoeffs(const cv::Mat& matrix) :
-    Dwt2dCoeffs(matrix, DWT2D::max_possible_levels(_coeff_matrix))
+    Dwt2dCoeffs(matrix, DWT2D::max_possible_levels(matrix))
 {
 }
 
@@ -53,7 +53,7 @@ Dwt2dCoeffs::Dwt2dCoeffs(cv::Mat&& matrix, int levels) :
 }
 
 Dwt2dCoeffs::Dwt2dCoeffs(cv::Mat&& matrix) :
-    Dwt2dCoeffs(matrix, DWT2D::max_possible_levels(_coeff_matrix))
+    Dwt2dCoeffs(matrix, DWT2D::max_possible_levels(matrix))
 {
 }
 
@@ -66,6 +66,9 @@ Dwt2dCoeffs& Dwt2dCoeffs::operator=(const cv::Mat& matrix)
 {
     check_size_for_assignment(matrix);
 
+    if (matrix.size() != size())
+        _levels = DWT2D::max_possible_levels(_coeff_matrix);
+
     if (matrix.type() != _coeff_matrix.type()) {
         cv::Mat matrix2;
         matrix.convertTo(matrix2, _coeff_matrix.type());
@@ -74,34 +77,28 @@ Dwt2dCoeffs& Dwt2dCoeffs::operator=(const cv::Mat& matrix)
         matrix.copyTo(_coeff_matrix);
     }
 
-    _levels = DWT2D::max_possible_levels(_coeff_matrix);
-
     return *this;
 }
 
 Dwt2dCoeffs& Dwt2dCoeffs::operator=(cv::Mat&& matrix)
 {
     check_size_for_assignment(matrix);
+    if (matrix.size() != size())
+        _levels = DWT2D::max_possible_levels(_coeff_matrix);
+
     _coeff_matrix = matrix;
-    _levels = DWT2D::max_possible_levels(_coeff_matrix);
 
     return *this;
 }
 
 Dwt2dCoeffs& Dwt2dCoeffs::operator=(const cv::MatExpr& matrix)
 {
-    check_size_for_assignment(matrix);
-    _coeff_matrix = matrix;
-    _levels = DWT2D::max_possible_levels(_coeff_matrix);
-
-    return *this;
+    return this->operator=(cv::Mat(matrix));
 }
 
 Dwt2dCoeffs& Dwt2dCoeffs::operator=(const cv::Scalar& scalar)
 {
     _coeff_matrix = scalar;
-    _levels = DWT2D::max_possible_levels(_coeff_matrix);
-
     return *this;
 }
 

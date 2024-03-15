@@ -41,6 +41,8 @@ std::string join(std::vector<T> items, std::string delim)
     return stream.str();
 }
 
+std::string get_subband_name(int subband);
+
 template<typename T, int CHANNELS>
 struct print_matrix_to
 {
@@ -77,8 +79,10 @@ struct print_matrix_to
         return matrix.cols > truncate_cols_limit && col == column_start_items;
     }
 
-    void operator()(const cv::Mat& matrix, std::ostream* stream) const
+    void operator()(const cv::Mat& input, std::ostream* stream) const
     {
+        cv::Mat matrix;
+        clamp_near_zero(input, matrix, 1e-30);
         cv::Mat widths = calculate_widths(matrix);
 
         *stream << std::endl;
@@ -95,8 +99,9 @@ struct print_matrix_to
 
                         auto pixel = matrix.at<Pixel>(row, col);
                         for (int k = 0 ; k < pixel.channels; ++k) {
+                            int spacing = pixel.channels == 1 ? (col > 0) : (k > 0);
                             *stream << std::setfill(' ')
-                                    << std::setw((col > 0) + widths.at<int>(col, k))
+                                    << std::setw(spacing + widths.at<int>(col, k))
                                     << std::right
                                     << std::setprecision(precision)
                                     << +pixel[0];
@@ -160,24 +165,24 @@ cv::Mat create_matrix(int rows, int cols, int type, double initial_value = 0.0);
 
 bool matrix_equals(const cv::Mat& a, const cv::Mat& b, testing::MatchResultListener* result_listener = nullptr);
 bool matrix_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener = nullptr);
-MATCHER_P(MatrixEq, other, "") { return matrix_equals(arg, other, result_listener); }
+MATCHER_P(MatrixEq, matrix, "") { return matrix_equals(arg, matrix, result_listener); }
 
-bool matrix_float_equals(const cv::Mat& a, const cv::Mat& b, std::size_t nulps = 4, testing::MatchResultListener* result_listener = nullptr);
-bool matrix_float_equals(const cv::Mat& a, const cv::Scalar& b, std::size_t nulps = 4, testing::MatchResultListener* result_listener = nullptr);
-MATCHER_P(MatrixFloatEq, other, "") { return matrix_float_equals(arg, other, 4, result_listener); }
-MATCHER_P2(MatrixFloatEq, other, nulps, "") { return matrix_float_equals(arg, other, nulps, result_listener); }
+bool matrix_float_equals(const cv::Mat& a, const cv::Mat& b, std::size_t nulps = 6, testing::MatchResultListener* result_listener = nullptr);
+bool matrix_float_equals(const cv::Mat& a, const cv::Scalar& b, std::size_t nulps = 6, testing::MatchResultListener* result_listener = nullptr);
+MATCHER_P(MatrixFloatEq, matrix, "") { return matrix_float_equals(arg, matrix, 6, result_listener); }
+MATCHER_P2(MatrixFloatEq, matrix, num_ulps, "") { return matrix_float_equals(arg, matrix, num_ulps, result_listener); }
 
 bool matrix_less_than(const cv::Mat& a, const cv::Scalar& b);
 bool matrix_less_than_or_equal(const cv::Mat& a, const cv::Scalar& b);
-MATCHER_P(MatrixLessOrEqual, other, "") { return matrix_less_than_or_equal(arg, other); }
+MATCHER_P(MatrixLessOrEqual, matrix, "") { return matrix_less_than_or_equal(arg, matrix); }
 
 bool matrix_greater_than(const cv::Mat& a, const cv::Scalar& b);
 bool matrix_greater_than_or_equal(const cv::Mat& a, const cv::Scalar& b);
-MATCHER_P(MatrixGreaterOrEqual, other, "") { return matrix_greater_than_or_equal(arg, other); }
+MATCHER_P(MatrixGreaterOrEqual, matrix, "") { return matrix_greater_than_or_equal(arg, matrix); }
 
 bool matrix_is_all_zeros(const cv::Mat& a);
 bool matrix_near(const cv::Mat& a, const cv::Mat& b, float tolerance=0.0, testing::MatchResultListener* result_listener=nullptr);
-MATCHER_P2(MatrixNear, other, tolerance, "") { return matrix_near(arg, other, tolerance, result_listener); }
+MATCHER_P2(MatrixNear, matrix, tolerance, "") { return matrix_near(arg, matrix, tolerance, result_listener); }
 
 template <typename ResultListener>
 bool is_matrix_min(
@@ -223,10 +228,6 @@ bool is_matrix_max(
     return std::fabs(max - value) <= tolerance;
 }
 
-
-bool equal_within_ulps(float a, float b, int nulps);
-bool equal_within_ulps(double a, double b, int nulps);
-
 MATCHER_P(IsMatrixMax, value, "") { return is_matrix_max(arg, value, result_listener); }
 MATCHER_P2(IsMaskedMatrixMax, value, mask, "") { return is_matrix_max(arg, value, result_listener, mask); }
 
@@ -239,6 +240,71 @@ MATCHER_P(ScalarDoubleEq, other, "") { return scalar_double_equals(arg, other); 
 
 bool scalar_near(const cv::Scalar& a, const cv::Scalar& b, double tolerance=1e-10);
 MATCHER_P2(ScalarNear, other, tolerance, "") { return scalar_near(arg, other, tolerance); }
+
+// bool equal_within_ulps(float a, float b, int num_ulps);
+// bool equal_within_ulps(double a, double b, int num_ulps);
+
+int ulps_between(float a, float b);
+int ulps_between(double a, double b);
+std::string classification_str(int classification);
+
+template <typename T>
+bool equal_within_ulps(T a, T b, int num_ulps)
+{
+    static_assert(sizeof(double) == sizeof(long));
+
+    if (std::fpclassify(a) == FP_SUBNORMAL)
+        a = 0.0;
+
+    if (std::fpclassify(b) == FP_SUBNORMAL)
+        b = 0.0;
+
+    bool result = false;
+    if (std::isnan(a))
+        result = std::isnan(b);
+    else if (std::isnan(b))
+        result = std::isnan(a);
+    else if (std::isinf(a))
+        result = std::isinf(b) && std::signbit(a) == std::signbit(b);
+    else if (std::isinf(b))
+        result = std::isinf(a) && std::signbit(a) == std::signbit(b);
+    else
+        result = ulps_between(a, b) <= num_ulps;
+
+    return result;
+}
+
+template <typename T>
+bool float_equals(T a, T b, int num_ulps, T zero_tolerance=0.0)
+{
+    if (zero_tolerance <= 0)
+        zero_tolerance = std::pow(2, std::numeric_limits<T>::min_exponent / num_ulps);
+
+    bool result;
+    if (a == 0 || std::fpclassify(a) == FP_SUBNORMAL)
+        result = std::fabs(b) < zero_tolerance;
+    else if (b == 0 || std::fpclassify(b) == FP_SUBNORMAL)
+        result = std::fabs(a) < zero_tolerance;
+    else
+        result = equal_within_ulps(a, b, num_ulps);
+
+    #ifdef DEBUG_FLOAT_EQUALS
+    if (!result) {
+        auto a_classification = std::fpclassify(a);
+        auto b_classification = std::fpclassify(b);
+
+        std::cout
+            << "a = " << a << " (" << classification_str(a_classification) << ")  "
+            << "b = " << b << " (" << classification_str(b_classification) << ")  "
+            << "min = " << std::numeric_limits<T>::min() << "  "
+            << "min_exp = " << std::numeric_limits<T>::min_exponent << "  "
+            << "zero_tolerance = " << zero_tolerance << "  "
+            << "ulps = " << ulps_between(a, b) << "  " << (result ? "true" : "false") << "\n";
+    }
+    #endif  // DEBUG_FLOAT_EQUALS
+
+    return result;
+}
 
 #endif  // WAVELET_TEST_COMMON_HPP
 

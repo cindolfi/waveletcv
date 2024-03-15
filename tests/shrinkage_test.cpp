@@ -585,52 +585,6 @@ INSTANTIATE_TEST_CASE_P(
 );
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * -----------------------------------------------------------------------------
  * Hard Threshold Test
@@ -2029,7 +1983,10 @@ public:
     static const int COLS = 16;
 
     template <typename T>
-    static DWT2D::Coeffs create_level_coeffs(std::initializer_list<T> values)
+    static DWT2D::Coeffs create_level_coeffs(
+        std::initializer_list<T> values,
+        cv::Scalar approx_value = cv::Scalar::all(9)
+    )
     {
         assert(values.size() == 3 * LEVELS);
 
@@ -2038,25 +1995,21 @@ public:
         int i = 0;
         for (const auto& value : values) {
             int level = i / 3;
-            switch (i % 3) {
-            case 0:
-                coeffs.set_horizontal_detail(cv::Scalar::all(value), level);
-                break;
-            case 1:
-                coeffs.set_vertical_detail(cv::Scalar::all(value), level);
-                break;
-            case 2:
-                coeffs.set_diagonal_detail(cv::Scalar::all(value), level);
-                break;
-            }
+            int subband = i % 3;
+            coeffs.set_detail(level, subband, cv::Scalar::all(value));
             ++i;
         }
+
+        // coeffs.set_approx(approx_value);
 
         return coeffs;
     }
 
     template<typename T>
-    static DWT2D::Coeffs create_level_coeffs(std::initializer_list<std::initializer_list<T>> values)
+    static DWT2D::Coeffs create_level_coeffs(
+        std::initializer_list<std::initializer_list<T>> values,
+        cv::Scalar approx_value = cv::Scalar::all(9)
+    )
     {
         assert(values.size() == 3 * LEVELS);
 
@@ -2073,25 +2026,21 @@ public:
             }
 
             int level = i / 3;
-            switch (i % 3) {
-            case 0:
-                coeffs.set_horizontal_detail(scalar_value, level);
-                break;
-            case 1:
-                coeffs.set_vertical_detail(scalar_value, level);
-                break;
-            case 2:
-                coeffs.set_diagonal_detail(scalar_value, level);
-                break;
-            }
+            int subband = i % 3;
+            coeffs.set_detail(level, subband, scalar_value);
             ++i;
         }
+
+        // coeffs.set_approx(approx_value);
 
         return coeffs;
     }
 
     template <typename T>
-    static DWT2D::Coeffs create_subband_coeffs(std::initializer_list<T> values)
+    static DWT2D::Coeffs create_subband_coeffs(
+        std::initializer_list<T> values,
+        cv::Scalar approx_value = cv::Scalar::all(9)
+    )
     {
         assert(values.size() == 3 * LEVELS);
 
@@ -2100,25 +2049,21 @@ public:
         int i = 0;
         for (const auto& value : values) {
             int level = i / 3;
-            switch (i % 3) {
-            case 0:
-                coeffs.set_horizontal_detail(cv::Scalar::all(value), level);
-                break;
-            case 1:
-                coeffs.set_vertical_detail(cv::Scalar::all(value), level);
-                break;
-            case 2:
-                coeffs.set_diagonal_detail(cv::Scalar::all(value), level);
-                break;
-            }
+            int subband = i % 3;
+            coeffs.set_detail(level, subband, cv::Scalar::all(value));
             ++i;
         }
+
+        // coeffs.set_approx(approx_value);
 
         return coeffs;
     }
 
     template<typename T>
-    static DWT2D::Coeffs create_subband_coeffs(std::initializer_list<std::initializer_list<T>> values)
+    static DWT2D::Coeffs create_subband_coeffs(
+        std::initializer_list<std::initializer_list<T>> values,
+        cv::Scalar approx_value = cv::Scalar::all(9)
+    )
     {
         assert(values.size() == 3 * LEVELS);
 
@@ -2135,19 +2080,12 @@ public:
             }
 
             int level = i / 3;
-            switch (i % 3) {
-            case 0:
-                coeffs.set_horizontal_detail(scalar_value, level);
-                break;
-            case 1:
-                coeffs.set_vertical_detail(scalar_value, level);
-                break;
-            case 2:
-                coeffs.set_diagonal_detail(scalar_value, level);
-                break;
-            }
+            int subband = i % 3;
+            coeffs.set_detail(level, subband, scalar_value);
             ++i;
         }
+
+        // coeffs.set_approx(approx_value);
 
         return coeffs;
     }
@@ -2353,7 +2291,7 @@ TEST_P(SoftShrinkTest, DetailsShrunkCorrectly)
 
     soft_shrink_details(coeffs, param.threshold, param.lower_level, param.upper_level);
 
-    EXPECT_THAT(coeffs, MatrixEq(param.expected));
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -2563,7 +2501,7 @@ TEST_P(HardShrinkTest, DetailsShrunkCorrectly)
 
     hard_shrink_details(coeffs, param.threshold, param.lower_level, param.upper_level);
 
-    EXPECT_THAT(coeffs, MatrixEq(param.expected));
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -2816,7 +2754,7 @@ TEST_P(SoftShrinkLevelsTest, DetailsShrunkCorrectly)
 
     soft_shrink_detail_levels(coeffs, param.thresholds);
 
-    EXPECT_THAT(coeffs, MatrixEq(param.expected));
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -3046,11 +2984,11 @@ public:
 TEST_P(HardShrinkLevelsTest, DetailsShrunkCorrectly)
 {
     auto param = GetParam();
-    auto coeffs = param.coeffs.clone();
+    auto coeffs = param.coeffs;
 
     hard_shrink_detail_levels(coeffs, param.thresholds);
 
-    EXPECT_THAT(coeffs, MatrixEq(param.expected));
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -3300,11 +3238,11 @@ public:
 TEST_P(SoftShrinkSubbandsTest, DetailsShrunkCorrectly)
 {
     auto param = GetParam();
-    auto coeffs = param.coeffs.clone();
+    auto coeffs = param.coeffs;
 
     soft_shrink_detail_subbands(coeffs, param.thresholds);
 
-    EXPECT_THAT(coeffs, MatrixEq(param.expected));
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
 }
 
 INSTANTIATE_TEST_CASE_P(
@@ -3533,11 +3471,11 @@ public:
 TEST_P(HardShrinkSubbandsTest, DetailsShrunkCorrectly)
 {
     auto param = GetParam();
-    auto coeffs = param.coeffs.clone();
+    auto coeffs = param.coeffs;
 
     hard_shrink_detail_subbands(coeffs, param.thresholds);
 
-    EXPECT_THAT(coeffs, MatrixEq(param.expected));
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
 }
 
 INSTANTIATE_TEST_CASE_P(
