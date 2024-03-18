@@ -27,22 +27,22 @@ Dwt2dCoeffs::Dwt2dCoeffs(const cv::Mat& matrix) :
 }
 
 Dwt2dCoeffs::Dwt2dCoeffs(int rows, int cols, int type) :
-    Dwt2dCoeffs(cv::Mat(rows, cols, type))
+    Dwt2dCoeffs(cv::Mat(rows, cols, type, 0.0))
 {
 }
 
 Dwt2dCoeffs::Dwt2dCoeffs(int rows, int cols, int type, int levels) :
-    Dwt2dCoeffs(cv::Mat(rows, cols, type), levels)
+    Dwt2dCoeffs(cv::Mat(rows, cols, type, 0.0), levels)
 {
 }
 
 Dwt2dCoeffs::Dwt2dCoeffs(const cv::Size& size, int type, int levels) :
-    Dwt2dCoeffs(cv::Mat(size, type), levels)
+    Dwt2dCoeffs(cv::Mat(size, type, 0.0), levels)
 {
 }
 
 Dwt2dCoeffs::Dwt2dCoeffs(const cv::Size& size, int type) :
-    Dwt2dCoeffs(cv::Mat(size, type))
+    Dwt2dCoeffs(cv::Mat(size, type, 0.0))
 {
 }
 

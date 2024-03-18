@@ -42,6 +42,7 @@ std::string join(std::vector<T> items, std::string delim)
 }
 
 std::string get_subband_name(int subband);
+std::string get_type_name(int type);
 
 template<typename T, int CHANNELS>
 struct print_matrix_to
@@ -88,7 +89,7 @@ struct print_matrix_to
         *stream << std::endl;
         for (int row = 0; row < matrix.rows; ++row) {
             if (is_row_ellipsis(matrix, row)) {
-                *stream << ".\n.\n.";
+                *stream << ".\n.\n.\n";
             } else if (!is_row_hidden(matrix, row)) {
                 for (int col = 0; col < matrix.cols; ++col) {
                     if (is_column_ellipsis(matrix, col)) {
@@ -104,7 +105,7 @@ struct print_matrix_to
                                     << std::setw(spacing + widths.at<int>(col, k))
                                     << std::right
                                     << std::setprecision(precision)
-                                    << +pixel[0];
+                                    << +pixel[k];
                         }
                     }
                 }
@@ -164,8 +165,11 @@ struct print_matrix_to
 cv::Mat create_matrix(int rows, int cols, int type, double initial_value = 0.0);
 
 bool matrix_equals(const cv::Mat& a, const cv::Mat& b, testing::MatchResultListener* result_listener = nullptr);
-bool matrix_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener = nullptr);
+// bool matrix_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener = nullptr);
 MATCHER_P(MatrixEq, matrix, "") { return matrix_equals(arg, matrix, result_listener); }
+
+bool matrix_all_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener = nullptr);
+MATCHER_P(MatrixAllEq, scalar, "") { return matrix_all_equals(arg, scalar, result_listener); }
 
 bool matrix_float_equals(const cv::Mat& a, const cv::Mat& b, std::size_t nulps = 6, testing::MatchResultListener* result_listener = nullptr);
 bool matrix_float_equals(const cv::Mat& a, const cv::Scalar& b, std::size_t nulps = 6, testing::MatchResultListener* result_listener = nullptr);
@@ -240,9 +244,6 @@ MATCHER_P(ScalarDoubleEq, other, "") { return scalar_double_equals(arg, other); 
 
 bool scalar_near(const cv::Scalar& a, const cv::Scalar& b, double tolerance=1e-10);
 MATCHER_P2(ScalarNear, other, tolerance, "") { return scalar_near(arg, other, tolerance); }
-
-// bool equal_within_ulps(float a, float b, int num_ulps);
-// bool equal_within_ulps(double a, double b, int num_ulps);
 
 int ulps_between(float a, float b);
 int ulps_between(double a, double b);

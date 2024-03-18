@@ -1985,7 +1985,7 @@ public:
     template <typename T>
     static DWT2D::Coeffs create_level_coeffs(
         std::initializer_list<T> values,
-        cv::Scalar approx_value = cv::Scalar::all(9)
+        cv::Scalar approx_value = cv::Scalar(-2, -1, 1, 2)
     )
     {
         assert(values.size() == 3 * LEVELS);
@@ -1996,11 +1996,12 @@ public:
         for (const auto& value : values) {
             int level = i / 3;
             int subband = i % 3;
+
             coeffs.set_detail(level, subband, cv::Scalar::all(value));
             ++i;
         }
 
-        // coeffs.set_approx(approx_value);
+        coeffs.set_approx(approx_value);
 
         return coeffs;
     }
@@ -2008,7 +2009,7 @@ public:
     template<typename T>
     static DWT2D::Coeffs create_level_coeffs(
         std::initializer_list<std::initializer_list<T>> values,
-        cv::Scalar approx_value = cv::Scalar::all(9)
+        cv::Scalar approx_value = cv::Scalar(-2, -1, 1, 2)
     )
     {
         assert(values.size() == 3 * LEVELS);
@@ -2018,74 +2019,22 @@ public:
         int i = 0;
         for (const auto& value : values) {
             assert(value.size() == Pixel::channels);
+
             cv::Scalar scalar_value;
             auto iter = value.begin();
             for (int j = 0; j < value.size(); ++j) {
-                scalar_value[j] = *iter;
-                ++iter;
+                scalar_value[j] = *iter++;
+                // ++iter;
             }
 
             int level = i / 3;
             int subband = i % 3;
-            coeffs.set_detail(level, subband, scalar_value);
+            if (level != 3)
+                coeffs.set_detail(level, subband, scalar_value);
             ++i;
         }
 
-        // coeffs.set_approx(approx_value);
-
-        return coeffs;
-    }
-
-    template <typename T>
-    static DWT2D::Coeffs create_subband_coeffs(
-        std::initializer_list<T> values,
-        cv::Scalar approx_value = cv::Scalar::all(9)
-    )
-    {
-        assert(values.size() == 3 * LEVELS);
-
-        auto type = cv::traits::Type<Pixel>::value;
-        DWT2D::Coeffs coeffs(ROWS, COLS, type, LEVELS);
-        int i = 0;
-        for (const auto& value : values) {
-            int level = i / 3;
-            int subband = i % 3;
-            coeffs.set_detail(level, subband, cv::Scalar::all(value));
-            ++i;
-        }
-
-        // coeffs.set_approx(approx_value);
-
-        return coeffs;
-    }
-
-    template<typename T>
-    static DWT2D::Coeffs create_subband_coeffs(
-        std::initializer_list<std::initializer_list<T>> values,
-        cv::Scalar approx_value = cv::Scalar::all(9)
-    )
-    {
-        assert(values.size() == 3 * LEVELS);
-
-        auto type = cv::traits::Type<Pixel>::value;
-        DWT2D::Coeffs coeffs(ROWS, COLS, type, LEVELS);
-        int i = 0;
-        for (const auto& value : values) {
-            assert(value.size() == Pixel::channels);
-            cv::Scalar scalar_value;
-            auto iter = value.begin();
-            for (int j = 0; j < value.size(); ++j) {
-                scalar_value[j] = *iter;
-                ++iter;
-            }
-
-            int level = i / 3;
-            int subband = i % 3;
-            coeffs.set_detail(level, subband, scalar_value);
-            ++i;
-        }
-
-        // coeffs.set_approx(approx_value);
+        coeffs.set_approx(approx_value);
 
         return coeffs;
     }
@@ -3263,13 +3212,13 @@ class HardShrinkSubbandsTest : public ShrinkTestBase<ShrinkSubbandsTestParam<dou
 public:
     static std::vector<ParamType> create_params()
     {
-        auto coeffs = create_subband_coeffs({
+        auto coeffs = create_level_coeffs({
             -5, -4, -3,
             -2, -1,  0,
              1,  2,  3,
              4,  5,  6
         });
-        auto indenpendent_channel_coeffs = create_subband_coeffs({
+        auto indenpendent_channel_coeffs = create_level_coeffs({
             {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
             {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
             { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
@@ -3297,7 +3246,7 @@ public:
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5, -4, -3,
                      0,  0,  0,
                      0,  0,  3,
@@ -3313,7 +3262,7 @@ public:
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5,  0,  0,
                      0,  0,  0,
                      0,  0,  3,
@@ -3329,7 +3278,7 @@ public:
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5, -4, -3,
                     -2,  0,  0,
                      0,  0,  3,
@@ -3345,7 +3294,7 @@ public:
                     cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5, -4, -3,
                      0,  0,  0,
                      0,  2,  3,
@@ -3361,7 +3310,7 @@ public:
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
                     cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5, -4, -3,
                      0,  0,  0,
                      0,  0,  3,
@@ -3377,7 +3326,7 @@ public:
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5,  0,  0,
                     -2,  0,  0,
                      0,  0,  3,
@@ -3393,7 +3342,7 @@ public:
                     cv::Scalar::all(3), cv::Scalar::all(3), cv::Scalar::all(3),
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5, -4, -3,
                     -2,  0,  0,
                      0,  0,  0,
@@ -3409,7 +3358,7 @@ public:
                     cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
                     cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5, -4, -3,
                      0,  0,  0,
                      0,  2,  3,
@@ -3425,7 +3374,7 @@ public:
                     cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5,  0,  0,
                      0,  0,  0,
                      0,  2,  3,
@@ -3441,7 +3390,7 @@ public:
                     cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
                     cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     -5, -4, -3,
                     -2,  0,  0,
                      0,  0,  3,
@@ -3457,7 +3406,7 @@ public:
                     cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2),
                     cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0)
                 ),
-                .expected = create_subband_coeffs({
+                .expected = create_level_coeffs({
                     {-8, -7, -6,  0}, {-7, 0, 0, 0}, {0, 0, 0, 0},
                     { 0, -3, -2, -1}, { 0, 0, 0, 0}, {0, 0, 0, 1},
                     { 0,  0,  0,  3}, { 0, 0, 3, 4}, {0, 3, 4, 5},

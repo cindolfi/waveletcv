@@ -55,13 +55,38 @@ std::string get_subband_name(int subband)
     return "";
 }
 
+std::string get_type_name(int type)
+{
+    std::string channels = std::to_string(CV_MAT_CN(type));
+    switch (CV_MAT_DEPTH(type)){
+        case CV_32F: return "CV_32FC" + channels;
+        case CV_64F: return "CV_64FC" + channels;
+        case CV_32S: return "CV_32SC" + channels;
+        case CV_16S: return "CV_16SC" + channels;
+        case CV_16U: return "CV_16UC" + channels;
+        case CV_8S: return "CV_8SC" + channels;
+        case CV_8U: return "CV_8UC" + channels;
+    }
+    assert(false);
+    return "";
+}
+
 cv::Mat create_matrix(int rows, int cols, int type, double initial_value)
 {
-    std::vector<double> elements(rows * cols);
-    std::iota(elements.begin(), elements.end(), initial_value);
-    auto result = cv::Mat(elements, true).reshape(0, rows);
-    result.convertTo(result, type);
+    int channels = CV_MAT_CN(type);
+    cv::Mat result;
+    if (channels == 1) {
+        std::vector<double> elements(rows * cols);
+        std::iota(elements.begin(), elements.end(), initial_value);
+        cv::Mat(elements, true).reshape(0, rows).convertTo(result, type);
+    } else {
+        std::vector<cv::Mat> result_channels(channels);
+        int depth = CV_MAT_DEPTH(type);
+        for (int i = 0; i < channels; ++i)
+            result_channels[i] = create_matrix(rows, cols, depth, i + 1);
 
+        cv::merge(result_channels, result);
+    }
     return result;
 }
 
@@ -96,7 +121,7 @@ bool multichannel_compare(const cv::Mat& a, const cv::Scalar& b, int cmp_type)
     for (int i = 0; i < a.channels(); ++i) {
         cv::Mat channel_result;
         cv::compare(a_channels[i], b[i], channel_result, cmp_type);
-        if (cv::countNonZero(channel_result) != a.total())
+        if (cv::countNonZero(channel_result) != channel_result.total())
             return false;
     }
 
@@ -238,7 +263,7 @@ bool matrix_equals(const cv::Mat& a, const cv::Mat& b, testing::MatchResultListe
     return multichannel_compare(a, b, cv::CMP_EQ);
 }
 
-bool matrix_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener)
+bool matrix_all_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener)
 {
     if (a.empty())
         return false;
@@ -391,79 +416,4 @@ int ulps_between(double a, double b)
 
     return abs(*(long*)&a - *(long*)&b);
 }
-
-
-
-// bool equal_within_ulps(float a, float b, int num_ulps)
-// {
-//     static_assert(sizeof(float) == sizeof(int));
-
-//     if (!std::isnormal(a))
-//         a = 0.0;
-
-//     if (!std::isnormal(b))
-//         b = 0.0;
-
-//     bool result = false;
-//     if (std::isnan(a))
-//         result = std::isnan(b);
-//     else if (std::isnan(b))
-//         result = std::isnan(a);
-//     else if (std::isinf(a))
-//         result = std::isinf(b) && std::signbit(a) == std::signbit(b);
-//     else if (std::isinf(b))
-//         result = std::isinf(a) && std::signbit(a) == std::signbit(b);
-//     else
-//         result = ulps(a, b) <= num_ulps;
-
-//     if (!result) {
-//         auto a_classification = std::fpclassify(a);
-//         auto b_classification = std::fpclassify(b);
-//         int ulps = abs(*(long*)&a - *(long*)&b);
-
-//         std::cout << "a = " << a << " (" << classification_str(a_classification) << ")  "
-//             << "b = " << b << " (" << classification_str(b_classification) << ")  "
-//             << "min = " << std::numeric_limits<double>::min() << "  "
-//             << "ulps = " << ulps << "  " << (result ? "true" : "false") << "\n";
-//     }
-
-//     return result;
-// }
-
-
-// bool equal_within_ulps(double a, double b, int num_ulps)
-// {
-//     static_assert(sizeof(double) == sizeof(long));
-
-//     if (!std::isnormal(a))
-//         a = 0.0;
-
-//     if (!std::isnormal(b))
-//         b = 0.0;
-
-//     bool result = false;
-//     if (std::isnan(a))
-//         result = std::isnan(b);
-//     else if (std::isnan(b))
-//         result = std::isnan(a);
-//     else if (std::isinf(a))
-//         result = std::isinf(b) && std::signbit(a) == std::signbit(b);
-//     else if (std::isinf(b))
-//         result = std::isinf(a) && std::signbit(a) == std::signbit(b);
-//     else
-//         result = ulps(a, b) <= num_ulps;
-
-//     if (!result) {
-//         auto a_classification = std::fpclassify(a);
-//         auto b_classification = std::fpclassify(b);
-//         int ulps = abs(*(long*)&a - *(long*)&b);
-
-//         std::cout << "a = " << a << " (" << classification_str(a_classification) << ")  "
-//             << "b = " << b << " (" << classification_str(b_classification) << ")  "
-//             << "min = " << std::numeric_limits<double>::min() << "  "
-//             << "ulps = " << ulps << "  " << (result ? "true" : "false") << "\n";
-//     }
-
-//     return result;
-// }
 

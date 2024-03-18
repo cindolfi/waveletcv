@@ -1,7 +1,6 @@
 /**
  * Utils Unit Test
 */
-// #include <iostream>
 #include <numeric>
 #include <wavelet/utils.hpp>
 #include "common.hpp"
