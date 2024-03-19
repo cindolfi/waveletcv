@@ -116,6 +116,8 @@ struct print_matrix_to
                 *stream << "\n";
             }
         }
+
+        *stream << "[" << input.size << "]\n";
     }
 
     cv::Mat calculate_widths(const cv::Mat& matrix) const

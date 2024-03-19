@@ -42,6 +42,7 @@ public:
         cv::Mat _highpass;
     };
 
+public:
     WaveletFilterBank(
         const KernelPair& reconstruct_kernels,
         const KernelPair& decompose_kernels
@@ -55,6 +56,25 @@ public:
     WaveletFilterBank() = default;
     WaveletFilterBank(const WaveletFilterBank& other) = default;
     WaveletFilterBank(WaveletFilterBank&& other) = default;
+
+    int filter_length() const
+    {
+        return std::max(
+            _decompose_kernels.lowpass().total(),
+            _reconstruct_kernels.lowpass().total()
+        );
+    }
+
+    cv::Size output_size(const cv::Size& input_size) const;
+    int output_size(int input_size) const;
+    cv::Size subband_size(const cv::Size& input_size) const;
+    int subband_size(int input_size) const;
+
+    // cv::Size input_size(const cv::Size& output_size) const;
+    // int input_size(int output_size) const;
+    cv::Rect unpad_rect(const cv::Size& coeffs_size) const;
+    cv::Rect unpad_rect(cv::InputArray padded_matrix) const;
+    void unpad(cv::InputArray padded_matrix, cv::OutputArray output) const;
 
     void forward(
         cv::InputArray x,
@@ -105,28 +125,12 @@ public:
     static KernelPair build_orthogonal_decompose_kernels(const std::vector<T>& reconstruct_lowpass_coeffs)
     {
         return build_biorthogonal_decompose_kernels(reconstruct_lowpass_coeffs, reconstruct_lowpass_coeffs);
-
-        // std::vector<T> lowpass(reconstruct_lowpass_coeffs.size());
-        // std::ranges::reverse_copy(reconstruct_lowpass_coeffs, lowpass.begin());
-
-        // std::vector<T> highpass = reconstruct_lowpass_coeffs;
-        // negate_evens(highpass);
-
-        // return KernelPair(lowpass, highpass);
     }
 
     template <typename T>
     static KernelPair build_orthogonal_reconstruct_kernels(const std::vector<T>& reconstruct_lowpass_coeffs)
     {
         return build_biorthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs, reconstruct_lowpass_coeffs);
-
-        // std::vector<T> lowpass = reconstruct_lowpass_coeffs;
-
-        // std::vector<T> highpass(reconstruct_lowpass_coeffs.size());
-        // std::ranges::reverse_copy(reconstruct_lowpass_coeffs, highpass.begin());
-        // negate_odds(highpass);
-
-        // return KernelPair(lowpass, highpass);
     }
 
     template <typename T>
@@ -249,7 +253,8 @@ public:
     bool compact_support() const { return _p->compact_support; }
     std::string family() const { return _p->family; }
     std::string name() const { return _p->name; }
-    const FilterBank& filter_bank() const { return _p->filter_bank; }
+    FilterBank filter_bank() const { return _p->filter_bank; }
+    int filter_length() const { return _p->filter_bank.filter_length(); }
 
     static Wavelet create(const std::string& name);
     static std::vector<std::string> registered_wavelets();

@@ -41,8 +41,101 @@ WaveletFilterBank::WaveletFilterBank(
 {
 }
 
+cv::Size WaveletFilterBank::output_size(const cv::Size& input_size) const
+{
+    return cv::Size(output_size(input_size.width), output_size(input_size.height));
+}
+
+int WaveletFilterBank::output_size(int input_size) const
+{
+    return 2 * subband_size(input_size);
+}
+
+cv::Size WaveletFilterBank::subband_size(const cv::Size& input_size) const
+{
+    return cv::Size(subband_size(input_size.width), subband_size(input_size.height));
+}
+
+int WaveletFilterBank::subband_size(int input_size) const
+{
+    return (input_size + filter_length() - 1) / 2;
+}
+
+// cv::Size WaveletFilterBank::input_size(const cv::Size& output_size) const
+// {
+//     return cv::Size(input_size(output_size.width), input_size(output_size.height));
+// }
+
+// int WaveletFilterBank::input_size(int output_size) const
+// {
+//     // output_size = 2 * int((input_size + filter_length() - 1) / 2);
+//     // (output_size / 2) = int((input_size + filter_length() - 1) / 2);
+//     // 2 * (output_size / 2) = input_size + filter_length() - 1;
+
+//     // input_size + filter_length() - 1 even
+//     output_size = input_size + filter_length() - 1;
+
+//     // input_size + filter_length() - 1 odd
+//     (output_size / 2) = int((input_size + filter_length() - 1) / 2);
+
+//     // filter_length() - 1 odd => input_size even
+//     output_size = 2 * (input_size + filter_length() - 1) / 2;
+
+
+//     // filter_length() - 1 even => input_size odd
+//     output_size = 2 * input_size + (filter_length() - 1);
+
+//     // input_size = 2 * (output_size / 2) - filter_length() + 1;
+
+//     // return output_size - filter_length() + 1 + (output_size % 2 == 0);
+//     return 2 * (output_size / 2) - filter_length() + 1;
+//     return 2 * (output_size / 2) - filter_length() + 1;
+
+//     // return 2 * output_size - filter_length() + (output_size % 2);
+//     // return output_size - filter_length() + 2 * (output_size % 2 == 0);
+//     // return output_size - filter_length() + 2 - (output_size % 2);
+// }
+
+cv::Rect WaveletFilterBank::unpad_rect(const cv::Size& padded_size) const
+{
+    // // int pad1 = (filter_length() - 1) / 2;
+    // int pad1 = (filter_length() - 1);
+    // // int pad2 = (filter_length() - 1) / 2;
+    // // auto size = input_size(padded_size / 2);
+
+    // // int pad2 = (filter_length() - 1) / 2 + (filter_length() - 1) % 2;
+    // return cv::Rect(
+    //     cv::Point(pad1, pad1),
+    //     cv::Size(padded_size.width - pad1 - 1, padded_size.height - pad1 - 1)
+    //     // cv::Point(padded_size.width - pad2, padded_size.height - pad2)
+    // );
+
+    int top_left_pad = (filter_length() - 1) / 2;
+    int bottom_right_pad = (filter_length() - 1) / 2;
+    // int top_left_pad = (filter_length() - 1) / 2;
+    // int bottom_right_pad = (filter_length() - 1) / 2 + (filter_length() - 1) % 2;
+    return cv::Rect(
+        cv::Point(top_left_pad, top_left_pad),
+        cv::Point(padded_size.width - bottom_right_pad, padded_size.height - bottom_right_pad)
+    );
+}
+
+cv::Rect WaveletFilterBank::unpad_rect(cv::InputArray padded_matrix) const
+{
+    return unpad_rect(padded_matrix.size());
+}
+
+void WaveletFilterBank::unpad(cv::InputArray padded_matrix, cv::OutputArray output) const
+{
+    auto matrix = padded_matrix.getMat();
+    auto unpadded_matrix = matrix(unpad_rect(padded_matrix));
+    // std::cout << "unpad " << matrix.size() << "  " << h.size() << "  " << unpad_rect(padded_matrix) << "\n";
+    unpadded_matrix.copyTo(output);
+    // matrix(unpad_rect(padded_matrix)).copyTo(output);
+}
+
 void WaveletFilterBank::forward(
-    cv::InputArray x,
+    cv::InputArray input,
     cv::OutputArray approx,
     cv::OutputArray horizontal_detail,
     cv::OutputArray vertical_detail,
@@ -50,10 +143,23 @@ void WaveletFilterBank::forward(
     int border_type
 ) const
 {
-    auto data = x.getMat();
+    int top_left_pad = (filter_length() - 1) / 2;
+    // int pad2 = (filter_length() - 1) / 2;
+    int bottom_right_pad = (filter_length() - 1) / 2 + (filter_length() - 1) % 2;
 
-    auto stage1_lowpass_output = forward_stage1_lowpass(data, border_type);
-    auto stage1_highpass_output = forward_stage1_highpass(data, border_type);
+    cv::Mat padded_input;
+    cv::copyMakeBorder(
+        input,
+        padded_input,
+        top_left_pad,
+        bottom_right_pad,
+        top_left_pad,
+        bottom_right_pad,
+        border_type
+    );
+
+    auto stage1_lowpass_output = forward_stage1_lowpass(padded_input, border_type);
+    auto stage1_highpass_output = forward_stage1_highpass(padded_input, border_type);
 
     forward_stage2_lowpass(stage1_lowpass_output, approx, border_type);
     forward_stage2_highpass(stage1_lowpass_output, horizontal_detail, border_type);
@@ -132,10 +238,12 @@ void WaveletFilterBank::inverse(
     auto x2 = inverse_stage1_lowpass(vertical_detail, border_type)
         + inverse_stage1_highpass(diagonal_detail, border_type);
 
-    output.assign(
-        inverse_stage2_lowpass(x1, border_type)
-        + inverse_stage2_highpass(x2, border_type)
-    );
+    auto image = inverse_stage2_lowpass(x1, border_type)
+        + inverse_stage2_highpass(x2, border_type);
+
+    unpad(image, output);
+    // std::cout << "output.size() = " << output.size() << "\n";
+    // output.assign(image);
 }
 
 cv::Mat WaveletFilterBank::inverse_stage1_lowpass(cv::InputArray data, int border_type) const

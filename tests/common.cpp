@@ -246,10 +246,34 @@ void print_matrix_difference_statistics(const cv::Mat& a, const cv::Mat& b, doub
     }
 }
 
+bool ensure_size_and_channels_match(const cv::Mat& a, const cv::Mat& b, testing::MatchResultListener* result_listener)
+{
+    if (a.size() != b.size()) {
+        if (result_listener) {
+            *result_listener << "because a.size() != b.size(), "
+                << "where a.size() = " << a.size() << " and b.size() =" << b.size();
+        }
+        return false;
+    }
+
+    if (a.channels() != b.channels()) {
+        if (result_listener) {
+            *result_listener << "because a.channels() != b.channels(), "
+                << "where a.channels() = " << a.channels() << " and b.channels() =" << b.channels();
+        }
+        return false;
+    }
+
+    return true;
+}
+
 bool matrix_equals(const cv::Mat& a, const cv::Mat& b, testing::MatchResultListener* result_listener)
 {
     if (a.empty() && b.empty())
         return true;
+
+    if (!ensure_size_and_channels_match(a, b, result_listener))
+        return false;
 
     if (result_listener) {
         *result_listener << "where ";
@@ -281,6 +305,9 @@ bool matrix_float_equals(const cv::Mat& a, const cv::Mat& b, std::size_t num_ulp
 {
     if (a.empty() && b.empty())
         return true;
+
+    if (!ensure_size_and_channels_match(a, b, result_listener))
+        return false;
 
     if (result_listener) {
         *result_listener << "where ";
@@ -334,7 +361,7 @@ bool matrix_is_all_zeros(const cv::Mat& a)
 
 bool matrix_near(const cv::Mat& a, const cv::Mat& b, float tolerance, testing::MatchResultListener* result_listener)
 {
-    if (a.size() != b.size() || a.channels() != b.channels())
+    if (!ensure_size_and_channels_match(a, b, result_listener))
         return false;
 
     if (tolerance <= 0)

@@ -52,7 +52,7 @@ class DWT2DTestCases:
             self,
             test_cases: abc.Sequence[TestCase],
             patterns: dict[str, dict[str, np.ndarray]],
-            border_mode: str = 'periodization',
+            border_mode: str = 'reflect',
             dtype: np.dtype = np.float64,
         ):
         self.test_cases = test_cases
@@ -223,6 +223,7 @@ def main():
     large_square_name, large_tall_name, large_wide_name = tuple(large_shapes.keys())
 
     dwt2d_test_cases = DWT2DTestCases(
+        border_mode='reflect',
         patterns={
             name: create_patterns(shape)
             # for name, shape in {**small_shapes, **medium_shapes, **large_shapes}.items()

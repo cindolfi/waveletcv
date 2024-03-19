@@ -92,8 +92,18 @@ void hard_shrink_detail_subbands(DWT2D::Coeffs& coeffs, cv::InputArray threshold
  * Universal / VisuShrink
  * -----------------------------------------------------------------------------
 */
-cv::Scalar universal_threshold(const DWT2D::Coeffs& coeffs, cv::Scalar stdev=1.0);
+// cv::Scalar universal_threshold(const cv::Mat& coeffs, cv::Mat& mask, cv::Scalar stdev=cv::Scalar::all(1.0));
+// cv::Scalar universal_threshold(const cv::Mat& coeffs, cv::Scalar stdev=cv::Scalar::all(1.0));
+
+cv::Scalar universal_threshold(const DWT2D::Coeffs& coeffs, const cv::Scalar& stdev = cv::Scalar::all(1.0));
+cv::Scalar universal_threshold(cv::InputArray details, const cv::Scalar& stdev = cv::Scalar::all(1.0));
+cv::Scalar universal_threshold(cv::InputArray details, cv::InputArray mask, const cv::Scalar& stdev = cv::Scalar::all(1.0));
+cv::Scalar universal_threshold(int num_elements, const cv::Scalar& stdev = cv::Scalar::all(1.0));
+
 cv::Scalar visu_shrink_threshold(const DWT2D::Coeffs& coeffs);
+cv::Scalar visu_shrink_threshold(cv::InputArray details);
+cv::Scalar visu_shrink_threshold(cv::InputArray details, cv::InputArray mask);
+
 void visu_soft_shrink(DWT2D::Coeffs& coeffs);
 void visu_hard_shrink(DWT2D::Coeffs& coeffs);
 
@@ -103,34 +113,38 @@ void visu_hard_shrink(DWT2D::Coeffs& coeffs);
  * -----------------------------------------------------------------------------
 */
 enum SureShrinkVariant {
-    NORMAL_SURE_SHRINK = 0,
+    NORMAL_SURE_SHRINK,
     HYBRID_SURE_SHRINK,
 };
 const nlopt::algorithm DEFAULT_SURE_SHRINK_NLOPT_ALGORITHM = nlopt::LN_NELDERMEAD;
 
 cv::Scalar compute_sure_threshold(
-    const cv::Mat& input,
+    // const cv::Mat& input,
+    cv::InputArray input,
+    // const DWT2D::Coeffs& input,
     const cv::Scalar& stdev = cv::Scalar::all(1.0),
     SureShrinkVariant variant = NORMAL_SURE_SHRINK,
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
 cv::Scalar compute_sure_threshold(
-    const cv::Mat& input,
+    // const cv::Mat& input,
+    cv::InputArray input,
+    // const DWT2D::Coeffs& input,
     cv::InputArray mask,
     const cv::Scalar& stdev = cv::Scalar::all(1.0),
     SureShrinkVariant variant = NORMAL_SURE_SHRINK,
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
 
-cv::Mat4d sure_shrink_thresholds(
+cv::Mat4d sure_shrink_subband_thresholds(
     const DWT2D::Coeffs& coeffs,
-    int levels = 0,
+    int levels,
     SureShrinkVariant variant = NORMAL_SURE_SHRINK,
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
 cv::Mat4d sure_shrink_level_thresholds(
     const DWT2D::Coeffs& coeffs,
-    int levels = 0,
+    int levels,
     SureShrinkVariant variant = NORMAL_SURE_SHRINK,
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
@@ -293,6 +307,7 @@ struct compute_sure_threshold
         const cv::Scalar& stdev,
         nlopt::algorithm algorithm,
         SureShrinkVariant variant,
+        cv::Scalar univ_threshold,
         cv::Scalar& result
     ) const
     {
@@ -307,7 +322,7 @@ struct compute_sure_threshold
                 result[i] = single_channel_normal_using_nlopt(channels[i], stdev[i], algorithm);
                 break;
             case HYBRID_SURE_SHRINK:
-                result[i] = single_channel_hybrid_using_nlopt(channels[i], stdev[i], algorithm);
+                result[i] = single_channel_hybrid_using_nlopt(channels[i], stdev[i], univ_threshold[i], algorithm);
                 break;
             }
         }
@@ -319,19 +334,21 @@ struct compute_sure_threshold
         const cv::Scalar& stdev,
         nlopt::algorithm algorithm,
         SureShrinkVariant variant,
+        cv::Scalar univ_threshold,
         cv::Scalar& result
     ) const
     {
         assert(input.channels() == N);
         cv::Mat masked_input;
         collect_masked<T, N>()(input, masked_input, mask);
-        this->operator()(masked_input, stdev, algorithm, variant, result);
+        this->operator()(masked_input, stdev, algorithm, variant, univ_threshold, result);
     }
 
     void operator()(
         cv::InputArray input,
         const cv::Scalar& stdev,
         SureShrinkVariant variant,
+        cv::Scalar univ_threshold,
         cv::Scalar& result
     ) const
     {
@@ -345,7 +362,7 @@ struct compute_sure_threshold
                 result[i] = single_channel_normal_using_brute_force(channels[i], stdev[i]);
                 break;
             case HYBRID_SURE_SHRINK:
-                result[i] = single_channel_hybrid_using_brute_force(channels[i], stdev[i]);
+                result[i] = single_channel_hybrid_using_brute_force(channels[i], stdev[i], univ_threshold[i]);
                 break;
             }
         }
@@ -356,13 +373,14 @@ struct compute_sure_threshold
         cv::InputArray mask,
         const cv::Scalar& stdev,
         SureShrinkVariant variant,
+        cv::Scalar univ_threshold,
         cv::Scalar& result
     ) const
     {
         assert(input.channels() == N);
         cv::Mat masked_input;
         collect_masked<T, N>()(input, masked_input, mask);
-        this->operator()(masked_input, stdev, variant, result);
+        this->operator()(masked_input, stdev, variant, univ_threshold, result);
     }
 
     void sure_risk(
@@ -453,10 +471,11 @@ private:
         return threshold[0];
     }
 
-    T single_channel_hybrid_using_nlopt(const cv::Mat& channel, T stdev, nlopt::algorithm algorithm) const
+    T single_channel_hybrid_using_nlopt(const cv::Mat& channel, T stdev, T univ_threshold, nlopt::algorithm algorithm) const
     {
         if (use_universal_threshold(channel, stdev))
-            return universal_threshold(channel, stdev)[0];
+            return univ_threshold;
+            // return universal_threshold(channel, stdev)[0];
 
         return single_channel_normal_using_nlopt(channel, stdev, algorithm);
     }
@@ -482,10 +501,11 @@ private:
         return std::fabs(flattened_channel.at<T>(threshold_index));
     }
 
-    T single_channel_hybrid_using_brute_force(const cv::Mat& channel, T stdev) const
+    T single_channel_hybrid_using_brute_force(const cv::Mat& channel, T stdev, T univ_threshold) const
     {
         if (use_universal_threshold(channel, stdev))
-            return universal_threshold(channel, stdev)[0];
+            return univ_threshold;
+            // return universal_threshold(channel, stdev)[0];
 
         return single_channel_normal_using_brute_force(channel, stdev);
     }
@@ -493,13 +513,13 @@ private:
     bool use_universal_threshold(const cv::Mat& channel, T stdev) const
     {
         int n = channel.total();
-        auto mse = cv::sum(channel * channel) / (n * stdev * stdev);
+        auto mse = cv::sum(channel * channel)[0] / (n * stdev * stdev);
         auto universal_test_statistic = 1 + std::pow(std::log2(n), 1.5) / std::sqrt(n);
-        auto result = mse[0] < universal_test_statistic;
+        auto result = mse < universal_test_statistic;
         CV_LOG_DEBUG(
             NULL,
             (result ? "using universal threshold" : "using SURE threshold")
-            << "  mse = " << mse[0]
+            << "  mse = " << mse
             << "  universal_test_statistic = " << universal_test_statistic
             << "  stdev = " << stdev
         );

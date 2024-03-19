@@ -91,26 +91,41 @@ public:
         int level;
     };
 
+protected:
+    // // Dwt2dCoeffs(const cv::Mat& matrix);
+    // Dwt2dCoeffs(const cv::Mat& matrix, int levels);
+    // // Dwt2dCoeffs(int rows, int cols, int type);
+    // Dwt2dCoeffs(int rows, int cols, int type, int levels);
+    // // Dwt2dCoeffs(const cv::Size& size, int type);
+    // Dwt2dCoeffs(const cv::Size& size, int type, int levels);
+    // // Dwt2dCoeffs(cv::Mat&& matrix);
+    // Dwt2dCoeffs(cv::Mat&& matrix, int levels);
+
+    Dwt2dCoeffs(
+        const cv::Mat& matrix,
+        int levels,
+        std::vector<cv::Size> subband_sizes
+    );
+
+    Dwt2dCoeffs(
+        const cv::Mat& matrix,
+        int levels,
+        std::vector<cv::Rect> subband_rects
+    );
+
 public:
     Dwt2dCoeffs();
-    Dwt2dCoeffs(const cv::Mat& matrix);
-    Dwt2dCoeffs(const cv::Mat& matrix, int levels);
-    Dwt2dCoeffs(int rows, int cols, int type);
-    Dwt2dCoeffs(int rows, int cols, int type, int levels);
-    Dwt2dCoeffs(const cv::Size& size, int type);
-    Dwt2dCoeffs(const cv::Size& size, int type, int levels);
-    Dwt2dCoeffs(cv::Mat&& matrix);
-    Dwt2dCoeffs(cv::Mat&& matrix, int levels);
     Dwt2dCoeffs(const Dwt2dCoeffs& other) = default;
     Dwt2dCoeffs(Dwt2dCoeffs&& other) = default;
 
+public:
     //  assignment
     Dwt2dCoeffs& operator=(const Dwt2dCoeffs& coeffs) = default;
     Dwt2dCoeffs& operator=(Dwt2dCoeffs&& coeffs) = default;
     Dwt2dCoeffs& operator=(const cv::Mat& matrix);
     Dwt2dCoeffs& operator=(const cv::MatExpr& matrix);
     Dwt2dCoeffs& operator=(const cv::Scalar& scalar);
-    Dwt2dCoeffs& operator=(cv::Mat&& matrix);
+    // Dwt2dCoeffs& operator=(cv::Mat&& matrix);
 
     //  casting
     operator cv::Mat() const { return _coeff_matrix; }
@@ -296,6 +311,8 @@ protected:
 private:
     cv::Mat _coeff_matrix;
     int _levels;
+    std::vector<cv::Rect> _subband_rects;
+    // std::shared_ptr<const DWT2D> _dwt;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Dwt2dCoeffs& wavelet);
@@ -313,6 +330,39 @@ public:
     DWT2D() = delete;
     DWT2D(const DWT2D& other) = default;
     DWT2D(DWT2D&& other) = default;
+
+    Coeffs create_coeffs(cv::InputArray coeffs, const cv::Size& input_size, int levels) const;
+    Coeffs create_coeffs(const cv::Size& input_size, int type, int levels) const
+    {
+        auto size = coeffs_size_for_input(input_size, levels);
+        return create_coeffs(cv::Mat(size, type, 0.0), input_size, levels);
+    }
+    Coeffs create_coeffs(int input_rows, int input_cols, int type, int levels) const
+    {
+        return create_coeffs(cv::Size(input_cols, input_rows), type, levels);
+    }
+
+    // // Coeffs create_coeffs() const { return create_coeffs(cv::Mat(0, 0, CV_64F, 0.0), 0); }
+    // Coeffs create_coeffs(cv::InputArray matrix) const { return create_coeffs(matrix, max_levels_without_border_effects(matrix)); }
+    // // Coeffs create_coeffs(int rows, int cols, int type) const { return create_coeffs(cv::Mat(rows, cols, type, 0.0)); }
+    // Coeffs create_coeffs(int rows, int cols, int type, int levels) const { return create_coeffs(cv::Mat(rows, cols, type, 0.0), levels); }
+    // // Coeffs create_coeffs(const cv::Size& size, int type) const { return create_coeffs(cv::Mat(size, type, 0.0)); }
+    // Coeffs create_coeffs(const cv::Size& size, int type, int levels) const  { return create_coeffs(cv::Mat(size, type, 0.0), levels); }
+
+    Coeffs create_coeffs_for_input(cv::InputArray input, int levels) const;
+    Coeffs create_coeffs_for_input(const cv::Size& size, int type, int levels) const;
+    Coeffs create_coeffs_for_input(int rows, int cols, int type, int levels) const;
+
+    cv::Size coeffs_size_for_input(const cv::Size& input_size, int levels) const;
+    cv::Size coeffs_size_for_input(int rows, int cols, int levels) const;
+    cv::Size coeffs_size_for_input(cv::InputArray input, int levels) const;
+
+    // cv::Size input_size_for_coeffs(const cv::Size& coeffs_size, int levels) const;
+    // cv::Size input_size_for_coeffs(int rows, int cols, int levels) const;
+    // cv::Size input_size_for_coeffs(cv::InputArray input, int levels) const;
+
+    // Coeffs create_coeffs(cv::Mat&& matrix) const;
+    // Coeffs create_coeffs(cv::Mat&& matrix, int levels) const;
 
     Coeffs operator()(cv::InputArray x) const { return forward(x); }
     Coeffs operator()(cv::InputArray x, int levels) const { return forward(x, levels); }
@@ -333,13 +383,17 @@ public:
     Coeffs running_inverse(const Coeffs& coeffs, int levels) const;
     void running_inverse(const Coeffs& coeffs, Coeffs& output, int levels) const;
 
-    static int max_possible_levels(cv::InputArray x);
-    static int max_possible_levels(int rows, int cols);
-    static int max_possible_levels(const cv::Size& size);
+    // static int max_possible_levels(cv::InputArray x);
+    // static int max_possible_levels(int rows, int cols);
+    // static int max_possible_levels(const cv::Size& size);
 
-    static int max_levels_without_border_effects(int rows, int cols, int filter_length);
-    static int max_levels_without_border_effects(const cv::Size& size, int filter_length);
-    static int max_levels_without_border_effects(cv::InputArray x, int filter_length);
+    // static int max_levels_without_border_effects(int rows, int cols, int filter_length);
+    // static int max_levels_without_border_effects(const cv::Size& size, int filter_length);
+    // static int max_levels_without_border_effects(cv::InputArray x, int filter_length);
+
+    int max_levels_without_border_effects(int rows, int cols) const;
+    int max_levels_without_border_effects(const cv::Size& size) const;
+    int max_levels_without_border_effects(cv::InputArray x) const;
 
 protected:
     void _forward(cv::InputArray x, DWT2D::Coeffs& output, int levels) const;
@@ -348,10 +402,13 @@ protected:
     //  defining DISABLE_ARG_CHECKS
     void check_levels_in_range(int levels, int min_levels, int max_levels) const;
     void check_levels_in_range(int levels, int min_levels, cv::InputArray x) const;
+    void check_coeffs_size(cv::InputArray coeffs, const cv::Size& input_size, int levels) const;
 
     void copy_if_not_identical(const DWT2D::Coeffs& x, DWT2D::Coeffs& output) const;
     void create_like(cv::InputArray x, DWT2D::Coeffs& output, int levels) const;
     void create_like(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& output) const;
+
+
 
 public:
     Wavelet wavelet;
