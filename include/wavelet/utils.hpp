@@ -7,12 +7,13 @@ namespace wavelet
 {
 void flatten(cv::InputArray input, cv::OutputArray output);
 void collect_masked(cv::InputArray input, cv::OutputArray output, cv::InputArray mask);
+bool equals(const cv::Mat& a, const cv::Mat& b);
 cv::Scalar median(cv::InputArray input);
 cv::Scalar median(cv::InputArray input, cv::InputArray mask);
 
 namespace internal
 {
-template<template<typename T, int N, auto ...> class Functor, auto ...TemplateArgs>
+template <template <typename T, int N, auto ...> class Functor, auto ...TemplateArgs>
 void dispatch_on_pixel_type(int type, auto&&... args)
 {
     switch (type) {

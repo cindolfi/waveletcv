@@ -36,6 +36,16 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, LevelsIsZero)
     ASSERT_EQ(coeffs.levels(), 0);
 }
 
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, InputSizeIsEmpty)
+{
+    ASSERT_TRUE(coeffs.input_size().empty());
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, WaveletIsInvalid)
+{
+    ASSERT_FALSE(coeffs.wavelet().is_valid());
+}
+
 //  ----------------------------------------------------------------------------
 //  getters
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, AtLevelIsError)
@@ -221,7 +231,6 @@ class Dwt2dCoeffsTest : public testing::TestWithParam<int>
 protected:
     const int rows = 32;
     const int cols = 16;
-    // const int type = CV_32F;
     const int expected_levels = 4;
     const cv::Size size = cv::Size(cols, rows);
 
@@ -236,10 +245,11 @@ protected:
     {
         type = GetParam();
         expected_matrix = create_matrix(rows, cols, type);
-        // coeffs = DWT2D::Coeffs(expected_matrix);
-        // coeffs = DWT2D::Coeffs(expected_matrix, expected_levels);
-        // auto dwt = DWT2D(haar());
-        coeffs = dwt.create_coeffs(expected_matrix, size, expected_levels);
+        coeffs = dwt.create_coeffs(
+            expected_matrix,
+            expected_matrix.size(),
+            expected_levels
+        );
     }
 
     void assert_mask_and_rect_are_consistent(const cv::Mat& mask, const cv::Rect& rect, int level)
@@ -276,8 +286,6 @@ TEST_P(Dwt2dCoeffsTest, TypeIsCorrect)
 
 TEST_P(Dwt2dCoeffsTest, InitializedToAllZeros)
 {
-    // auto zero_initialized_coeffs = DWT2D::Coeffs(rows, cols, type);
-    // auto zero_initialized_coeffs = DWT2D::Coeffs(rows, cols, type, expected_levels);
     auto zero_initialized_coeffs = dwt.create_coeffs(rows, cols, type, expected_levels);
     auto expected_coeffs = cv::Mat(rows, cols, type, 0.0);
 
@@ -309,6 +317,12 @@ TEST_P(Dwt2dCoeffsTest, CastToMatrix)
     ) << "matrix does not share data with coeffs";
 }
 
+TEST_P(Dwt2dCoeffsTest, ClonedLevelsIsCorrect)
+{
+    auto cloned_coeffs = coeffs.clone();
+    ASSERT_EQ(cloned_coeffs.levels(), coeffs.levels());
+}
+
 TEST_P(Dwt2dCoeffsTest, ClonedSizeIsCorrect)
 {
     auto cloned_coeffs = coeffs.clone();
@@ -321,10 +335,38 @@ TEST_P(Dwt2dCoeffsTest, ClonedTypeIsCorrect)
     ASSERT_EQ(cloned_coeffs.type(), coeffs.type());
 }
 
-TEST_P(Dwt2dCoeffsTest, ClonedLevelsIsCorrect)
+TEST_P(Dwt2dCoeffsTest, ClonedInputSizeIsCorrect)
 {
     auto cloned_coeffs = coeffs.clone();
-    ASSERT_EQ(cloned_coeffs.levels(), coeffs.levels());
+    for (int level = 0; level < coeffs.levels(); ++level) {
+        ASSERT_EQ(
+            cloned_coeffs.input_size(level),
+            coeffs.input_size(level)
+        ) << "cloned input size does not equal orginal detail size at level " << level;
+    }
+}
+
+TEST_P(Dwt2dCoeffsTest, ClonedDetailSizeCorrect)
+{
+    auto cloned_coeffs = coeffs.clone();
+    for (int level = 0; level < coeffs.levels(); ++level) {
+        ASSERT_EQ(
+            cloned_coeffs.detail_size(level),
+            coeffs.detail_size(level)
+        ) << "cloned detail size does not equal orginal detail size at level " << level;
+    }
+}
+
+TEST_P(Dwt2dCoeffsTest, ClonedWaveletIsCorrect)
+{
+    auto cloned_coeffs = coeffs.clone();
+    ASSERT_EQ(cloned_coeffs.wavelet(), coeffs.wavelet());
+}
+
+TEST_P(Dwt2dCoeffsTest, ClonedBorderTypeIsCorrect)
+{
+    auto cloned_coeffs = coeffs.clone();
+    ASSERT_EQ(cloned_coeffs.border_type(), coeffs.border_type());
 }
 
 TEST_P(Dwt2dCoeffsTest, CloneCopiesData)
@@ -343,9 +385,11 @@ TEST_P(Dwt2dCoeffsTest, CloneCopiesData)
 
 TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrix)
 {
-    // DWT2D::Coeffs new_coeffs(expected_matrix.size(), expected_matrix.type());
-    // DWT2D::Coeffs new_coeffs(expected_matrix.size(), expected_matrix.type(), expected_levels);
-    auto new_coeffs = dwt.create_coeffs(expected_matrix.size(), expected_matrix.type(), expected_levels);
+    auto new_coeffs = dwt.create_coeffs(
+        expected_matrix.size(),
+        expected_matrix.type(),
+        expected_levels
+    );
     new_coeffs = expected_matrix;
 
     EXPECT_THAT(new_coeffs, MatrixEq(expected_matrix));
@@ -354,9 +398,11 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrix)
 
 TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrixExpr)
 {
-    // DWT2D::Coeffs new_coeffs(expected_matrix.size(), expected_matrix.type());
-    // DWT2D::Coeffs new_coeffs(expected_matrix.size(), expected_matrix.type(), expected_levels);
-    auto new_coeffs = dwt.create_coeffs(expected_matrix.size(), expected_matrix.type(), expected_levels);
+    auto new_coeffs = dwt.create_coeffs(
+        expected_matrix.size(),
+        expected_matrix.type(),
+        expected_levels
+    );
     new_coeffs = 1 + expected_matrix;
     cv::Mat h = 1 + expected_matrix;
 
@@ -366,8 +412,6 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrixExpr)
 
 TEST_P(Dwt2dCoeffsTest, AssignmentFromScalar)
 {
-    // DWT2D::Coeffs new_coeffs(size, type);
-    // DWT2D::Coeffs new_coeffs(size, type, expected_levels);
     auto new_coeffs = dwt.create_coeffs(size, type, expected_levels);
     auto scalar = cv::Scalar(0.5, 1.5, 2.5, 3.5);
     new_coeffs = scalar;
@@ -380,20 +424,11 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromWrongSizeMatrixIsError)
 {
     EXPECT_THROW(
         {
-            // DWT2D::Coeffs new_coeffs(
-            //     cv::Size(1, 1) + expected_matrix.size(),
-            //     expected_matrix.type()
-            // );
             auto new_coeffs = dwt.create_coeffs(
                 cv::Size(1, 1) + expected_matrix.size(),
                 expected_matrix.type(),
                 expected_levels
             );
-            // DWT2D::Coeffs new_coeffs(
-            //     cv::Size(1, 1) + expected_matrix.size(),
-            //     expected_matrix.type(),
-            //     expected_levels
-            // );
             new_coeffs = expected_matrix;
         },
         cv::Exception
@@ -542,7 +577,6 @@ public:
     static const int full_levels = 4;
     const int rows = 32;
     const int cols = 16;
-    // const int type = CV_32F;
     const cv::Size full_size = cv::Size(cols, rows);
 
 protected:
@@ -558,8 +592,6 @@ protected:
         type = std::get<1>(GetParam());
 
         expected_matrix = create_matrix(rows, cols, type);
-        // coeffs = DWT2D::Coeffs(expected_matrix);
-        // coeffs = DWT2D::Coeffs(expected_matrix, full_levels);
         coeffs = dwt.create_coeffs(expected_matrix, full_size, full_levels);
 
         int level_size_factor = std::pow(2, level);
@@ -589,10 +621,6 @@ protected:
         );
         expected_diagonal_detail = expected_matrix(expected_subband_detail_rects[DIAGONAL]);
 
-        // expected_level_coeffs = DWT2D::Coeffs(
-        //     expected_matrix(cv::Rect(cv::Point(0, 0), expected_size)),
-        //     expected_levels
-        // );
         expected_level_coeffs = dwt.create_coeffs(
             expected_matrix(cv::Rect(cv::Point(0, 0), expected_size)),
             expected_size,
@@ -1153,8 +1181,11 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetApproxToMatrix)
 {
     auto expected_modified_full_matrix = expected_matrix.clone();
 
-    // DWT2D::Coeffs full_coeffs(expected_modified_full_matrix, full_levels);
-    auto full_coeffs = dwt.create_coeffs(expected_modified_full_matrix, full_size, full_levels);
+    auto full_coeffs = dwt.create_coeffs(
+        expected_modified_full_matrix,
+        full_size,
+        full_levels
+    );
     auto level_coeffs = full_coeffs.at_level(level);
 
     //  Get approx coefficients before assignment so that we can make sure
@@ -1191,8 +1222,11 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetApproxToScalar)
 {
     auto expected_modified_full_matrix = expected_matrix.clone();
 
-    // DWT2D::Coeffs full_coeffs(expected_modified_full_matrix, full_levels);
-    auto full_coeffs = dwt.create_coeffs(expected_modified_full_matrix, full_size, full_levels);
+    auto full_coeffs = dwt.create_coeffs(
+        expected_modified_full_matrix,
+        full_size,
+        full_levels
+    );
     auto level_coeffs = full_coeffs.at_level(level);
 
     //  Get approx coefficients before assignment so that we can make sure
@@ -1228,9 +1262,11 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetApproxToScalar)
 TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToApprox)
 {
     auto expected_modified_full_matrix = expected_matrix.clone();
-
-    // DWT2D::Coeffs full_coeffs(expected_modified_full_matrix, full_levels);
-    auto full_coeffs = dwt.create_coeffs(expected_modified_full_matrix, full_size, full_levels);
+    auto full_coeffs = dwt.create_coeffs(
+        expected_modified_full_matrix,
+        full_size,
+        full_levels
+    );
     auto level_coeffs = full_coeffs.at_level(level);
 
     //  Get approx coefficients before assignment so that we can make sure
@@ -1268,9 +1304,12 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToMatrix)
 {
     for (auto [subband, detail_rect] : expected_subband_detail_rects) {
         auto expected_modified_full_matrix = expected_matrix.clone();
+        auto full_coeffs = dwt.create_coeffs(
+            expected_modified_full_matrix,
+            full_size,
+            full_levels
+        );
 
-        // DWT2D::Coeffs full_coeffs(expected_modified_full_matrix, full_levels);
-        auto full_coeffs = dwt.create_coeffs(expected_modified_full_matrix, full_size, full_levels);
         auto level_coeffs = full_coeffs.at_level(level);
 
         //  Get detail coefficients before assignment so that we can make sure
@@ -1309,9 +1348,11 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToScalar)
 {
     for (auto [subband, detail_rect] : expected_subband_detail_rects) {
         auto expected_modified_full_matrix = expected_matrix.clone();
-
-        // DWT2D::Coeffs full_coeffs(expected_modified_full_matrix, full_levels);
-        auto full_coeffs = dwt.create_coeffs(expected_modified_full_matrix, full_size, full_levels);
+        auto full_coeffs = dwt.create_coeffs(
+            expected_modified_full_matrix,
+            full_size,
+            full_levels
+        );
         auto level_coeffs = full_coeffs.at_level(level);
 
         //  Get detail coefficients before assignment so that we can make sure
@@ -1350,9 +1391,11 @@ TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToDetails)
 {
     for (auto [subband, detail_rect] : expected_subband_detail_rects) {
         auto expected_modified_full_matrix = expected_matrix.clone();
-
-        // DWT2D::Coeffs full_coeffs(expected_modified_full_matrix, full_levels);
-        auto full_coeffs = dwt.create_coeffs(expected_modified_full_matrix, full_size, full_levels);
+        auto full_coeffs = dwt.create_coeffs(
+            expected_modified_full_matrix,
+            full_size,
+            full_levels
+        );
         auto level_coeffs = full_coeffs.at_level(level);
 
         //  Get detail coefficients before assignment so that we can make sure
@@ -1393,9 +1436,11 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToWrongSizeMatrixIsError)
     for (auto [subband, detail_rect] : expected_subband_detail_rects) {
         EXPECT_THROW(
             {
-                // DWT2D::Coeffs full_coeffs = expected_matrix.clone();
-                // DWT2D::Coeffs full_coeffs(expected_matrix.clone(), expected_levels);
-                auto full_coeffs = dwt.create_coeffs(expected_matrix.clone(), expected_matrix.size(), expected_levels);
+                auto full_coeffs = dwt.create_coeffs(
+                    expected_matrix.clone(),
+                    expected_matrix.size(),
+                    expected_levels
+                );
                 auto new_detail_values = cv::Mat(cv::Size(1, 1) + detail_rect.size(), type, level);
                 full_coeffs.set_detail(level, subband, new_detail_values);
             },
@@ -1483,8 +1528,6 @@ protected:
     void SetUp() override
     {
         auto param = GetParam();
-        // coeffs = DWT2D::Coeffs(full_size, type);
-        // coeffs = DWT2D::Coeffs(full_size, type, 3);
         coeffs = dwt.create_coeffs(full_size, type, 3);
 
         populate_test_case_matrix(param, coeffs);
@@ -2358,11 +2401,6 @@ INSTANTIATE_TEST_CASE_P(
  * Transformation Tests
  * =============================================================================
 */
-/**
- * -----------------------------------------------------------------------------
- * WaveletFilterBank
- * -----------------------------------------------------------------------------
-*/
 struct DWT2DTestParam
 {
     std::string wavelet_name;
@@ -2393,45 +2431,37 @@ namespace cv
             assert(false);
 
         std::vector<double> data = json_matrix["data"];
-        Mat(data).reshape(0, shape[0]).convertTo(matrix, type);
+        // Mat(data).reshape(0, shape[0]).convertTo(matrix, type);
+        auto data_matrix = Mat(data);
+        if (!data_matrix.empty())
+            data_matrix = data_matrix.reshape(0, shape[0]);
+
+        data_matrix.convertTo(matrix, type);
     }
 }
 
-class DWT2DTest : public testing::TestWithParam<DWT2DTestParam>
+auto print_dwt2d_test_label  = [](const auto& info) {
+    std::string wavelet_name = info.param.wavelet_name;
+    std::ranges::replace(wavelet_name, '.', '_');
+    return wavelet_name + "_" + info.param.input_name + "_" + std::to_string(info.param.levels);
+};
+
+class BaseDWT2DTest : public testing::TestWithParam<DWT2DTestParam>
 {
 public:
-    const double NEARNESS_TOLERANCE = 1e-5;
+    const double NEARNESS_TOLERANCE = 1e-10;
     const double CLAMP_TOLERANCE = 0.1 * NEARNESS_TOLERANCE;
 
 protected:
-    DWT2DTest() :
+    BaseDWT2DTest() :
         testing::TestWithParam<DWT2DTestParam>(),
         wavelet(Wavelet::create(GetParam().wavelet_name))
     {}
 
     void SetUp() override
     {
-        auto param = GetParam();
-        levels = param.levels;
-        std::string test_name = UnitTest::GetInstance()->current_test_info()->name();
-
-        if (test_name.find("Forward") != std::string::npos) {
-            SetUpForwardTest(
-                DWT2DTest::inputs.at(param.input_name),
-                param.coeffs
-            );
-        } else if (test_name.find("Inverse") != std::string::npos) {
-            SetUpInverseTest(
-                param.coeffs,
-                DWT2DTest::inputs.at(param.input_name)
-            );
-        } else {
-            assert(false);
-        }
+        levels = GetParam().levels;
     }
-
-    virtual void SetUpForwardTest(const cv::Mat& forward_input, const cv::Mat& forward_output) = 0;
-    virtual void SetUpInverseTest(const cv::Mat& inverse_input, const cv::Mat& inverse_output) = 0;
 
     void clamp_small_to_zero(auto& ...matrices) const
     {
@@ -2449,7 +2479,7 @@ public:
         if (!params.empty() && !inputs.empty())
             return;
 
-        //  DWT2D_TEST_DATA_PATH is define in CMakeLists.txt
+        //  DWT2D_TEST_DATA_PATH is defined in CMakeLists.txt
         std::ifstream test_case_data_file(DWT2D_TEST_DATA_PATH);
         auto test_case_data = json::parse(test_case_data_file);
 
@@ -2484,8 +2514,8 @@ public:
     }
 };
 
-std::map<std::string, cv::Mat> DWT2DTest::inputs;
-std::vector<DWT2DTestParam> DWT2DTest::params;
+std::map<std::string, cv::Mat> BaseDWT2DTest::inputs;
+std::vector<DWT2DTestParam> BaseDWT2DTest::params;
 
 
 /**
@@ -2493,86 +2523,58 @@ std::vector<DWT2DTestParam> DWT2DTest::params;
  * Filter Bank
  * -----------------------------------------------------------------------------
 */
-class FilterBankTest : public DWT2DTest
+class ForwardFilterBankTest : public BaseDWT2DTest
 {
 protected:
-    void SetUpForwardTest(const cv::Mat& forward_input, const cv::Mat& forward_output) override
+    void SetUp() override
     {
-        cv::Size size = wavelet.filter_bank().subband_size(forward_input.size());
+        BaseDWT2DTest::SetUp();
+        auto param = GetParam();
+
+        input = BaseDWT2DTest::inputs.at(param.input_name);
+
+        cv::Size size = wavelet.filter_bank().subband_size(input.size());
         cv::Rect approx_rect(0, 0, size.width, size.height);
         cv::Rect horizontal_detail_rect(0, size.height, size.width, size.height);
         cv::Rect vertical_detail_rect(size.width, 0, size.width, size.height);
         cv::Rect diagonal_detail_rect(size.width, size.height, size.width, size.height);
 
-        //  forward input
-        input = forward_input;
-        //  forward output
-        expected_output = forward_output;
+        expected_output = param.coeffs;
         expected_approx = expected_output(approx_rect);
         expected_horizontal_detail = expected_output(horizontal_detail_rect);
         expected_vertical_detail = expected_output(vertical_detail_rect);
         expected_diagonal_detail = expected_output(diagonal_detail_rect);
     }
 
-    void SetUpInverseTest(const cv::Mat& inverse_input, const cv::Mat& inverse_output) override
-    {
-        cv::Size size = inverse_input.size() / 2;
-        cv::Rect approx_rect(0, 0, size.width, size.height);
-        cv::Rect horizontal_detail_rect(0, size.height, size.width, size.height);
-        cv::Rect vertical_detail_rect(size.width, 0, size.width, size.height);
-        cv::Rect diagonal_detail_rect(size.width, size.height, size.width, size.height);
-
-        //  inverse input
-        input = inverse_input;
-        approx_input = input(approx_rect);
-        horizontal_detail_input = input(horizontal_detail_rect);
-        vertical_detail_input = input(vertical_detail_rect);
-        diagonal_detail_input = input(diagonal_detail_rect);
-        //  inverse output
-        expected_output = inverse_output;
-    }
-
-    //  used for forward transform
     cv::Mat input;
     cv::Mat expected_approx;
     cv::Mat expected_horizontal_detail;
     cv::Mat expected_vertical_detail;
     cv::Mat expected_diagonal_detail;
-    //  used for inverse transform
-    cv::Mat approx_input;
-    cv::Mat horizontal_detail_input;
-    cv::Mat vertical_detail_input;
-    cv::Mat diagonal_detail_input;
     cv::Mat expected_output;
 };
 
-TEST_P(FilterBankTest, ForwardOutputSize)
+TEST_P(ForwardFilterBankTest, OutputSize)
 {
     auto output_size = wavelet.filter_bank().output_size(input.size());
 
     EXPECT_EQ(output_size, expected_output.size());
 }
 
-TEST_P(FilterBankTest, ForwardSubbandSize)
+TEST_P(ForwardFilterBankTest, SubbandSize)
 {
     auto subband_size = wavelet.filter_bank().subband_size(input.size());
 
     EXPECT_EQ(subband_size, expected_output.size() / 2);
 }
 
-// TEST_P(FilterBankTest, ForwardInputSize)
-// {
-//     auto input_size = wavelet.filter_bank().input_size(expected_output.size());
-
-//     EXPECT_EQ(input_size, input.size());
-// }
-
-TEST_P(FilterBankTest, ForwardTransform)
+TEST_P(ForwardFilterBankTest, Forward)
 {
     cv::Mat actual_approx;
     cv::Mat actual_horizontal_detail;
     cv::Mat actual_vertical_detail;
     cv::Mat actual_diagonal_detail;
+    // std::cout << "\n" << input << "\n";
     wavelet.filter_bank().forward(
         input,
         actual_approx,
@@ -2612,9 +2614,53 @@ TEST_P(FilterBankTest, ForwardTransform)
         actual_diagonal_detail,
         MatrixNear(expected_diagonal_detail, NEARNESS_TOLERANCE)
     ) << "diagonal_detail is incorrect";
+
+    // ASSERT_FALSE(true);
 }
 
-TEST_P(FilterBankTest, InverseTransform)
+
+INSTANTIATE_TEST_CASE_P(
+    FilterBankGroup,
+    ForwardFilterBankTest,
+    testing::ValuesIn(ForwardFilterBankTest::get_test_params(1)),
+    print_dwt2d_test_label
+);
+
+
+//  ----------------------------------------------------------------------------
+class InverseFilterBankTest : public BaseDWT2DTest
+{
+protected:
+    void SetUp() override
+    {
+        BaseDWT2DTest::SetUp();
+        auto param = GetParam();
+
+        cv::Size size = param.coeffs.size() / 2;
+        cv::Rect approx_rect(0, 0, size.width, size.height);
+        cv::Rect horizontal_detail_rect(0, size.height, size.width, size.height);
+        cv::Rect vertical_detail_rect(size.width, 0, size.width, size.height);
+        cv::Rect diagonal_detail_rect(size.width, size.height, size.width, size.height);
+
+        //  inverse input
+        input = param.coeffs;
+        approx_input = input(approx_rect);
+        horizontal_detail_input = input(horizontal_detail_rect);
+        vertical_detail_input = input(vertical_detail_rect);
+        diagonal_detail_input = input(diagonal_detail_rect);
+        //  inverse output
+        expected_output = BaseDWT2DTest::inputs.at(param.input_name);
+    }
+
+    cv::Mat input;
+    cv::Mat approx_input;
+    cv::Mat horizontal_detail_input;
+    cv::Mat vertical_detail_input;
+    cv::Mat diagonal_detail_input;
+    cv::Mat expected_output;
+};
+
+TEST_P(InverseFilterBankTest, Inverse)
 {
     cv::Mat actual_output;
     wavelet.filter_bank().inverse(
@@ -2623,7 +2669,7 @@ TEST_P(FilterBankTest, InverseTransform)
         vertical_detail_input,
         diagonal_detail_input,
         actual_output,
-        cv::BORDER_REFLECT101
+        expected_output.size()
     );
 
     //  Clamping is only for readability of failure messages.  It does not
@@ -2632,18 +2678,16 @@ TEST_P(FilterBankTest, InverseTransform)
     clamp_small_to_zero(actual_output, expected_output);
 
     EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
+
+    // ASSERT_FALSE(true);
 }
 
 
 INSTANTIATE_TEST_CASE_P(
-    DWT2DGroup,
-    FilterBankTest,
-    testing::ValuesIn(FilterBankTest::get_test_params(1)),
-    [](const auto& info) {
-        std::string wavelet_name = info.param.wavelet_name;
-        std::ranges::replace(wavelet_name, '.', '_');
-        return wavelet_name + "_" + info.param.input_name + "_" + std::to_string(info.param.levels);
-    }
+    FilterBankGroup,
+    InverseFilterBankTest,
+    testing::ValuesIn(InverseFilterBankTest::get_test_params(1)),
+    print_dwt2d_test_label
 );
 
 
@@ -2652,24 +2696,230 @@ INSTANTIATE_TEST_CASE_P(
  * DWT2D
  * -----------------------------------------------------------------------------
 */
-class DWT2DAllLevelsTest : public DWT2DTest
+struct DWT2DMaxLevelsTestParam
+{
+    std::string wavelet_name;
+    cv::Size input_size;
+    int expected_max_levels;
+    int expected_max_levels_without_border_effects;
+};
+
+void PrintTo(const DWT2DMaxLevelsTestParam& param, std::ostream* stream)
+{
+    *stream << "\nwavelet_name: " << param.wavelet_name
+            << "\ninput_size: " << param.input_size
+            << "\nexpected_max_levels: " << param.expected_max_levels
+            << "\nexpected_max_levels_without_border_effects: " << param.expected_max_levels_without_border_effects;
+}
+
+auto print_dwt2d_max_levels_test_label  = [](const auto& info) {
+    std::string wavelet_name = info.param.wavelet_name;
+    std::ranges::replace(wavelet_name, '.', '_');
+    return wavelet_name + "_" + std::to_string(info.param.input_size.width) + "x" + std::to_string(info.param.input_size.height);
+};
+
+class DWT2DMaxLevelsTest : public testing::TestWithParam<DWT2DMaxLevelsTestParam>
 {
 protected:
-    DWT2DAllLevelsTest() :
-        DWT2DTest(),
-        dwt(wavelet, cv::BORDER_REFLECT101)
+    DWT2DMaxLevelsTest() :
+        dwt(Wavelet::create(GetParam().wavelet_name), cv::BORDER_REFLECT101)
     {}
 
-    void SetUpForwardTest(const cv::Mat& forward_input, const cv::Mat& forward_output) override
+public:
+    static std::vector<ParamType> create_test_params()
     {
-        input = forward_input;
-        expected_output = forward_output;
+        return {
+            //  db1 (i.e. filter length == 2)
+            {
+                .wavelet_name = "db1",
+                .input_size = cv::Size(),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db1",
+                .input_size = cv::Size(2, 2),
+                .expected_max_levels = 1,
+                .expected_max_levels_without_border_effects = 1,
+            },
+            {
+                .wavelet_name = "db1",
+                .input_size = cv::Size(2, 1),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db1",
+                .input_size = cv::Size(1, 2),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db1",
+                .input_size = cv::Size(16, 16),
+                .expected_max_levels = 4,
+                .expected_max_levels_without_border_effects = 4,
+            },
+            {
+                .wavelet_name = "db1",
+                .input_size = cv::Size(16, 15),
+                .expected_max_levels = 3,
+                .expected_max_levels_without_border_effects = 3,
+            },
+            {
+                .wavelet_name = "db1",
+                .input_size = cv::Size(15, 16),
+                .expected_max_levels = 3,
+                .expected_max_levels_without_border_effects = 3,
+            },
+            //  db2 (i.e. filter length == 4)
+            {
+                .wavelet_name = "db2",
+                .input_size = cv::Size(),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db2",
+                .input_size = cv::Size(2, 2),
+                .expected_max_levels = 1,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db2",
+                .input_size = cv::Size(2, 1),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db2",
+                .input_size = cv::Size(1, 2),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db2",
+                .input_size = cv::Size(16, 16),
+                .expected_max_levels = 4,
+                .expected_max_levels_without_border_effects = 2,
+            },
+            {
+                .wavelet_name = "db2",
+                .input_size = cv::Size(16, 15),
+                .expected_max_levels = 3,
+                .expected_max_levels_without_border_effects = 2,
+            },
+            {
+                .wavelet_name = "db2",
+                .input_size = cv::Size(15, 16),
+                .expected_max_levels = 3,
+                .expected_max_levels_without_border_effects = 2,
+            },
+            {
+                .wavelet_name = "db2",
+                .input_size = cv::Size(24, 24),
+                .expected_max_levels = 4,
+                .expected_max_levels_without_border_effects = 3,
+            },
+            //  db4 (i.e. filter length == 8)
+            {
+                .wavelet_name = "db4",
+                .input_size = cv::Size(),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db4",
+                .input_size = cv::Size(2, 2),
+                .expected_max_levels = 1,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db4",
+                .input_size = cv::Size(2, 1),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db4",
+                .input_size = cv::Size(1, 2),
+                .expected_max_levels = 0,
+                .expected_max_levels_without_border_effects = 0,
+            },
+            {
+                .wavelet_name = "db4",
+                .input_size = cv::Size(16, 16),
+                .expected_max_levels = 4,
+                .expected_max_levels_without_border_effects = 1,
+            },
+            {
+                .wavelet_name = "db4",
+                .input_size = cv::Size(16, 15),
+                .expected_max_levels = 3,
+                .expected_max_levels_without_border_effects = 1,
+            },
+            {
+                .wavelet_name = "db4",
+                .input_size = cv::Size(15, 16),
+                .expected_max_levels = 3,
+                .expected_max_levels_without_border_effects = 1,
+            },
+            {
+                .wavelet_name = "db4",
+                .input_size = cv::Size(28, 28),
+                .expected_max_levels = 4,
+                .expected_max_levels_without_border_effects = 2,
+            },
+        };
     }
 
-    void SetUpInverseTest(const cv::Mat& inverse_input, const cv::Mat& inverse_output) override
+    DWT2D dwt;
+};
+
+// TEST_P(DWT2DMaxLevelsTest, MaxLevels)
+// {
+//     auto param = GetParam();
+//     auto actual_max_levels = dwt.max_levels(param.input_size);
+
+//     EXPECT_EQ(actual_max_levels, param.expected_max_levels);
+// }
+
+TEST_P(DWT2DMaxLevelsTest, MaxLevelsWithoutBorderEffects)
+{
+    auto param = GetParam();
+    auto actual_max_levels_without_border_effects = dwt.max_levels_without_border_effects(param.input_size);
+
+    EXPECT_EQ(
+        actual_max_levels_without_border_effects,
+        param.expected_max_levels_without_border_effects
+    );
+}
+
+INSTANTIATE_TEST_CASE_P(
+    DWT2DGroup,
+    DWT2DMaxLevelsTest,
+    testing::ValuesIn(DWT2DMaxLevelsTest::create_test_params()),
+    print_dwt2d_max_levels_test_label
+);
+
+
+//  ----------------------------------------------------------------------------
+class ForwardDWT2DTest : public BaseDWT2DTest
+{
+protected:
+    ForwardDWT2DTest() :
+        BaseDWT2DTest(),
+        dwt(wavelet, cv::BORDER_REFLECT101)
+        // dwt(wavelet, cv::BORDER_REPLICATE)
+    {}
+
+    void SetUp() override
     {
-        input = inverse_input;
-        expected_output = inverse_output;
+        BaseDWT2DTest::SetUp();
+        auto param = GetParam();
+
+        input = BaseDWT2DTest::inputs.at(param.input_name);
+        expected_output = param.coeffs;
     }
 
     DWT2D dwt;
@@ -2677,91 +2927,125 @@ protected:
     cv::Mat expected_output;
 };
 
-TEST_P(DWT2DAllLevelsTest, ForwardCoeffSizeForInput)
+TEST_P(ForwardDWT2DTest, CoeffSizeForInput)
 {
-    auto coeffs_size = dwt.coeffs_size_for_input(input, levels);
+    if (!expected_output.empty()) {
+        auto coeffs_size = dwt.coeffs_size_for_input(input, levels);
 
-    EXPECT_EQ(coeffs_size, expected_output.size());
+        EXPECT_EQ(coeffs_size, expected_output.size());
+    }
 }
 
-// TEST_P(DWT2DAllLevelsTest, ForwardInputSizeForCoeffs)
-// {
-//     auto input_size = dwt.input_size_for_coeffs(expected_output, levels);
-
-//     EXPECT_EQ(input_size, input.size());
-// }
-
-TEST_P(DWT2DAllLevelsTest, ForwardTransform)
+TEST_P(ForwardDWT2DTest, Forward)
 {
-    auto actual_output = dwt.forward(input, levels);
+    if (expected_output.empty()) {
+        EXPECT_THROW({ dwt.forward(input, levels); }, cv::Exception);
+    } else {
+        auto actual_output = dwt.forward(input, levels);
 
-    //  Clamping is only for readability of failure messages.  It does not
-    //  impact the test because the CLAMP_TOLERANCE is smaller than the
-    //  the NEARNESS_TOLERANCE.
-    clamp_small_to_zero(actual_output, expected_output);
+        //  Clamping is only for readability of failure messages.  It does not
+        //  impact the test because the CLAMP_TOLERANCE is smaller than the
+        //  the NEARNESS_TOLERANCE.
+        clamp_small_to_zero(actual_output, expected_output);
 
-    EXPECT_EQ(actual_output.levels(), levels);
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
+        EXPECT_EQ(actual_output.levels(), levels);
+        EXPECT_EQ(actual_output.input_size(), input.size());
+        EXPECT_EQ(actual_output.wavelet(), dwt.wavelet);
+        EXPECT_EQ(actual_output.border_type(), dwt.border_type);
+        EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
+    }
 }
 
-TEST_P(DWT2DAllLevelsTest, RunningForwardTransform)
+TEST_P(ForwardDWT2DTest, CallOperator)
 {
-    auto coeffs = dwt.running_forward(input, 1);
-    for (int i = 1; i < levels; ++i)
-        coeffs = dwt.running_forward(coeffs, 1);
+    if (expected_output.empty()) {
+        EXPECT_THROW({ dwt(input, levels); }, cv::Exception);
+    } else {
+        auto actual_output = dwt(input, levels);
 
-    //  Clamping is only for readability of failure messages.  It does not
-    //  impact the test because the CLAMP_TOLERANCE is smaller than the
-    //  the NEARNESS_TOLERANCE.
-    clamp_small_to_zero(coeffs, expected_output);
+        //  Clamping is only for readability of failure messages.  It does not
+        //  impact the test because the CLAMP_TOLERANCE is smaller than the
+        //  the NEARNESS_TOLERANCE.
+        clamp_small_to_zero(actual_output, expected_output);
 
-    EXPECT_EQ(coeffs.levels(), levels);
-    EXPECT_THAT(coeffs, MatrixNear(expected_output, NEARNESS_TOLERANCE));
-}
-
-TEST_P(DWT2DAllLevelsTest, InverseTransform)
-{
-    std::cout << "\n";
-    // auto coeffs = DWT2D::Coeffs(input, levels);
-    auto coeffs = dwt.create_coeffs(input, expected_output.size(), levels);
-    auto actual_output = dwt.inverse(coeffs);
-
-    //  Clamping is only for readability of failure messages.  It does not
-    //  impact the test because the CLAMP_TOLERANCE is smaller than the
-    //  the NEARNESS_TOLERANCE.
-    clamp_small_to_zero(actual_output, expected_output);
-
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
-    // ASSERT_FALSE(true);
-}
-
-TEST_P(DWT2DAllLevelsTest, RunningInverseTransform)
-{
-    // auto coeffs = DWT2D::Coeffs(input, levels);
-    auto coeffs = dwt.create_coeffs(input, expected_output.size(), levels);
-    for (int i = 0; i < levels; ++i)
-        coeffs = dwt.running_inverse(coeffs, 1);
-
-    EXPECT_EQ(coeffs.levels(), 0);
-
-    //  Clamping is only for readability of failure messages.  It does not
-    //  impact the test because the CLAMP_TOLERANCE is smaller than the
-    //  the NEARNESS_TOLERANCE.
-    cv::Mat actual_output = coeffs;
-    clamp_small_to_zero(actual_output, expected_output);
-
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
+        EXPECT_EQ(actual_output.levels(), levels);
+        EXPECT_EQ(actual_output.input_size(), input.size());
+        EXPECT_EQ(actual_output.wavelet(), dwt.wavelet);
+        EXPECT_EQ(actual_output.border_type(), dwt.border_type);
+        EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
+    }
 }
 
 
 INSTANTIATE_TEST_CASE_P(
     DWT2DGroup,
-    DWT2DAllLevelsTest,
-    testing::ValuesIn(DWT2DAllLevelsTest::get_test_params()),
-    [](const auto& info) {
-        std::string wavelet_name = info.param.wavelet_name;
-        std::ranges::replace(wavelet_name, '.', '_');
-        return wavelet_name + "_" + info.param.input_name + "_" + std::to_string(info.param.levels);
+    ForwardDWT2DTest,
+    testing::ValuesIn(ForwardDWT2DTest::get_test_params()),
+    print_dwt2d_test_label
+);
+
+
+//  ----------------------------------------------------------------------------
+class InverseDWT2DTest : public BaseDWT2DTest
+{
+protected:
+    InverseDWT2DTest() :
+        BaseDWT2DTest(),
+        dwt(wavelet, cv::BORDER_REFLECT101)
+    {}
+
+    void SetUp() override
+    {
+        BaseDWT2DTest::SetUp();
+        auto param = GetParam();
+
+        expected_output = BaseDWT2DTest::inputs.at(param.input_name);
+        if (!param.coeffs.empty())
+            coeffs = dwt.create_coeffs(param.coeffs, expected_output.size(), levels);
     }
+
+    DWT2D dwt;
+    DWT2D::Coeffs coeffs;
+    cv::Mat expected_output;
+};
+
+TEST_P(InverseDWT2DTest, Inverse)
+{
+    if (coeffs.empty()) {
+        EXPECT_THROW({ dwt.inverse(coeffs); }, cv::Exception);
+    } else {
+        auto actual_output = dwt.inverse(coeffs);
+
+        //  Clamping is only for readability of failure messages.  It does not
+        //  impact the test because the CLAMP_TOLERANCE is smaller than the
+        //  the NEARNESS_TOLERANCE.
+        clamp_small_to_zero(actual_output, expected_output);
+
+        EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
+    }
+}
+
+TEST_P(InverseDWT2DTest, Invert)
+{
+    if (coeffs.empty()) {
+        EXPECT_THROW({ coeffs.invert(); }, cv::Exception);
+    } else {
+        auto actual_output = coeffs.invert();
+
+        //  Clamping is only for readability of failure messages.  It does not
+        //  impact the test because the CLAMP_TOLERANCE is smaller than the
+        //  the NEARNESS_TOLERANCE.
+        clamp_small_to_zero(actual_output, expected_output);
+
+        EXPECT_THAT(actual_output, MatrixNear(expected_output, NEARNESS_TOLERANCE));
+    }
+}
+
+
+INSTANTIATE_TEST_CASE_P(
+    DWT2DGroup,
+    InverseDWT2DTest,
+    testing::ValuesIn(InverseDWT2DTest::get_test_params()),
+    print_dwt2d_test_label
 );
 

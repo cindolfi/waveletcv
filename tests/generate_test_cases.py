@@ -63,28 +63,41 @@ class DWT2DTestCases:
 
     @staticmethod
     def make_horizontal_lines(shape, inverted=False, dtype=np.float64):
-        pattern = np.tile(
-            np.array([[1, 1], [0, 0]], dtype=dtype),
-            (shape[0] // 2, shape[1] // 2),
+        return DWT2DTestCases._make_pattern(
+            shape=shape,
+            tile=[[1, 1], [0, 0]],
+            inverted=inverted,
+            dtype=dtype,
         )
-        return pattern if not inverted else 1 - pattern
 
 
     @staticmethod
     def make_vertical_lines(shape, inverted=False, dtype=np.float64):
-        pattern = np.tile(
-            np.array([[1, 0], [1, 0]], dtype=dtype),
-            (shape[0] // 2, shape[1] // 2),
+        return DWT2DTestCases._make_pattern(
+            shape=shape,
+            tile=[[1, 0], [1, 0]],
+            inverted=inverted,
+            dtype=dtype,
         )
-        return pattern if not inverted else 1 - pattern
 
 
     @staticmethod
     def make_diagonal_lines(shape, inverted=False, dtype=np.float64):
-        pattern = np.tile(
-            np.array([[1, 0], [0, 1]], dtype=dtype),
-            (shape[0] // 2, shape[1] // 2),
+        return DWT2DTestCases._make_pattern(
+            shape=shape,
+            tile=[[1, 0], [0, 1]],
+            inverted=inverted,
+            dtype=dtype,
         )
+
+
+    @staticmethod
+    def _make_pattern(shape, tile, inverted=False, dtype=np.float64):
+        rows, cols = (shape[0] + shape[0] % 2, shape[1] + shape[1] % 2)
+        tile = np.array(tile, dtype=dtype)
+        pattern = np.tile(tile, (rows // 2, cols // 2))
+        pattern = pattern[:shape[0], :shape[1]]
+
         return pattern if not inverted else 1 - pattern
 
 
@@ -123,16 +136,20 @@ class DWT2DTestCases:
 
     def transform_pattern(self, wavelet, pattern, level):
         axes = (0, 1)
-        coeffs = pywt.wavedec2(
-            pattern,
-            wavelet,
-            axes=axes,
-            mode=self.border_mode,
-            level=level,
-        )
-        coeffs = pywt.coeffs_to_array(coeffs, axes=axes)[0]
+        try:
+            coeffs = pywt.wavedec2(
+                pattern,
+                wavelet,
+                axes=axes,
+                mode=self.border_mode,
+                level=level,
+            )
+            coeffs = pywt.coeffs_to_array(coeffs, axes=axes)[0]
+        except ValueError:
+            coeffs = np.zeros([0, 0], dtype=self.dtype)
 
         return coeffs.astype(self.dtype)
+
 
 
 
@@ -183,7 +200,6 @@ def main():
             'sym',
             'coif',
             'bior',
-            # 'rbior',
         ],
     )
     coeffs_test_cases.generate('wavelet_test_data.json')
@@ -199,16 +215,16 @@ def main():
             inverted_vertical_lines=DWT2DTestCases.make_vertical_lines(shape, inverted=True),
             diagonal_lines=DWT2DTestCases.make_diagonal_lines(shape),
             inverted_diagonal_lines=DWT2DTestCases.make_diagonal_lines(shape, inverted=True),
-            # random=np.random.randn(*shape),
+            random=np.random.randn(*shape),
         )
 
     def make_square_tall_and_wide_shapes(size):
         shapes = [
             (size, size),
-            (size, size // 2),
-            (size // 2, size)
+            (size, (size // 2) - 1),
+            ((size // 2) + 1, size)
         ]
-        return {f'{shape[0]}x{shape[1]}': shape for shape in shapes}
+        return {f'{shape[1]}x{shape[0]}': shape for shape in shapes}
 
     SMALL_SIZE = 16
     MEDIUM_SIZE = 64
@@ -222,185 +238,186 @@ def main():
     medium_square_name, medium_tall_name, medium_wide_name = tuple(medium_shapes.keys())
     large_square_name, large_tall_name, large_wide_name = tuple(large_shapes.keys())
 
+    levels = [1, 2, 3, 4]
+
     dwt2d_test_cases = DWT2DTestCases(
         border_mode='reflect',
+        dtype=np.float64,
         patterns={
             name: create_patterns(shape)
-            # for name, shape in {**small_shapes, **medium_shapes, **large_shapes}.items()
             for name, shape in (small_shapes | medium_shapes | large_shapes).items()
         },
         test_cases=[
             TestCase(
                 wavelet='haar',
                 patterns=small_square_name,
-                levels=[1, 2, 3, 4],
+                levels=levels,
             ),
             TestCase(
                 wavelet='haar',
                 patterns=small_tall_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='haar',
                 patterns=small_wide_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             #   ----------------------------------------------------------------
             TestCase(
                 wavelet='db1',
                 patterns=small_square_name,
-                levels=[1, 2, 3, 4],
+                levels=levels,
             ),
             TestCase(
                 wavelet='db1',
                 patterns=small_tall_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='db1',
                 patterns=small_wide_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='db2',
                 patterns=medium_square_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='db2',
                 patterns=medium_tall_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='db2',
                 patterns=medium_wide_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='db4',
                 patterns=large_square_name,
-                levels=[1, 2, 3, 4],
+                levels=levels,
             ),
             TestCase(
                 wavelet='db4',
                 patterns=large_tall_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='db4',
                 patterns=large_wide_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             #   ----------------------------------------------------------------
             TestCase(
                 wavelet='sym2',
                 patterns=medium_square_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='sym2',
                 patterns=medium_tall_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='sym2',
                 patterns=medium_wide_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='sym3',
                 patterns=large_square_name,
-                levels=[1, 2, 3, 4],
+                levels=levels,
             ),
             TestCase(
                 wavelet='sym3',
                 patterns=large_tall_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='sym3',
                 patterns=large_wide_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             #   ----------------------------------------------------------------
             TestCase(
                 wavelet='coif1',
                 patterns=medium_square_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='coif1',
                 patterns=medium_tall_name,
-                levels=[1, 2],
+                levels=levels,
             ),
             TestCase(
                 wavelet='coif1',
                 patterns=medium_wide_name,
-                levels=[1, 2],
+                levels=levels,
             ),
             TestCase(
                 wavelet='coif2',
                 patterns=large_square_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='coif2',
                 patterns=large_tall_name,
-                levels=[1, 2],
+                levels=levels,
             ),
             TestCase(
                 wavelet='coif2',
                 patterns=large_wide_name,
-                levels=[1, 2],
+                levels=levels,
             ),
             #   ----------------------------------------------------------------
             TestCase(
                 wavelet='bior1.1',
                 patterns=small_square_name,
-                levels=[1, 2, 3, 4],
+                levels=levels,
             ),
             TestCase(
                 wavelet='bior1.1',
                 patterns=small_tall_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='bior1.1',
                 patterns=small_wide_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='bior2.2',
                 patterns=medium_square_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='bior2.2',
                 patterns=medium_tall_name,
-                levels=[1, 2],
+                levels=levels,
             ),
             TestCase(
                 wavelet='bior2.2',
                 patterns=medium_wide_name,
-                levels=[1, 2],
+                levels=levels,
             ),
             TestCase(
                 wavelet='bior4.4',
                 patterns=large_square_name,
-                levels=[1, 2, 3],
+                levels=levels,
             ),
             TestCase(
                 wavelet='bior4.4',
                 patterns=large_tall_name,
-                levels=[1, 2],
+                levels=levels,
             ),
             TestCase(
                 wavelet='bior4.4',
                 patterns=large_wide_name,
-                levels=[1, 2],
+                levels=levels,
             ),
         ],
-        dtype=np.float64,
     )
 
     dwt2d_test_cases.generate(filename='dwt2d_test_data.json')

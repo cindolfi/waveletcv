@@ -120,7 +120,6 @@ TEST_P(MedianTest, MedianIsCorrect)
     auto actual_median = median(matrix)[0];
 
     EXPECT_DOUBLE_EQ(actual_median, param.expected_median);
-    // ASSERT_FALSE(true);
 }
 
 auto median_test_labels = MedianTest::create_labels();

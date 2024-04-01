@@ -92,9 +92,6 @@ void hard_shrink_detail_subbands(DWT2D::Coeffs& coeffs, cv::InputArray threshold
  * Universal / VisuShrink
  * -----------------------------------------------------------------------------
 */
-// cv::Scalar universal_threshold(const cv::Mat& coeffs, cv::Mat& mask, cv::Scalar stdev=cv::Scalar::all(1.0));
-// cv::Scalar universal_threshold(const cv::Mat& coeffs, cv::Scalar stdev=cv::Scalar::all(1.0));
-
 cv::Scalar universal_threshold(const DWT2D::Coeffs& coeffs, const cv::Scalar& stdev = cv::Scalar::all(1.0));
 cv::Scalar universal_threshold(cv::InputArray details, const cv::Scalar& stdev = cv::Scalar::all(1.0));
 cv::Scalar universal_threshold(cv::InputArray details, cv::InputArray mask, const cv::Scalar& stdev = cv::Scalar::all(1.0));
@@ -119,17 +116,13 @@ enum SureShrinkVariant {
 const nlopt::algorithm DEFAULT_SURE_SHRINK_NLOPT_ALGORITHM = nlopt::LN_NELDERMEAD;
 
 cv::Scalar compute_sure_threshold(
-    // const cv::Mat& input,
     cv::InputArray input,
-    // const DWT2D::Coeffs& input,
     const cv::Scalar& stdev = cv::Scalar::all(1.0),
     SureShrinkVariant variant = NORMAL_SURE_SHRINK,
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
 cv::Scalar compute_sure_threshold(
-    // const cv::Mat& input,
     cv::InputArray input,
-    // const DWT2D::Coeffs& input,
     cv::InputArray mask,
     const cv::Scalar& stdev = cv::Scalar::all(1.0),
     SureShrinkVariant variant = NORMAL_SURE_SHRINK,
@@ -475,7 +468,6 @@ private:
     {
         if (use_universal_threshold(channel, stdev))
             return univ_threshold;
-            // return universal_threshold(channel, stdev)[0];
 
         return single_channel_normal_using_nlopt(channel, stdev, algorithm);
     }
@@ -505,7 +497,6 @@ private:
     {
         if (use_universal_threshold(channel, stdev))
             return univ_threshold;
-            // return universal_threshold(channel, stdev)[0];
 
         return single_channel_normal_using_brute_force(channel, stdev);
     }

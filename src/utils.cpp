@@ -23,6 +23,14 @@ void collect_masked(cv::InputArray input, cv::OutputArray output, cv::InputArray
     );
 }
 
+bool equals(const cv::Mat& a, const cv::Mat& b)
+{
+    return &a == &b || (
+        a.size() == b.size()
+        && (a.data == b.data || cv::sum(a != b) == cv::Scalar(0, 0, 0, 0))
+    );
+}
+
 cv::Scalar median(cv::InputArray input)
 {
     cv::Scalar result;

@@ -224,15 +224,42 @@ void hard_shrink_detail_subbands(DWT2D::Coeffs& coeffs, cv::InputArray threshold
  * Universal / VisuShrink
  * -----------------------------------------------------------------------------
 */
-cv::Scalar universal_threshold(const DWT2D::Coeffs& coeffs, cv::Scalar stdev)
+cv::Scalar universal_threshold(const DWT2D::Coeffs& coeffs, const cv::Scalar& stdev)
 {
-    return stdev * std::sqrt(2 * std::log(coeffs.total()));
+    return universal_threshold(coeffs.total() - coeffs.approx().total(), stdev);
+}
+
+cv::Scalar universal_threshold(cv::InputArray details, const cv::Scalar& stdev)
+{
+    return universal_threshold(details.total(), stdev);
+}
+
+cv::Scalar universal_threshold(cv::InputArray details, cv::InputArray mask, const cv::Scalar& stdev)
+{
+    assert(details.size() == mask.size());
+    return universal_threshold(cv::countNonZero(mask), stdev);
+}
+
+cv::Scalar universal_threshold(int num_elements, const cv::Scalar& stdev)
+{
+    return stdev * std::sqrt(2.0 * std::log(num_elements));
 }
 
 cv::Scalar visu_shrink_threshold(const DWT2D::Coeffs& coeffs)
 {
     return universal_threshold(coeffs, estimate_stdev(coeffs, coeffs.detail_mask()));
 }
+
+cv::Scalar visu_shrink_threshold(cv::InputArray details)
+{
+    return universal_threshold(details, estimate_stdev(details));
+}
+
+cv::Scalar visu_shrink_threshold(cv::InputArray details, cv::InputArray mask)
+{
+    return universal_threshold(details, mask, estimate_stdev(details, mask));
+}
+
 
 void visu_soft_shrink(DWT2D::Coeffs& coeffs)
 {
@@ -253,7 +280,7 @@ void visu_hard_shrink(DWT2D::Coeffs& coeffs)
  * -----------------------------------------------------------------------------
 */
 cv::Scalar compute_sure_threshold(
-    const cv::Mat& input,
+    cv::InputArray input,
     const cv::Scalar& stdev,
     SureShrinkVariant variant,
     nlopt::algorithm algorithm
@@ -266,6 +293,7 @@ cv::Scalar compute_sure_threshold(
         stdev,
         algorithm,
         variant,
+        (variant == HYBRID_SURE_SHRINK) ? universal_threshold(input, stdev) : cv::Scalar(),
         result
     );
 
@@ -273,7 +301,7 @@ cv::Scalar compute_sure_threshold(
 }
 
 cv::Scalar compute_sure_threshold(
-    const cv::Mat& input,
+    cv::InputArray input,
     cv::InputArray mask,
     const cv::Scalar& stdev,
     SureShrinkVariant variant,
@@ -288,6 +316,7 @@ cv::Scalar compute_sure_threshold(
         stdev,
         algorithm,
         variant,
+        (variant == HYBRID_SURE_SHRINK) ? universal_threshold(input, stdev) : cv::Scalar(),
         result
     );
 
@@ -307,9 +336,6 @@ cv::Mat4d sure_shrink_subband_thresholds(
     nlopt::algorithm algorithm
 )
 {
-    if (levels <= 0)
-        levels = coeffs.levels();
-
     cv::Mat4d thresholds(levels, 3);
     for (int level = 0; level < levels; ++level) {
         for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL}) {
@@ -329,9 +355,6 @@ cv::Mat4d sure_shrink_level_thresholds(
     nlopt::algorithm algorithm
 )
 {
-    if (levels <= 0)
-        levels = coeffs.levels();
-
     cv::Mat4d thresholds(levels, 1);
     for (int level = 0; level < levels; ++level) {
         cv::Mat detail_coeffs;
@@ -347,7 +370,7 @@ void sure_shrink(DWT2D::Coeffs& coeffs)
 {
     auto thresholds = sure_shrink_subband_thresholds(
         coeffs,
-        0,
+        coeffs.levels(),
         NORMAL_SURE_SHRINK,
         DEFAULT_SURE_SHRINK_NLOPT_ALGORITHM
     );
@@ -380,7 +403,7 @@ void sure_shrink_levelwise(DWT2D::Coeffs& coeffs)
 {
     auto thresholds = sure_shrink_level_thresholds(
         coeffs,
-        0,
+        coeffs.levels(),
         NORMAL_SURE_SHRINK,
         DEFAULT_SURE_SHRINK_NLOPT_ALGORITHM
     );
@@ -413,7 +436,7 @@ void hybrid_sure_shrink(DWT2D::Coeffs& coeffs)
 {
     auto thresholds = sure_shrink_subband_thresholds(
         coeffs,
-        0,
+        coeffs.levels(),
         HYBRID_SURE_SHRINK,
         DEFAULT_SURE_SHRINK_NLOPT_ALGORITHM
     );
@@ -446,7 +469,7 @@ void hybrid_sure_shrink_levelwise(DWT2D::Coeffs& coeffs)
 {
     auto thresholds = sure_shrink_level_thresholds(
         coeffs,
-        0,
+        coeffs.levels(),
         HYBRID_SURE_SHRINK,
         DEFAULT_SURE_SHRINK_NLOPT_ALGORITHM
     );

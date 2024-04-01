@@ -84,6 +84,7 @@ protected:
 public:
     static std::vector<WaveletTestParam> create_test_params()
     {
+        //  WAVELET_TEST_DATA_PATH is defined in CMakeLists.txt
         std::ifstream test_case_data_file(WAVELET_TEST_DATA_PATH);
         auto test_case_data = json::parse(test_case_data_file);
 

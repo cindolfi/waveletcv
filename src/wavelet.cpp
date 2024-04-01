@@ -14,17 +14,379 @@ namespace wavelet
 {
 namespace internal
 {
+template <typename Pixel>
+inline void dot(const cv::Mat& a, const cv::Mat& b, Pixel& output_pixel)
+{
+    auto c = cv::sum(a.mul(b));
+    for (int i = 0; i < Pixel::channels; ++i)
+        output_pixel[i] = c[i];
+}
+
+template <typename T, int CHANNELS>
+struct ConvolveRowsAndDownsampleCols
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+
+    /**
+     * Input is assumed to be padded, kernel is assumed to be flipped and transposed (if necessary)
+    */
+    void operator()(cv::InputArray input, cv::OutputArray output, const cv::Mat& kernel)
+    {
+        auto output_size = input.size() - kernel.size() + cv::Size(1, 1);
+        output_size.width = output_size.width / 2;
+        output.create(output_size, input.type());
+
+        const auto input_image = input.getMat();
+        output.getMat().forEach<Pixel>(
+            [&](auto& output_pixel, const auto index) {
+                dot(
+                    kernel,
+                    input_image(cv::Rect(
+                        cv::Point(2 * index[1], index[0]),
+                        kernel.size()
+                    )),
+                    output_pixel
+                );
+            }
+        );
+    }
+};
+
+template <typename T, int CHANNELS>
+struct ConvolveColsAndDownsampleRows
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+
+    /**
+     * Input is assumed to be padded, kernel is assumed to be flipped and transposed (if necessary)
+    */
+    void operator()(cv::InputArray input, cv::OutputArray output, const cv::Mat& kernel)
+    {
+        auto output_size = input.size() - kernel.size() + cv::Size(1, 1);
+        output_size.height = output_size.height / 2;
+        output.create(output_size, input.type());
+
+        const auto input_image = input.getMat();
+        output.getMat().forEach<Pixel>(
+            [&](auto& output_pixel, const auto index) {
+                dot(
+                    kernel,
+                    input_image(cv::Rect(
+                        cv::Point(index[1], 2 * index[0]),
+                        kernel.size()
+                    )),
+                    output_pixel
+                );
+            }
+        );
+    }
+};
+
+template <typename T, int CHANNELS>
+struct UpsampleRowsAndConvolveCols
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+
+    /**
+     * Kernels are assumed to be flipped and transposed (if necessary)
+    */
+    void operator()(
+        cv::InputArray input,
+        cv::OutputArray output,
+        const cv::Mat& even_index_kernel,
+        const cv::Mat& odd_index_kernel,
+        const cv::Size& output_size
+    ) const
+    {
+        output.create(
+            cv::Size(input.size().width, output_size.height),
+            input.type()
+        );
+        const auto input_image = input.getMat();
+        output.getMat().forEach<Pixel>(
+            [&](auto& output_pixel, const auto index) {
+                const cv::Mat& kernel = (index[0] % 2 == 1)
+                                      ? odd_index_kernel
+                                      : even_index_kernel;
+                dot(
+                    kernel,
+                    input_image(cv::Rect(
+                        cv::Point(index[1], index[0] / 2),
+                        kernel.size()
+                    )),
+                    output_pixel
+                );
+            }
+        );
+    }
+};
+
+template <typename T, int CHANNELS>
+struct UpsampleColsAndConvolveRows
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+
+    /**
+     * Kernels are assumed to be flipped and transposed (if necessary)
+    */
+    void operator()(
+        cv::InputArray input,
+        cv::OutputArray output,
+        const cv::Mat& even_index_kernel,
+        const cv::Mat& odd_index_kernel,
+        const cv::Size& output_size
+    ) const
+    {
+        output.create(
+            cv::Size(output_size.width, input.size().height),
+            input.type()
+        );
+        const auto input_image = input.getMat();
+        output.getMat().forEach<Pixel>(
+            [&](auto& output_pixel, const auto index) {
+                const cv::Mat& kernel = (index[1] % 2 == 1)
+                                      ? odd_index_kernel
+                                      : even_index_kernel;
+                dot(
+                    kernel,
+                    input_image(cv::Rect(
+                        cv::Point(index[1] / 2, index[0]),
+                        kernel.size()
+                    )),
+                    output_pixel
+                );
+            }
+        );
+    }
+};
+
+template <typename T, int CHANNELS>
+struct SplitKernelIntoOddAndEvenParts
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+
+    void operator()(cv::InputArray full_kernel, cv::OutputArray even_output, cv::OutputArray odd_output) const
+    {
+        //  Build the kernels to use for even output rows/columns and odd output
+        //  rows/columns.
+        //  We are simulating upsampling by virtually interlacing zeros between
+        //  each input. All even rows/columns in this virtually upsampled input
+        //  are all zeros.  As such, only odd indexed kernel values are used
+        //  for even output rows/columns. Likewise, only even indexed kernel
+        //  values are used for odd output rows/columns.
+        auto kernel = full_kernel.getMat();
+        assert(kernel.rows == 1 || kernel.cols == 1);
+        int kernel_length = std::max(kernel.rows, kernel.cols);
+
+        cv::Size even_size(kernel_length / 2 + kernel_length % 2, 1);
+        cv::Size odd_size(kernel_length / 2, 1);
+        if (kernel.cols == 1) {
+            std::swap(even_size.width, even_size.height);
+            std::swap(odd_size.width, odd_size.height);
+        }
+
+        even_output.create(even_size, kernel.type());
+        auto even_kernel = even_output.getMat();
+        for (int i = 0; i < even_kernel.total(); ++i)
+            even_kernel.at<Pixel>(i) = kernel.at<Pixel>(2 * i + 1);
+
+        odd_output.create(odd_size, kernel.type());
+        auto odd_kernel = odd_output.getMat();
+        for (int i = 0; i < odd_kernel.total(); ++i)
+            odd_kernel.at<Pixel>(i) = kernel.at<Pixel>(2 * i);
+    }
+};
+
+
+template <typename T, int CHANNELS>
+struct MergeEvenAndOddKernels
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+
+    void operator()(cv::InputArray even_kernel_input, cv::InputArray odd_kernel_input, cv::OutputArray full_kernel) const
+    {
+        cv::Mat even_kernel = even_kernel_input.getMat();
+        cv::Mat odd_kernel = odd_kernel_input.getMat();
+
+        int kernel_length = even_kernel.total() + odd_kernel.total();
+        cv::Size kernel_size(kernel_length, 1);
+        if (even_kernel.cols == 1)
+            std::swap(kernel_size.width, kernel_size.height);
+
+        full_kernel.create(kernel_size, even_kernel.type());
+        auto kernel = full_kernel.getMat();
+        for (int i = 0; i < kernel.total(); ++i) {
+            //  This is correct.  The even/odd naming convention applies to the
+            //  even/odd-ness of the image rows & columns, which is opposite
+            //  to the even/odd-ness of the kernel indices.
+            cv::Mat& source_kernel = (i % 2 == 0) ? odd_kernel : even_kernel;
+            kernel.at<Pixel>(i) = source_kernel.at<Pixel>(i / 2);
+        }
+    }
+};
+
 /**
  * -----------------------------------------------------------------------------
  * WaveletFilterBank
  * -----------------------------------------------------------------------------
 */
-WaveletFilterBank::WaveletFilterBank(
-    const WaveletFilterBank::KernelPair& reconstruct_kernels,
-    const WaveletFilterBank::KernelPair& decompose_kernels
+bool KernelPair::operator==(const KernelPair& other) const
+{
+    return this == &other || (
+        equals(_lowpass, other._lowpass) && equals(_highpass, other._highpass)
+    );
+}
+
+WaveletFilterBankImpl::WaveletFilterBankImpl() :
+    decompose_lowpass(0, 0, CV_64F),
+    decompose_highpass(0, 0, CV_64F),
+    reconstruct_even_lowpass(0, 0, CV_64F),
+    reconstruct_odd_lowpass(0, 0, CV_64F),
+    reconstruct_even_highpass(0, 0, CV_64F),
+    reconstruct_odd_highpass(0, 0, CV_64F),
+    filter_length(0)
+{
+}
+
+WaveletFilterBankImpl::WaveletFilterBankImpl(
+    const cv::Mat& reconstruct_lowpass_,
+    const cv::Mat& reconstruct_highpass_,
+    const cv::Mat& decompose_lowpass_,
+    const cv::Mat& decompose_highpass_
 ) :
-    _reconstruct_kernels(reconstruct_kernels),
-    _decompose_kernels(decompose_kernels)
+    filter_length(std::max(decompose_lowpass_.total(), decompose_highpass_.total()))
+{
+    check_kernels(
+        reconstruct_lowpass_,
+        reconstruct_highpass_,
+        decompose_lowpass_,
+        decompose_highpass_
+    );
+
+    cv::flip(decompose_lowpass_, decompose_lowpass, -1);
+    cv::flip(decompose_highpass_, decompose_highpass, -1);
+
+    cv::Mat flipped_reconstruct_lowpass;
+    cv::flip(reconstruct_lowpass_, flipped_reconstruct_lowpass, -1);
+    split_kernel_into_odd_and_even_parts(
+        flipped_reconstruct_lowpass,
+        reconstruct_even_lowpass,
+        reconstruct_odd_lowpass
+    );
+
+    cv::Mat flipped_reconstruct_highpass;
+    cv::flip(reconstruct_highpass_, flipped_reconstruct_highpass, -1);
+    split_kernel_into_odd_and_even_parts(
+        flipped_reconstruct_highpass,
+        reconstruct_even_highpass,
+        reconstruct_odd_highpass
+    );
+}
+
+void WaveletFilterBankImpl::split_kernel_into_odd_and_even_parts(cv::InputArray kernel, cv::OutputArray even_kernel, cv::OutputArray odd_kernel) const
+{
+    dispatch_on_pixel_type<SplitKernelIntoOddAndEvenParts>(
+        kernel.type(),
+        kernel,
+        even_kernel,
+        odd_kernel
+    );
+}
+
+void WaveletFilterBankImpl::merge_even_and_odd_kernels(
+    cv::InputArray even_kernel,
+    cv::InputArray odd_kernel,
+    cv::OutputArray kernel
+) const
+{
+    dispatch_on_pixel_type<MergeEvenAndOddKernels>(
+        even_kernel.type(),
+        even_kernel,
+        odd_kernel,
+        kernel
+    );
+}
+
+KernelPair WaveletFilterBankImpl::reconstruct_kernels() const
+{
+    cv::Mat lowpass;
+    merge_even_and_odd_kernels(reconstruct_even_lowpass, reconstruct_odd_lowpass, lowpass);
+    cv::flip(lowpass, lowpass, -1);
+
+    cv::Mat highpass;
+    merge_even_and_odd_kernels(reconstruct_even_highpass, reconstruct_odd_highpass, highpass);
+    cv::flip(highpass, highpass, -1);
+
+    return KernelPair(lowpass, highpass);
+}
+
+KernelPair WaveletFilterBankImpl::decompose_kernels() const
+{
+    cv::Mat lowpass;
+    cv::flip(decompose_lowpass, lowpass, -1);
+    cv::Mat highpass;
+    cv::flip(decompose_highpass, highpass, -1);
+
+    return KernelPair(lowpass, highpass);
+}
+
+#ifndef DISABLE_ARG_CHECKS
+void WaveletFilterBankImpl::check_kernels(
+    const cv::Mat& reconstruct_lowpass,
+    const cv::Mat& reconstruct_highpass,
+    const cv::Mat& decompose_lowpass,
+    const cv::Mat& decompose_highpass
+) const
+{
+    std::vector<cv::Mat> kernels = {
+        reconstruct_lowpass,
+        reconstruct_highpass,
+        decompose_lowpass,
+        decompose_highpass
+    };
+    if (!std::ranges::all_of(kernels, [](auto kernel) { return kernel.empty(); })
+        && !std::ranges::none_of(kernels, [](auto kernel) { return kernel.empty(); })) {
+        std::stringstream message;
+        message
+            << "FilterBank: Kernels must all be empty or all nonempty, got "
+            << (reconstruct_lowpass.empty() ? "empty" : "nonempty") << " reconstruct_lowpass, "
+            << (reconstruct_highpass.empty() ? "empty" : "nonempty") << " reconstruct_highpass, "
+            << (decompose_lowpass.empty() ? "empty" : "nonempty") << " decompose_lowpass, and "
+            << (decompose_highpass.empty() ? "empty" : "nonempty") << " decompose_highpass.";
+        CV_Error(cv::Error::StsBadArg, message.str());
+    }
+
+    if (reconstruct_lowpass.size() != reconstruct_highpass.size()) {
+        std::stringstream message;
+        message
+            << "FilterBank: reconstruct_lowpass must have same size as reconstruct_highpass, "
+            << "got reconstruct_lowpass.size() = " << reconstruct_lowpass.size() << ", "
+            << "reconstruct_highpass.size() = " << reconstruct_highpass.size() << ".";
+        CV_Error(cv::Error::StsBadSize, message.str());
+    }
+
+    if (decompose_lowpass.size() != decompose_highpass.size()) {
+        std::stringstream message;
+        message
+            << "FilterBank: decompose_lowpass must have same size as decompose_highpass, "
+            << "got decompose_lowpass.size() = " << decompose_lowpass.size() << ", "
+            << "decompose_highpass.size() = " << decompose_highpass.size() << ".";
+        CV_Error(cv::Error::StsBadSize, message.str());
+    }
+}
+#else
+inline void WaveletFilterBankImpl::check_kernels(
+    const cv::Mat& reconstruct_lowpass,
+    const cv::Mat& reconstruct_highpass,
+    const cv::Mat& decompose_lowpass,
+    const cv::Mat& decompose_highpass
+) const
+{
+}
+#endif
+
+WaveletFilterBank::WaveletFilterBank() :
+    _p(std::make_shared<WaveletFilterBankImpl>())
 {
 }
 
@@ -34,11 +396,126 @@ WaveletFilterBank::WaveletFilterBank(
     const cv::Mat& decompose_lowpass,
     const cv::Mat& decompose_highpass
 ) :
-    WaveletFilterBank(
-        WaveletFilterBank::KernelPair(reconstruct_lowpass, reconstruct_highpass),
-        WaveletFilterBank::KernelPair(decompose_lowpass, decompose_highpass)
+    _p(
+        std::make_shared<WaveletFilterBankImpl>(
+            reconstruct_lowpass,
+            reconstruct_highpass,
+            decompose_lowpass,
+            decompose_highpass
+        )
     )
 {
+}
+
+WaveletFilterBank::WaveletFilterBank(
+    const KernelPair& reconstruct_kernels,
+    const KernelPair& decompose_kernels
+) :
+    WaveletFilterBank(
+        reconstruct_kernels.lowpass(),
+        reconstruct_kernels.highpass(),
+        decompose_kernels.lowpass(),
+        decompose_kernels.highpass()
+    )
+{
+}
+
+void WaveletFilterBank::forward(
+    cv::InputArray input,
+    cv::OutputArray approx,
+    cv::OutputArray horizontal_detail,
+    cv::OutputArray vertical_detail,
+    cv::OutputArray diagonal_detail,
+    int border_type,
+    const cv::Scalar& border_value
+) const
+{
+    if (input.rows() <= 1 || input.cols() <= 1) {
+        std::stringstream message;
+        message << "Input size must be greater [1 x 1], got " << input.size();
+        CV_Error(cv::Error::StsBadSize, message.str());
+    }
+
+    cv::Mat padded_input;
+    pad(input, padded_input, border_type, border_value);
+
+    //  stage 1
+    cv::Mat stage1_lowpass_output;
+    convolve_rows_and_downsample_cols(padded_input, stage1_lowpass_output, _p->decompose_lowpass);
+    cv::Mat stage1_highpass_output;
+    convolve_rows_and_downsample_cols(padded_input, stage1_highpass_output, _p->decompose_highpass);
+
+    //  stage 2
+    convolve_cols_and_downsample_rows(stage1_lowpass_output, approx, _p->decompose_lowpass);
+    convolve_cols_and_downsample_rows(stage1_lowpass_output, horizontal_detail, _p->decompose_highpass);
+    convolve_cols_and_downsample_rows(stage1_highpass_output, vertical_detail, _p->decompose_lowpass);
+    convolve_cols_and_downsample_rows(stage1_highpass_output, diagonal_detail, _p->decompose_highpass);
+}
+
+void WaveletFilterBank::inverse(
+    cv::InputArray approx,
+    cv::InputArray horizontal_detail,
+    cv::InputArray vertical_detail,
+    cv::InputArray diagonal_detail,
+    cv::OutputArray output,
+    const cv::Size& output_size
+) const
+{
+    //  stage 1a
+    cv::Mat stage1a_lowpass_output;
+    upsample_rows_and_convolve_cols(
+        approx,
+        stage1a_lowpass_output,
+        _p->reconstruct_even_lowpass,
+        _p->reconstruct_odd_lowpass,
+        output_size
+    );
+    cv::Mat stage1a_highpass_output;
+    upsample_rows_and_convolve_cols(
+        horizontal_detail,
+        stage1a_highpass_output,
+        _p->reconstruct_even_highpass,
+        _p->reconstruct_odd_highpass,
+        output_size
+    );
+
+    //  stage 1b
+    cv::Mat stage1b_lowpass_output;
+    upsample_rows_and_convolve_cols(
+        vertical_detail,
+        stage1b_lowpass_output,
+        _p->reconstruct_even_lowpass,
+        _p->reconstruct_odd_lowpass,
+        output_size
+    );
+    cv::Mat stage1b_highpass_output;
+    upsample_rows_and_convolve_cols(
+        diagonal_detail,
+        stage1b_highpass_output,
+        _p->reconstruct_even_highpass,
+        _p->reconstruct_odd_highpass,
+        output_size
+    );
+
+    //  stage 2
+    cv::Mat stage2_lowpass_output;
+    upsample_cols_and_convolve_rows(
+        stage1a_lowpass_output + stage1a_highpass_output,
+        stage2_lowpass_output,
+        _p->reconstruct_even_lowpass,
+        _p->reconstruct_odd_lowpass,
+        output_size
+    );
+    cv::Mat stage2_highpass_output;
+    upsample_cols_and_convolve_rows(
+        stage1b_lowpass_output + stage1b_highpass_output,
+        stage2_highpass_output,
+        _p->reconstruct_even_highpass,
+        _p->reconstruct_odd_highpass,
+        output_size
+    );
+
+    output.assign(stage2_lowpass_output + stage2_highpass_output);
 }
 
 cv::Size WaveletFilterBank::output_size(const cv::Size& input_size) const
@@ -61,290 +538,105 @@ int WaveletFilterBank::subband_size(int input_size) const
     return (input_size + filter_length() - 1) / 2;
 }
 
-// cv::Size WaveletFilterBank::input_size(const cv::Size& output_size) const
-// {
-//     return cv::Size(input_size(output_size.width), input_size(output_size.height));
-// }
-
-// int WaveletFilterBank::input_size(int output_size) const
-// {
-//     // output_size = 2 * int((input_size + filter_length() - 1) / 2);
-//     // (output_size / 2) = int((input_size + filter_length() - 1) / 2);
-//     // 2 * (output_size / 2) = input_size + filter_length() - 1;
-
-//     // input_size + filter_length() - 1 even
-//     output_size = input_size + filter_length() - 1;
-
-//     // input_size + filter_length() - 1 odd
-//     (output_size / 2) = int((input_size + filter_length() - 1) / 2);
-
-//     // filter_length() - 1 odd => input_size even
-//     output_size = 2 * (input_size + filter_length() - 1) / 2;
-
-
-//     // filter_length() - 1 even => input_size odd
-//     output_size = 2 * input_size + (filter_length() - 1);
-
-//     // input_size = 2 * (output_size / 2) - filter_length() + 1;
-
-//     // return output_size - filter_length() + 1 + (output_size % 2 == 0);
-//     return 2 * (output_size / 2) - filter_length() + 1;
-//     return 2 * (output_size / 2) - filter_length() + 1;
-
-//     // return 2 * output_size - filter_length() + (output_size % 2);
-//     // return output_size - filter_length() + 2 * (output_size % 2 == 0);
-//     // return output_size - filter_length() + 2 - (output_size % 2);
-// }
-
-cv::Rect WaveletFilterBank::unpad_rect(const cv::Size& padded_size) const
-{
-    // // int pad1 = (filter_length() - 1) / 2;
-    // int pad1 = (filter_length() - 1);
-    // // int pad2 = (filter_length() - 1) / 2;
-    // // auto size = input_size(padded_size / 2);
-
-    // // int pad2 = (filter_length() - 1) / 2 + (filter_length() - 1) % 2;
-    // return cv::Rect(
-    //     cv::Point(pad1, pad1),
-    //     cv::Size(padded_size.width - pad1 - 1, padded_size.height - pad1 - 1)
-    //     // cv::Point(padded_size.width - pad2, padded_size.height - pad2)
-    // );
-
-    int top_left_pad = (filter_length() - 1) / 2;
-    int bottom_right_pad = (filter_length() - 1) / 2;
-    // int top_left_pad = (filter_length() - 1) / 2;
-    // int bottom_right_pad = (filter_length() - 1) / 2 + (filter_length() - 1) % 2;
-    return cv::Rect(
-        cv::Point(top_left_pad, top_left_pad),
-        cv::Point(padded_size.width - bottom_right_pad, padded_size.height - bottom_right_pad)
-    );
-}
-
-cv::Rect WaveletFilterBank::unpad_rect(cv::InputArray padded_matrix) const
-{
-    return unpad_rect(padded_matrix.size());
-}
-
-void WaveletFilterBank::unpad(cv::InputArray padded_matrix, cv::OutputArray output) const
-{
-    auto matrix = padded_matrix.getMat();
-    auto unpadded_matrix = matrix(unpad_rect(padded_matrix));
-    // std::cout << "unpad " << matrix.size() << "  " << h.size() << "  " << unpad_rect(padded_matrix) << "\n";
-    unpadded_matrix.copyTo(output);
-    // matrix(unpad_rect(padded_matrix)).copyTo(output);
-}
-
-void WaveletFilterBank::forward(
+void WaveletFilterBank::pad(
     cv::InputArray input,
-    cv::OutputArray approx,
-    cv::OutputArray horizontal_detail,
-    cv::OutputArray vertical_detail,
-    cv::OutputArray diagonal_detail,
-    int border_type
+    cv::OutputArray output,
+    int border_type,
+    const cv::Scalar& border_value
 ) const
 {
-    int top_left_pad = (filter_length() - 1) / 2;
-    // int pad2 = (filter_length() - 1) / 2;
-    int bottom_right_pad = (filter_length() - 1) / 2 + (filter_length() - 1) % 2;
-
-    cv::Mat padded_input;
     cv::copyMakeBorder(
         input,
-        padded_input,
-        top_left_pad,
-        bottom_right_pad,
-        top_left_pad,
-        bottom_right_pad,
-        border_type
+        output,
+        filter_length() - 2,
+        filter_length(),
+        filter_length() - 2,
+        filter_length(),
+        border_type,
+        border_value
     );
-
-    auto stage1_lowpass_output = forward_stage1_lowpass(padded_input, border_type);
-    auto stage1_highpass_output = forward_stage1_highpass(padded_input, border_type);
-
-    forward_stage2_lowpass(stage1_lowpass_output, approx, border_type);
-    forward_stage2_highpass(stage1_lowpass_output, horizontal_detail, border_type);
-    forward_stage2_lowpass(stage1_highpass_output, vertical_detail, border_type);
-    forward_stage2_highpass(stage1_highpass_output, diagonal_detail, border_type);
 }
 
-cv::Mat WaveletFilterBank::forward_stage1_lowpass(cv::InputArray data, int border_type) const
-{
-    cv::Mat result;
-    forward_stage1_lowpass(data, result, border_type);
-    return result;
-}
-
-cv::Mat WaveletFilterBank::forward_stage1_highpass(cv::InputArray data, int border_type) const
-{
-    cv::Mat result;
-    forward_stage1_highpass(data, result, border_type);
-    return result;
-}
-
-cv::Mat WaveletFilterBank::forward_stage2_lowpass(cv::InputArray data, int border_type) const
-{
-    cv::Mat result;
-    forward_stage2_lowpass(data, result, border_type);
-    return result;
-}
-
-cv::Mat WaveletFilterBank::forward_stage2_highpass(cv::InputArray data, int border_type) const
-{
-    cv::Mat result;
-    forward_stage2_highpass(data, result, border_type);
-    return result;
-}
-
-void WaveletFilterBank::forward_stage1_lowpass(cv::InputArray data, cv::OutputArray output, int border_type) const
-{
-    cv::Mat filtered;
-    filter_rows(data, filtered, _decompose_kernels.lowpass(), border_type);
-    downsample_cols(filtered, output);
-}
-
-void WaveletFilterBank::forward_stage1_highpass(cv::InputArray data, cv::OutputArray output, int border_type) const
-{
-    cv::Mat filtered;
-    filter_rows(data, filtered, _decompose_kernels.highpass(), border_type);
-    downsample_cols(filtered, output);
-}
-
-void WaveletFilterBank::forward_stage2_lowpass(cv::InputArray data, cv::OutputArray output, int border_type) const
-{
-    cv::Mat filtered;
-    filter_cols(data, filtered, _decompose_kernels.lowpass(), border_type);
-    downsample_rows(filtered, output);
-}
-
-void WaveletFilterBank::forward_stage2_highpass(cv::InputArray data, cv::OutputArray output, int border_type) const
-{
-    cv::Mat filtered;
-    filter_cols(data, filtered, _decompose_kernels.highpass(), border_type);
-    downsample_rows(filtered, output);
-}
-
-void WaveletFilterBank::inverse(
-    cv::InputArray approx,
-    cv::InputArray horizontal_detail,
-    cv::InputArray vertical_detail,
-    cv::InputArray diagonal_detail,
+void WaveletFilterBank::convolve_rows_and_downsample_cols(
+    cv::InputArray data,
     cv::OutputArray output,
-    int border_type
+    const cv::Mat& kernel
 ) const
 {
-    auto x1 = inverse_stage1_lowpass(approx, border_type)
-        + inverse_stage1_highpass(horizontal_detail, border_type);
-
-    auto x2 = inverse_stage1_lowpass(vertical_detail, border_type)
-        + inverse_stage1_highpass(diagonal_detail, border_type);
-
-    auto image = inverse_stage2_lowpass(x1, border_type)
-        + inverse_stage2_highpass(x2, border_type);
-
-    unpad(image, output);
-    // std::cout << "output.size() = " << output.size() << "\n";
-    // output.assign(image);
+    dispatch_on_pixel_type<ConvolveRowsAndDownsampleCols>(
+        data.type(),
+        data,
+        output,
+        kernel.t()
+    );
 }
 
-cv::Mat WaveletFilterBank::inverse_stage1_lowpass(cv::InputArray data, int border_type) const
+void WaveletFilterBank::convolve_cols_and_downsample_rows(
+    cv::InputArray data,
+    cv::OutputArray output,
+    const cv::Mat& kernel
+) const
 {
-    cv::Mat result;
-    inverse_stage1_lowpass(data, result, border_type);
-    return result;
+    dispatch_on_pixel_type<ConvolveColsAndDownsampleRows>(
+        data.type(),
+        data,
+        output,
+        kernel
+    );
 }
 
-cv::Mat WaveletFilterBank::inverse_stage1_highpass(cv::InputArray data, int border_type) const
+void WaveletFilterBank::upsample_cols_and_convolve_rows(
+    cv::InputArray data,
+    cv::OutputArray output,
+    const cv::Mat& even_kernel,
+    const cv::Mat& odd_kernel,
+    const cv::Size& valid_size
+) const
 {
-    cv::Mat result;
-    inverse_stage1_highpass(data, result, border_type);
-    return result;
+    dispatch_on_pixel_type<UpsampleColsAndConvolveRows>(
+        data.type(),
+        data,
+        output,
+        even_kernel.t(),
+        odd_kernel.t(),
+        valid_size
+    );
 }
 
-cv::Mat WaveletFilterBank::inverse_stage2_lowpass(cv::InputArray data, int border_type) const
+void WaveletFilterBank::upsample_rows_and_convolve_cols(
+    cv::InputArray data,
+    cv::OutputArray output,
+    const cv::Mat& even_kernel,
+    const cv::Mat& odd_kernel,
+    const cv::Size& valid_size
+) const
 {
-    cv::Mat result;
-    inverse_stage2_lowpass(data, result, border_type);
-    return result;
+    dispatch_on_pixel_type<UpsampleRowsAndConvolveCols>(
+        data.type(),
+        data,
+        output,
+        even_kernel,
+        odd_kernel,
+        valid_size
+    );
 }
 
-cv::Mat WaveletFilterBank::inverse_stage2_highpass(cv::InputArray data, int border_type) const
+bool WaveletFilterBank::operator==(const WaveletFilterBank& other) const
 {
-    cv::Mat result;
-    inverse_stage2_highpass(data, result, border_type);
-    return result;
-}
-
-void WaveletFilterBank::inverse_stage1_lowpass(cv::InputArray data, cv::OutputArray output, int border_type, int offset) const
-{
-    cv::Mat upsampled;
-    upsample_rows(data, upsampled);
-    filter_cols(upsampled, output, _reconstruct_kernels.lowpass(), border_type);
-}
-
-void WaveletFilterBank::inverse_stage1_highpass(cv::InputArray data, cv::OutputArray output, int border_type, int offset) const
-{
-    cv::Mat upsampled;
-    upsample_rows(data, upsampled);
-    filter_cols(upsampled, output, _reconstruct_kernels.highpass(), border_type);
-}
-
-void WaveletFilterBank::inverse_stage2_lowpass(cv::InputArray data, cv::OutputArray output, int border_type, int offset) const
-{
-    cv::Mat upsampled;
-    upsample_cols(data, upsampled);
-    filter_rows(upsampled, output, _reconstruct_kernels.lowpass(), border_type);
-}
-
-void WaveletFilterBank::inverse_stage2_highpass(cv::InputArray data, cv::OutputArray output, int border_type, int offset) const
-{
-    cv::Mat upsampled;
-    upsample_cols(data, upsampled);
-    filter_rows(upsampled, output, _reconstruct_kernels.highpass(), border_type);
-}
-
-void WaveletFilterBank::downsample_rows(cv::InputArray data, cv::OutputArray output) const
-{
-    //  use resize without any smoothing to implement downsampling by 2
-    cv::resize(data, output, cv::Size(data.cols(), data.rows() / 2), 0.0, 0.0, cv::INTER_NEAREST);
-}
-
-void WaveletFilterBank::downsample_cols(cv::InputArray data, cv::OutputArray output) const
-{
-    //  use resize without any smoothing to implement downsampling by 2
-    cv::resize(data, output, cv::Size(data.cols() / 2, data.rows()), 0.0, 0.0, cv::INTER_NEAREST);
-}
-
-void WaveletFilterBank::upsample_rows(cv::InputArray data, cv::OutputArray output) const
-{
-    //  use resize without any smoothing to implement upsampling by 2
-    cv::resize(data, output, cv::Size(data.cols(), 2 * data.rows()), 0.0, 0.0, cv::INTER_NEAREST);
-    auto output_matrix = output.getMat();
-    for (int i = 0; i < output_matrix.rows; i += 2)
-        output_matrix.row(i).setTo(0);
-}
-
-void WaveletFilterBank::upsample_cols(cv::InputArray data, cv::OutputArray output) const
-{
-    //  use resize without any smoothing to implement upsampling by 2
-    cv::resize(data, output, cv::Size(2 * data.cols(), data.rows()), 0.0, 0.0, cv::INTER_NEAREST);
-    auto output_matrix = output.getMat();
-    for (int j = 0; j < output_matrix.cols; j += 2)
-        output_matrix.col(j).setTo(0);
-}
-
-void WaveletFilterBank::filter_rows(cv::InputArray data, cv::OutputArray output, const cv::Mat& kernel, int border_type) const
-{
-    cv::filter2D(data, output, -1, kernel.t(), cv::Point(-1, -1), 0.0, border_type);
-}
-
-void WaveletFilterBank::filter_cols(cv::InputArray data, cv::OutputArray output, const cv::Mat& kernel, int border_type) const
-{
-    cv::filter2D(data, output, -1, kernel, cv::Point(-1, -1), 0.0, border_type);
+    return this == &other || (
+        equals(_p->decompose_lowpass, other._p->decompose_lowpass)
+        && equals(_p->decompose_highpass, other._p->decompose_highpass)
+        && equals(_p->reconstruct_even_lowpass, other._p->reconstruct_even_lowpass)
+        && equals(_p->reconstruct_odd_lowpass, other._p->reconstruct_odd_lowpass)
+        && equals(_p->reconstruct_even_highpass, other._p->reconstruct_even_highpass)
+        && equals(_p->reconstruct_odd_highpass, other._p->reconstruct_odd_highpass)
+    );
 }
 
 std::ostream& operator<<(std::ostream& stream, const WaveletFilterBank& filter_bank)
 {
-    stream << "decompose:\n"
+    stream
+        << "decompose:\n"
         << "    lowpass: " << filter_bank.decompose_kernels().lowpass().reshape(0, 1) << "\n"
         << "    highpass: " << filter_bank.decompose_kernels().highpass().reshape(0, 1) << "\n"
         << "reconstruct:\n"
@@ -370,7 +662,6 @@ std::ostream& operator<<(std::ostream& stream, const WaveletFilterBank& filter_b
  * -----------------------------------------------------------------------------
 */
 Wavelet::Wavelet(
-        // int order,
         int vanishing_moments_psi,
         int vanishing_moments_phi,
         int support_width,
@@ -384,7 +675,6 @@ Wavelet::Wavelet(
     ) :
     _p(
         std::make_shared<WaveletImpl>(
-            // order,
             vanishing_moments_psi,
             vanishing_moments_phi,
             support_width,
@@ -398,6 +688,16 @@ Wavelet::Wavelet(
         )
     )
 {
+}
+
+Wavelet::Wavelet() : _p(std::make_shared<WaveletImpl>())
+{
+}
+
+bool Wavelet::operator==(const Wavelet& other) const
+{
+    return _p == other._p
+        || (name() == other.name() && filter_bank() == other.filter_bank());
 }
 
 std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet)
@@ -542,14 +842,7 @@ std::string get_and_check_biorthogonal_name(int vanishing_moments_psi, int vanis
     ).str();
 
     if (!BIORTHOGONAL_FILTER_COEFFS.contains(name)) {
-        // auto valid_names = std::views::keys(BIORTHOGONAL_FILTER_COEFFS);
-        // auto h = join(valid_names);
         std::stringstream message;
-        // message
-        //     << "Invalid Biorthogonal wavelet order.  "
-        //     << "Must be one of: " << h << " - "
-        //     << "got biorN.M with " << "N = " << vanishing_moments_psi << " and M = " << vanishing_moments_phi <<  ".";
-
         message
             << "Invalid Biorthogonal wavelet order.  "
             << "Must be one of: ";
@@ -567,7 +860,6 @@ std::string get_and_check_biorthogonal_name(int vanishing_moments_psi, int vanis
 Wavelet haar()
 {
     return Wavelet(
-        // 1, // order
         1, // vanishing_moments_psi
         0, // vanishing_moments_phi
         1, // support_width
@@ -589,7 +881,6 @@ Wavelet daubechies(int order)
     check_wavelet_order(order, DAUBECHIES_MIN_ORDER, DAUBECHIES_MAX_ORDER, "Daubechies");
 
     return Wavelet(
-        // order, // order
         // 2 * order, // vanishing_moments_psi
         order, // vanishing_moments_psi
         0, // vanishing_moments_phi
@@ -612,7 +903,6 @@ Wavelet symlets(int order)
     check_wavelet_order(order, SYMLETS_MIN_ORDER, SYMLETS_MAX_ORDER, "Symlets");
 
     return Wavelet(
-        // order, // order
         order, // vanishing_moments_psi
         0, // vanishing_moments_phi
         2 * order - 1, // support_width
@@ -634,7 +924,6 @@ Wavelet coiflets(int order)
     check_wavelet_order(order, COIFLETS_MIN_ORDER, COIFLETS_MAX_ORDER, "Coiflets");
 
     return Wavelet(
-        // order, // order
         2 * order, // vanishing_moments_psi
         2 * order - 1, // vanishing_moments_phi
         6 * order - 1, // support_width
@@ -658,7 +947,6 @@ Wavelet biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
     auto decompose_lowpass_coeffs = BIORTHOGONAL_FILTER_COEFFS.at(name).second;
 
     return Wavelet(
-        // 10 * vanishing_moments_psi + vanishing_moments_phi, // order
         vanishing_moments_psi, // vanishing_moments_psi
         vanishing_moments_phi, // vanishing_moments_phi
         -1, // support_width
@@ -680,24 +968,6 @@ Wavelet biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
         )
     );
 }
-
-
-
-// for(i = 0; i < w->rec_len; ++i){
-    //     // w->rec_lo_float[i] = bior_float[N - 1][0][i + n];
-    //     // w->dec_lo_float[i] = bior_float[N - 1][M_idx + 1][w->dec_len - 1 - i];
-
-    //     // w->rec_hi_float[i] = ((i % 2) ? -1 : 1)
-    //     //     * bior_float[N - 1][M_idx + 1][w->dec_len - 1 - i];
-    //     // w->dec_hi_float[i] = (((w->dec_len-1-i) % 2) ? -1 : 1)
-    //     //     * bior_float[N - 1][0][i + n];
-
-    //     decompose_lowpass[i] = kernel_a[i + n];
-    //     reconstruct_lowpass[i] = kernel_b[filters_length - 1 - i];
-
-    //     decompose_highpass[i] = kernel_b[filters_length - 1 - i];
-    //     reconstruct_highpass[i] = kernel_a[i + n];
-    // }
 
 } // namespace wavelet
 

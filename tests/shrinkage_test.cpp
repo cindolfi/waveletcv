@@ -1991,7 +1991,6 @@ public:
         assert(values.size() == 3 * LEVELS);
 
         auto type = cv::traits::Type<Pixel>::value;
-        // DWT2D::Coeffs coeffs(ROWS, COLS, type, LEVELS);
         DWT2D dwt(haar());
         auto coeffs = dwt.create_coeffs(ROWS, COLS, type, LEVELS);
         int i = 0;
@@ -2017,7 +2016,6 @@ public:
         assert(values.size() == 3 * LEVELS);
 
         auto type = cv::traits::Type<Pixel>::value;
-        // DWT2D::Coeffs coeffs(ROWS, COLS, type, LEVELS);
         DWT2D dwt(haar());
         auto coeffs = dwt.create_coeffs(ROWS, COLS, type, LEVELS);
         int i = 0;
