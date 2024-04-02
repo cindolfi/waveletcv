@@ -10,8 +10,6 @@
 
 namespace wavelet
 {
-namespace internal
-{
 class KernelPair
 {
 public:
@@ -23,8 +21,7 @@ public:
     KernelPair(const cv::Mat& lowpass, const cv::Mat& highpass) :
         _lowpass(lowpass),
         _highpass(highpass)
-    {
-    }
+    {}
 
     template <typename T>
     KernelPair(const std::vector<T>& lowpass, const std::vector<T>& highpass) :
@@ -36,9 +33,8 @@ public:
         KernelPair(cv::Mat(lowpass, true), cv::Mat(highpass, true))
     {}
 
-    const cv::Mat lowpass() const { return _lowpass; }
-    const cv::Mat highpass() const { return _highpass; }
-
+    cv::Mat lowpass() const { return _lowpass; }
+    cv::Mat highpass() const { return _highpass; }
     int filter_length() const { return _lowpass.total(); }
     bool empty() const { return _lowpass.empty(); }
 
@@ -49,6 +45,9 @@ protected:
     cv::Mat _highpass;
 };
 
+
+namespace internal
+{
 struct DecomposeKernels
 {
     DecomposeKernels() :
@@ -60,6 +59,9 @@ struct DecomposeKernels
         lowpass(lowpass),
         highpass(highpass)
     {}
+
+    DecomposeKernels(const DecomposeKernels& other) = default;
+    DecomposeKernels(DecomposeKernels&& other) = default;
 
     cv::Mat lowpass;
     cv::Mat highpass;
@@ -86,21 +88,24 @@ struct ReconstructKernels
         odd_highpass(odd_highpass)
     {}
 
+    ReconstructKernels(const ReconstructKernels& other) = default;
+    ReconstructKernels(ReconstructKernels&& other) = default;
+
     cv::Mat even_lowpass;
     cv::Mat odd_lowpass;
     cv::Mat even_highpass;
     cv::Mat odd_highpass;
 };
 
-struct WaveletFilterBankImpl
+struct FilterBankImpl
 {
-    WaveletFilterBankImpl();
+    FilterBankImpl();
 
-    WaveletFilterBankImpl(
-        const cv::Mat& reconstruct_lowpass,
-        const cv::Mat& reconstruct_highpass,
+    FilterBankImpl(
         const cv::Mat& decompose_lowpass,
-        const cv::Mat& decompose_highpass
+        const cv::Mat& decompose_highpass,
+        const cv::Mat& reconstruct_lowpass,
+        const cv::Mat& reconstruct_highpass
     );
 
     void split_kernel_into_odd_and_even_parts(
@@ -128,24 +133,25 @@ struct WaveletFilterBankImpl
     ReconstructKernels reconstruct;
     int filter_length;
 };
+} // namespace internal
 
 
-class WaveletFilterBank
+class FilterBank
 {
 public:
-    WaveletFilterBank();
-    WaveletFilterBank(
+    FilterBank();
+    FilterBank(
         const cv::Mat& reconstruct_lowpass,
         const cv::Mat& reconstruct_highpass,
         const cv::Mat& decompose_lowpass,
         const cv::Mat& decompose_highpass
     );
-    WaveletFilterBank(
+    FilterBank(
         const KernelPair& reconstruct_kernels,
         const KernelPair& decompose_kernels
     );
-    WaveletFilterBank(const WaveletFilterBank& other) = default;
-    WaveletFilterBank(WaveletFilterBank&& other) = default;
+    FilterBank(const FilterBank& other) = default;
+    FilterBank(FilterBank&& other) = default;
 
     bool empty() const { return _p->decompose.lowpass.empty(); }
     int type() const { return _p->decompose.lowpass.type(); }
@@ -154,7 +160,8 @@ public:
     KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
     KernelPair decompose_kernels() const { return _p->decompose_kernels(); }
 
-    bool operator==(const WaveletFilterBank& other) const;
+    bool operator==(const FilterBank& other) const;
+    friend std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
 
     void forward(
         cv::InputArray x,
@@ -165,6 +172,13 @@ public:
         int border_type=cv::BORDER_DEFAULT,
         const cv::Scalar& border_value=cv::Scalar()
     ) const;
+    void prepare_forward(int type) const;
+    void finish_forward() const;
+    bool is_prepared_forward(int type) const
+    {
+        return (bool)_decompose
+        && _decompose->lowpass.type() == promote_type(type);
+    }
 
     void inverse(
         cv::InputArray approx,
@@ -192,20 +206,6 @@ public:
             cv::Size(approx.size() * 2)
         );
     }
-
-    cv::Size output_size(const cv::Size& input_size) const;
-    int output_size(int input_size) const;
-    cv::Size subband_size(const cv::Size& input_size) const;
-    int subband_size(int input_size) const;
-
-    void prepare_forward(int type) const;
-    void finish_forward() const;
-    bool is_prepared_forward(int type) const
-    {
-        return (bool)_decompose
-        && _decompose->lowpass.type() == promote_type(type);
-    }
-
     void prepare_inverse(int type) const;
     void finish_inverse() const;
     bool is_prepared_inverse(int type) const
@@ -214,27 +214,32 @@ public:
         && _reconstruct->even_lowpass.type() == promote_type(type);
     }
 
+    cv::Size output_size(const cv::Size& input_size) const;
+    int output_size(int input_size) const;
+    cv::Size subband_size(const cv::Size& input_size) const;
+    int subband_size(int input_size) const;
+
     //  kernel pair factories
     template <typename T>
-    static KernelPair build_orthogonal_decompose_kernels(const std::vector<T>& reconstruct_lowpass_coeffs)
+    static KernelPair create_orthogonal_decompose_kernels(const std::vector<T>& reconstruct_lowpass_coeffs)
     {
-        return build_biorthogonal_decompose_kernels(
+        return create_biorthogonal_decompose_kernels(
             reconstruct_lowpass_coeffs,
             reconstruct_lowpass_coeffs
         );
     }
 
     template <typename T>
-    static KernelPair build_orthogonal_reconstruct_kernels(const std::vector<T>& reconstruct_lowpass_coeffs)
+    static KernelPair create_orthogonal_reconstruct_kernels(const std::vector<T>& reconstruct_lowpass_coeffs)
     {
-        return build_biorthogonal_reconstruct_kernels(
+        return create_biorthogonal_reconstruct_kernels(
             reconstruct_lowpass_coeffs,
             reconstruct_lowpass_coeffs
         );
     }
 
     template <typename T>
-    static KernelPair build_biorthogonal_decompose_kernels(
+    static KernelPair create_biorthogonal_decompose_kernels(
         const std::vector<T>& reconstruct_lowpass_coeffs,
         const std::vector<T>& decompose_lowpass_coeffs
     )
@@ -249,7 +254,7 @@ public:
     }
 
     template <typename T>
-    static KernelPair build_biorthogonal_reconstruct_kernels(
+    static KernelPair create_biorthogonal_reconstruct_kernels(
         const std::vector<T>& reconstruct_lowpass_coeffs,
         const std::vector<T>& decompose_lowpass_coeffs
     )
@@ -283,25 +288,17 @@ public:
         );
     }
 
-    friend std::ostream& operator<<(std::ostream& stream, const WaveletFilterBank& filter_bank);
-
     int promote_type(int type) const;
 protected:
-    void create_multichannel_kernel(
-        cv::InputArray kernel,
-        cv::OutputArray result,
-        int channels
+    void promote_input(
+        cv::InputArray input,
+        cv::OutputArray promoted_input
     ) const;
     void promote_kernel(
         cv::InputArray kernel,
         cv::OutputArray promoted_kernel,
         int type
     ) const;
-    void promote_input(
-        cv::InputArray input,
-        cv::OutputArray promoted_input
-    ) const;
-
     void pad(
         cv::InputArray data,
         cv::OutputArray output,
@@ -323,16 +320,18 @@ protected:
         cv::OutputArray output,
         const cv::Mat& even_kernel,
         const cv::Mat& odd_kernel,
-        const cv::Size& valid_size
+        const cv::Size& output_size
     ) const;
     void upsample_rows_and_convolve_cols(
         cv::InputArray data,
         cv::OutputArray output,
         const cv::Mat& even_kernel,
         const cv::Mat& odd_kernel,
-        const cv::Size& valid_size
+        const cv::Size& output_size
     ) const;
 
+    //  Argument Checkers - these all raise execeptions and can be disabled by
+    //  defining DISABLE_ARG_CHECKS
     void check_forward_input(cv::InputArray input) const;
     void check_inverse_inputs(
         cv::InputArray approx,
@@ -342,31 +341,26 @@ protected:
     ) const;
 
 protected:
-    std::shared_ptr<WaveletFilterBankImpl> _p;
+    std::shared_ptr<internal::FilterBankImpl> _p;
     //  These are used as temporary caches for promoted kernels to avoid
     //  converting kernels every time forward or inverse is called by multilevel
     //  algorithms (e.g. DWT2D).  The caching and freeing is done by the
     //  prepare_*() and finish_*() methods, respectively.
-    mutable std::shared_ptr<DecomposeKernels> _decompose;
-    mutable std::shared_ptr<ReconstructKernels> _reconstruct;
+    mutable std::shared_ptr<internal::DecomposeKernels> _decompose;
+    mutable std::shared_ptr<internal::ReconstructKernels> _reconstruct;
 };
 
-std::ostream& operator<<(std::ostream& stream, const WaveletFilterBank& filter_bank);
-} // namespace internal
+std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
 
 
-
+enum class Symmetry {
+    SYMMETRIC,
+    NEAR_SYMMETRIC,
+    ASYMMETRIC,
+};
 
 class Wavelet
 {
-public:
-    using FilterBank = internal::WaveletFilterBank;
-    enum class Symmetry {
-        SYMMETRIC,
-        NEAR_SYMMETRIC,
-        ASYMMETRIC,
-    };
-
 protected:
     struct WaveletImpl
     {
@@ -383,6 +377,7 @@ protected:
     };
 
 public:
+    Wavelet();
     Wavelet(
         int vanishing_moments_psi,
         int vanishing_moments_phi,
@@ -395,7 +390,6 @@ public:
         const std::string& name,
         const FilterBank& filter_bank
     );
-    Wavelet();
 
     int vanishing_moments_psi() const { return _p->vanishing_moments_psi; }
     int vanishing_moments_phi() const { return _p->vanishing_moments_phi; }
@@ -432,7 +426,6 @@ private:
 
 std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
 
-
 /**
  * Factories
 */
@@ -442,7 +435,12 @@ Wavelet symlets(int order);
 Wavelet coiflets(int order);
 Wavelet biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
 
-}   // namespace wavelet
+namespace internal
+{
+    void check_wavelet_order(int order, int min_order, int max_order, const std::string family);
+    std::string get_and_check_biorthogonal_name(int vanishing_moments_psi, int vanishing_moments_phi);
+} // namespace internal
+} // namespace wavelet
 
 #endif  // WAVELET_WAVELET_HPP
 

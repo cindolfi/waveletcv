@@ -224,30 +224,19 @@ struct MergeEvenAndOddKernels
     }
 };
 
-/**
- * -----------------------------------------------------------------------------
- * WaveletFilterBank
- * -----------------------------------------------------------------------------
-*/
-bool KernelPair::operator==(const KernelPair& other) const
-{
-    return this == &other || (
-        equals(_lowpass, other._lowpass) && equals(_highpass, other._highpass)
-    );
-}
 
-WaveletFilterBankImpl::WaveletFilterBankImpl() :
+FilterBankImpl::FilterBankImpl() :
     decompose(),
     reconstruct(),
     filter_length(0)
 {
 }
 
-WaveletFilterBankImpl::WaveletFilterBankImpl(
-    const cv::Mat& reconstruct_lowpass_,
-    const cv::Mat& reconstruct_highpass_,
+FilterBankImpl::FilterBankImpl(
     const cv::Mat& decompose_lowpass_,
-    const cv::Mat& decompose_highpass_
+    const cv::Mat& decompose_highpass_,
+    const cv::Mat& reconstruct_lowpass_,
+    const cv::Mat& reconstruct_highpass_
 ) :
     filter_length(std::max(decompose_lowpass_.total(), decompose_highpass_.total()))
 {
@@ -278,7 +267,7 @@ WaveletFilterBankImpl::WaveletFilterBankImpl(
     );
 }
 
-void WaveletFilterBankImpl::split_kernel_into_odd_and_even_parts(cv::InputArray kernel, cv::OutputArray even_kernel, cv::OutputArray odd_kernel) const
+void FilterBankImpl::split_kernel_into_odd_and_even_parts(cv::InputArray kernel, cv::OutputArray even_kernel, cv::OutputArray odd_kernel) const
 {
     dispatch_on_pixel_type<SplitKernelIntoOddAndEvenParts>(
         kernel.type(),
@@ -288,7 +277,7 @@ void WaveletFilterBankImpl::split_kernel_into_odd_and_even_parts(cv::InputArray 
     );
 }
 
-void WaveletFilterBankImpl::merge_even_and_odd_kernels(
+void FilterBankImpl::merge_even_and_odd_kernels(
     cv::InputArray even_kernel,
     cv::InputArray odd_kernel,
     cv::OutputArray kernel
@@ -302,7 +291,7 @@ void WaveletFilterBankImpl::merge_even_and_odd_kernels(
     );
 }
 
-KernelPair WaveletFilterBankImpl::decompose_kernels() const
+KernelPair FilterBankImpl::decompose_kernels() const
 {
     cv::Mat lowpass;
     cv::flip(decompose.lowpass, lowpass, -1);
@@ -312,7 +301,7 @@ KernelPair WaveletFilterBankImpl::decompose_kernels() const
     return KernelPair(lowpass, highpass);
 }
 
-KernelPair WaveletFilterBankImpl::reconstruct_kernels() const
+KernelPair FilterBankImpl::reconstruct_kernels() const
 {
     cv::Mat lowpass;
     merge_even_and_odd_kernels(reconstruct.even_lowpass, reconstruct.odd_lowpass, lowpass);
@@ -326,7 +315,7 @@ KernelPair WaveletFilterBankImpl::reconstruct_kernels() const
 }
 
 #ifndef DISABLE_ARG_CHECKS
-void WaveletFilterBankImpl::check_kernels(
+void FilterBankImpl::check_kernels(
     const cv::Mat& reconstruct_lowpass,
     const cv::Mat& reconstruct_highpass,
     const cv::Mat& decompose_lowpass,
@@ -370,7 +359,7 @@ void WaveletFilterBankImpl::check_kernels(
     }
 }
 #else
-inline void WaveletFilterBankImpl::check_kernels(
+inline void FilterBankImpl::check_kernels(
     const cv::Mat& reconstruct_lowpass,
     const cv::Mat& reconstruct_highpass,
     const cv::Mat& decompose_lowpass,
@@ -379,43 +368,67 @@ inline void WaveletFilterBankImpl::check_kernels(
 {
 }
 #endif
+} // namespace internal
 
-WaveletFilterBank::WaveletFilterBank() :
-    _p(std::make_shared<WaveletFilterBankImpl>())
+
+/**
+ * =============================================================================
+ * Public API
+ * =============================================================================
+*/
+/**
+ * -----------------------------------------------------------------------------
+ * KernelPair
+ * -----------------------------------------------------------------------------
+*/
+bool KernelPair::operator==(const KernelPair& other) const
+{
+    return this == &other || (
+        equals(_lowpass, other._lowpass) && equals(_highpass, other._highpass)
+    );
+}
+
+/**
+ * -----------------------------------------------------------------------------
+ * FilterBank
+ * -----------------------------------------------------------------------------
+*/
+FilterBank::FilterBank() :
+    _p(std::make_shared<internal::FilterBankImpl>())
 {
 }
 
-WaveletFilterBank::WaveletFilterBank(
-    const cv::Mat& reconstruct_lowpass,
-    const cv::Mat& reconstruct_highpass,
+FilterBank::FilterBank(
     const cv::Mat& decompose_lowpass,
-    const cv::Mat& decompose_highpass
+    const cv::Mat& decompose_highpass,
+    const cv::Mat& reconstruct_lowpass,
+    const cv::Mat& reconstruct_highpass
 ) :
     _p(
-        std::make_shared<WaveletFilterBankImpl>(
-            reconstruct_lowpass,
-            reconstruct_highpass,
+        std::make_shared<internal::FilterBankImpl>(
             decompose_lowpass,
-            decompose_highpass
+            decompose_highpass,
+            reconstruct_lowpass,
+            reconstruct_highpass
         )
     )
 {
 }
 
-WaveletFilterBank::WaveletFilterBank(
-    const KernelPair& reconstruct_kernels,
-    const KernelPair& decompose_kernels
+FilterBank::FilterBank(
+    const KernelPair& decompose_kernels,
+    const KernelPair& reconstruct_kernels
 ) :
-    WaveletFilterBank(
-        reconstruct_kernels.lowpass(),
-        reconstruct_kernels.highpass(),
+    FilterBank(
         decompose_kernels.lowpass(),
-        decompose_kernels.highpass()
+        decompose_kernels.highpass(),
+        reconstruct_kernels.lowpass(),
+        reconstruct_kernels.highpass()
     )
 {
 }
 
-void WaveletFilterBank::forward(
+void FilterBank::forward(
     cv::InputArray input,
     cv::OutputArray approx,
     cv::OutputArray horizontal_detail,
@@ -453,7 +466,7 @@ void WaveletFilterBank::forward(
         finish_forward();
 }
 
-void WaveletFilterBank::prepare_forward(int type) const
+void FilterBank::prepare_forward(int type) const
 {
     if (is_prepared_forward(type))
         return;
@@ -463,18 +476,18 @@ void WaveletFilterBank::prepare_forward(int type) const
     cv::Mat highpass_kernel;
     promote_kernel(_p->decompose.highpass, highpass_kernel, type);
 
-    _decompose = std::make_shared<DecomposeKernels>(
+    _decompose = std::make_shared<internal::DecomposeKernels>(
         lowpass_kernel,
         highpass_kernel
     );
 }
 
-void WaveletFilterBank::finish_forward() const
+void FilterBank::finish_forward() const
 {
     _decompose = nullptr;
 }
 
-void WaveletFilterBank::inverse(
+void FilterBank::inverse(
     cv::InputArray approx,
     cv::InputArray horizontal_detail,
     cv::InputArray vertical_detail,
@@ -558,7 +571,7 @@ void WaveletFilterBank::inverse(
         finish_inverse();
 }
 
-void WaveletFilterBank::prepare_inverse(int type) const
+void FilterBank::prepare_inverse(int type) const
 {
     if (is_prepared_inverse(type))
         return;
@@ -572,7 +585,7 @@ void WaveletFilterBank::prepare_inverse(int type) const
     cv::Mat odd_highpass_kernel;
     promote_kernel(_p->reconstruct.odd_highpass, odd_highpass_kernel, type);
 
-    _reconstruct = std::make_shared<ReconstructKernels>(
+    _reconstruct = std::make_shared<internal::ReconstructKernels>(
         even_lowpass_kernel,
         odd_lowpass_kernel,
         even_highpass_kernel,
@@ -580,49 +593,32 @@ void WaveletFilterBank::prepare_inverse(int type) const
     );
 }
 
-void WaveletFilterBank::finish_inverse() const
+void FilterBank::finish_inverse() const
 {
     _reconstruct = nullptr;
 }
 
-cv::Size WaveletFilterBank::output_size(const cv::Size& input_size) const
+cv::Size FilterBank::output_size(const cv::Size& input_size) const
 {
     return cv::Size(output_size(input_size.width), output_size(input_size.height));
 }
 
-int WaveletFilterBank::output_size(int input_size) const
+int FilterBank::output_size(int input_size) const
 {
     return 2 * subband_size(input_size);
 }
 
-cv::Size WaveletFilterBank::subband_size(const cv::Size& input_size) const
+cv::Size FilterBank::subband_size(const cv::Size& input_size) const
 {
     return cv::Size(subband_size(input_size.width), subband_size(input_size.height));
 }
 
-int WaveletFilterBank::subband_size(int input_size) const
+int FilterBank::subband_size(int input_size) const
 {
     return (input_size + filter_length() - 1) / 2;
 }
 
-void WaveletFilterBank::create_multichannel_kernel(
-    cv::InputArray kernel,
-    cv::OutputArray result,
-    int channels
-) const
-{
-    if (channels == 1) {
-        result.assign(kernel.getMat());
-    } else {
-        std::vector<cv::Mat> kernels(channels);
-        for (int i = 0; i < channels; ++i)
-            kernels[i] = kernel.getMat();
-
-        cv::merge(kernels, result);
-    }
-}
-
-int WaveletFilterBank::promote_type(int type) const
+int FilterBank::promote_type(int type) const
 {
     return CV_MAKE_TYPE(
         std::max(depth(), CV_MAT_DEPTH(type)),
@@ -630,7 +626,16 @@ int WaveletFilterBank::promote_type(int type) const
     );
 }
 
-void WaveletFilterBank::promote_kernel(
+void FilterBank::promote_input(
+    cv::InputArray input,
+    cv::OutputArray promoted_input
+) const
+{
+    int type = promote_type(input.type());
+    input.getMat().convertTo(promoted_input, type);
+}
+
+void FilterBank::promote_kernel(
     cv::InputArray kernel,
     cv::OutputArray promoted_kernel,
     int type
@@ -640,19 +645,18 @@ void WaveletFilterBank::promote_kernel(
 
     cv::Mat converted;
     kernel.getMat().convertTo(converted, type);
-    create_multichannel_kernel(converted, promoted_kernel, CV_MAT_CN(type));
+
+    int channels = CV_MAT_CN(type);
+    if (channels == 1) {
+        promoted_kernel.assign(converted);
+    } else {
+        std::vector<cv::Mat> kernels(channels);
+        std::ranges::fill(kernels, converted);
+        cv::merge(kernels, promoted_kernel);
+    }
 }
 
-void WaveletFilterBank::promote_input(
-    cv::InputArray input,
-    cv::OutputArray promoted_input
-) const
-{
-    int type = promote_type(input.type());
-    input.getMat().convertTo(promoted_input, type);
-}
-
-void WaveletFilterBank::pad(
+void FilterBank::pad(
     cv::InputArray input,
     cv::OutputArray output,
     int border_type,
@@ -671,13 +675,13 @@ void WaveletFilterBank::pad(
     );
 }
 
-void WaveletFilterBank::convolve_rows_and_downsample_cols(
+void FilterBank::convolve_rows_and_downsample_cols(
     cv::InputArray data,
     cv::OutputArray output,
     const cv::Mat& kernel
 ) const
 {
-    dispatch_on_pixel_type<ConvolveRowsAndDownsampleCols>(
+    internal::dispatch_on_pixel_type<internal::ConvolveRowsAndDownsampleCols>(
         data.type(),
         data,
         output,
@@ -685,13 +689,13 @@ void WaveletFilterBank::convolve_rows_and_downsample_cols(
     );
 }
 
-void WaveletFilterBank::convolve_cols_and_downsample_rows(
+void FilterBank::convolve_cols_and_downsample_rows(
     cv::InputArray data,
     cv::OutputArray output,
     const cv::Mat& kernel
 ) const
 {
-    dispatch_on_pixel_type<ConvolveColsAndDownsampleRows>(
+    internal::dispatch_on_pixel_type<internal::ConvolveColsAndDownsampleRows>(
         data.type(),
         data,
         output,
@@ -699,43 +703,43 @@ void WaveletFilterBank::convolve_cols_and_downsample_rows(
     );
 }
 
-void WaveletFilterBank::upsample_cols_and_convolve_rows(
+void FilterBank::upsample_cols_and_convolve_rows(
     cv::InputArray data,
     cv::OutputArray output,
     const cv::Mat& even_kernel,
     const cv::Mat& odd_kernel,
-    const cv::Size& valid_size
+    const cv::Size& output_size
 ) const
 {
-    dispatch_on_pixel_type<UpsampleColsAndConvolveRows>(
+    internal::dispatch_on_pixel_type<internal::UpsampleColsAndConvolveRows>(
         data.type(),
         data,
         output,
         even_kernel.t(),
         odd_kernel.t(),
-        valid_size
+        output_size
     );
 }
 
-void WaveletFilterBank::upsample_rows_and_convolve_cols(
+void FilterBank::upsample_rows_and_convolve_cols(
     cv::InputArray data,
     cv::OutputArray output,
     const cv::Mat& even_kernel,
     const cv::Mat& odd_kernel,
-    const cv::Size& valid_size
+    const cv::Size& output_size
 ) const
 {
-    dispatch_on_pixel_type<UpsampleRowsAndConvolveCols>(
+    internal::dispatch_on_pixel_type<internal::UpsampleRowsAndConvolveCols>(
         data.type(),
         data,
         output,
         even_kernel,
         odd_kernel,
-        valid_size
+        output_size
     );
 }
 
-bool WaveletFilterBank::operator==(const WaveletFilterBank& other) const
+bool FilterBank::operator==(const FilterBank& other) const
 {
     return this == &other || (
         equals(_p->decompose.lowpass, other._p->decompose.lowpass)
@@ -748,7 +752,7 @@ bool WaveletFilterBank::operator==(const WaveletFilterBank& other) const
 }
 
 #ifndef DISABLE_ARG_CHECKS
-void WaveletFilterBank::check_forward_input(cv::InputArray input) const
+void FilterBank::check_forward_input(cv::InputArray input) const
 {
     if (input.rows() <= 1 || input.cols() <= 1) {
         std::stringstream message;
@@ -757,7 +761,7 @@ void WaveletFilterBank::check_forward_input(cv::InputArray input) const
     }
 }
 
-void WaveletFilterBank::check_inverse_inputs(
+void FilterBank::check_inverse_inputs(
     cv::InputArray approx,
     cv::InputArray horizontal_detail,
     cv::InputArray vertical_detail,
@@ -798,7 +802,7 @@ inline void WaveletFilterBank::check_inverse_inputs(
 ) const {}
 #endif // DISABLE_ARG_CHECKS
 
-std::ostream& operator<<(std::ostream& stream, const WaveletFilterBank& filter_bank)
+std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank)
 {
     stream
         << "decompose:\n"
@@ -811,33 +815,27 @@ std::ostream& operator<<(std::ostream& stream, const WaveletFilterBank& filter_b
     return stream;
 }
 
-} // namespace internal
-
-
-
-
-/**
- * =============================================================================
- * Public API
- * =============================================================================
-*/
 /**
  * -----------------------------------------------------------------------------
  * Wavelet
  * -----------------------------------------------------------------------------
 */
+Wavelet::Wavelet() : _p(std::make_shared<WaveletImpl>())
+{
+}
+
 Wavelet::Wavelet(
-        int vanishing_moments_psi,
-        int vanishing_moments_phi,
-        int support_width,
-        bool orthogonal,
-        bool biorthogonal,
-        Wavelet::Symmetry symmetry,
-        bool compact_support,
-        const std::string& family,
-        const std::string& name,
-        const FilterBank& filter_bank
-    ) :
+    int vanishing_moments_psi,
+    int vanishing_moments_phi,
+    int support_width,
+    bool orthogonal,
+    bool biorthogonal,
+    Symmetry symmetry,
+    bool compact_support,
+    const std::string& family,
+    const std::string& name,
+    const FilterBank& filter_bank
+) :
     _p(
         std::make_shared<WaveletImpl>(
             vanishing_moments_psi,
@@ -852,10 +850,6 @@ Wavelet::Wavelet(
             filter_bank
         )
     )
-{
-}
-
-Wavelet::Wavelet() : _p(std::make_shared<WaveletImpl>())
 {
 }
 
@@ -988,6 +982,125 @@ std::map<std::string, std::function<Wavelet()>> Wavelet::_wavelet_factories{
 };
 
 
+/**
+ * -----------------------------------------------------------------------------
+ * Wavelet Factories
+ * -----------------------------------------------------------------------------
+*/
+Wavelet haar()
+{
+    return Wavelet(
+        1, // vanishing_moments_psi
+        0, // vanishing_moments_phi
+        1, // support_width
+        true, // orthogonal
+        true, // biorthogonal
+        Symmetry::ASYMMETRIC, // symmetry
+        true, // compact_support
+        "Haar", // family
+        "haar", // name
+        FilterBank(
+            FilterBank::create_orthogonal_decompose_kernels(DAUBECHIES_FILTER_COEFFS[1]),
+            FilterBank::create_orthogonal_reconstruct_kernels(DAUBECHIES_FILTER_COEFFS[1])
+        )
+    );
+}
+
+Wavelet daubechies(int order)
+{
+    internal::check_wavelet_order(order, DAUBECHIES_MIN_ORDER, DAUBECHIES_MAX_ORDER, "Daubechies");
+
+    return Wavelet(
+        // 2 * order, // vanishing_moments_psi
+        order, // vanishing_moments_psi
+        0, // vanishing_moments_phi
+        2 * order - 1, // support_width
+        true, // orthogonal
+        true, // biorthogonal
+        Symmetry::ASYMMETRIC, // symmetry
+        true, // compact_support
+        "Daubechies", // family
+        "db" + std::to_string(order), // name
+        FilterBank(
+            FilterBank::create_orthogonal_decompose_kernels(DAUBECHIES_FILTER_COEFFS[order]),
+            FilterBank::create_orthogonal_reconstruct_kernels(DAUBECHIES_FILTER_COEFFS[order])
+        )
+    );
+}
+
+Wavelet symlets(int order)
+{
+    internal::check_wavelet_order(order, SYMLETS_MIN_ORDER, SYMLETS_MAX_ORDER, "Symlets");
+
+    return Wavelet(
+        order, // vanishing_moments_psi
+        0, // vanishing_moments_phi
+        2 * order - 1, // support_width
+        true, // orthogonal
+        true, // biorthogonal
+        Symmetry::NEAR_SYMMETRIC, // symmetry
+        true, // compact_support
+        "Symlets", // family
+        "sym" + std::to_string(order), // name
+        FilterBank(
+            FilterBank::create_orthogonal_decompose_kernels(SYMLET_FILTER_COEFFS[order]),
+            FilterBank::create_orthogonal_reconstruct_kernels(SYMLET_FILTER_COEFFS[order])
+        )
+    );
+}
+
+Wavelet coiflets(int order)
+{
+    internal::check_wavelet_order(order, COIFLETS_MIN_ORDER, COIFLETS_MAX_ORDER, "Coiflets");
+
+    return Wavelet(
+        2 * order, // vanishing_moments_psi
+        2 * order - 1, // vanishing_moments_phi
+        6 * order - 1, // support_width
+        true, // orthogonal
+        true, // biorthogonal
+        Symmetry::NEAR_SYMMETRIC, // symmetry
+        true, // compact_support
+        "Coiflets", // family
+        "coif" + std::to_string(order), // name
+        FilterBank(
+            FilterBank::create_orthogonal_decompose_kernels(COIFLETS_FILTER_COEFFS[order]),
+            FilterBank::create_orthogonal_reconstruct_kernels(COIFLETS_FILTER_COEFFS[order])
+        )
+    );
+}
+
+Wavelet biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
+{
+    auto name = internal::get_and_check_biorthogonal_name(vanishing_moments_psi, vanishing_moments_phi);
+    auto reconstruct_lowpass_coeffs = BIORTHOGONAL_FILTER_COEFFS.at(name).first;
+    auto decompose_lowpass_coeffs = BIORTHOGONAL_FILTER_COEFFS.at(name).second;
+
+    return Wavelet(
+        vanishing_moments_psi, // vanishing_moments_psi
+        vanishing_moments_phi, // vanishing_moments_phi
+        -1, // support_width
+        false, // orthogonal
+        true, // biorthogonal
+        Symmetry::SYMMETRIC, // symmetry
+        true, // compact_support
+        "Biorthogonal", // family
+        name, // name
+        FilterBank(
+            FilterBank::create_biorthogonal_decompose_kernels(
+                reconstruct_lowpass_coeffs,
+                decompose_lowpass_coeffs
+            ),
+            FilterBank::create_biorthogonal_reconstruct_kernels(
+                reconstruct_lowpass_coeffs,
+                decompose_lowpass_coeffs
+            )
+        )
+    );
+}
+
+namespace internal
+{
 void check_wavelet_order(int order, int min_order, int max_order, const std::string family)
 {
     if (order < min_order || order > max_order) {
@@ -1021,118 +1134,6 @@ std::string get_and_check_biorthogonal_name(int vanishing_moments_psi, int vanis
 
     return name;
 }
-
-Wavelet haar()
-{
-    return Wavelet(
-        1, // vanishing_moments_psi
-        0, // vanishing_moments_phi
-        1, // support_width
-        true, // orthogonal
-        true, // biorthogonal
-        Wavelet::Symmetry::ASYMMETRIC, // symmetry
-        true, // compact_support
-        "Haar", // family
-        "haar", // name
-        Wavelet::FilterBank(
-            Wavelet::FilterBank::build_orthogonal_reconstruct_kernels(DAUBECHIES_FILTER_COEFFS[1]),
-            Wavelet::FilterBank::build_orthogonal_decompose_kernels(DAUBECHIES_FILTER_COEFFS[1])
-        )
-    );
-}
-
-Wavelet daubechies(int order)
-{
-    check_wavelet_order(order, DAUBECHIES_MIN_ORDER, DAUBECHIES_MAX_ORDER, "Daubechies");
-
-    return Wavelet(
-        // 2 * order, // vanishing_moments_psi
-        order, // vanishing_moments_psi
-        0, // vanishing_moments_phi
-        2 * order - 1, // support_width
-        true, // orthogonal
-        true, // biorthogonal
-        Wavelet::Symmetry::ASYMMETRIC, // symmetry
-        true, // compact_support
-        "Daubechies", // family
-        "db" + std::to_string(order), // name
-        Wavelet::FilterBank(
-            Wavelet::FilterBank::build_orthogonal_reconstruct_kernels(DAUBECHIES_FILTER_COEFFS[order]),
-            Wavelet::FilterBank::build_orthogonal_decompose_kernels(DAUBECHIES_FILTER_COEFFS[order])
-        )
-    );
-}
-
-Wavelet symlets(int order)
-{
-    check_wavelet_order(order, SYMLETS_MIN_ORDER, SYMLETS_MAX_ORDER, "Symlets");
-
-    return Wavelet(
-        order, // vanishing_moments_psi
-        0, // vanishing_moments_phi
-        2 * order - 1, // support_width
-        true, // orthogonal
-        true, // biorthogonal
-        Wavelet::Symmetry::NEAR_SYMMETRIC, // symmetry
-        true, // compact_support
-        "Symlets", // family
-        "sym" + std::to_string(order), // name
-        Wavelet::FilterBank(
-            Wavelet::FilterBank::build_orthogonal_reconstruct_kernels(SYMLET_FILTER_COEFFS[order]),
-            Wavelet::FilterBank::build_orthogonal_decompose_kernels(SYMLET_FILTER_COEFFS[order])
-        )
-    );
-}
-
-Wavelet coiflets(int order)
-{
-    check_wavelet_order(order, COIFLETS_MIN_ORDER, COIFLETS_MAX_ORDER, "Coiflets");
-
-    return Wavelet(
-        2 * order, // vanishing_moments_psi
-        2 * order - 1, // vanishing_moments_phi
-        6 * order - 1, // support_width
-        true, // orthogonal
-        true, // biorthogonal
-        Wavelet::Symmetry::NEAR_SYMMETRIC, // symmetry
-        true, // compact_support
-        "Coiflets", // family
-        "coif" + std::to_string(order), // name
-        Wavelet::FilterBank(
-            Wavelet::FilterBank::build_orthogonal_reconstruct_kernels(COIFLETS_FILTER_COEFFS[order]),
-            Wavelet::FilterBank::build_orthogonal_decompose_kernels(COIFLETS_FILTER_COEFFS[order])
-        )
-    );
-}
-
-Wavelet biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
-{
-    auto name = get_and_check_biorthogonal_name(vanishing_moments_psi, vanishing_moments_phi);
-    auto reconstruct_lowpass_coeffs = BIORTHOGONAL_FILTER_COEFFS.at(name).first;
-    auto decompose_lowpass_coeffs = BIORTHOGONAL_FILTER_COEFFS.at(name).second;
-
-    return Wavelet(
-        vanishing_moments_psi, // vanishing_moments_psi
-        vanishing_moments_phi, // vanishing_moments_phi
-        -1, // support_width
-        false, // orthogonal
-        true, // biorthogonal
-        Wavelet::Symmetry::SYMMETRIC, // symmetry
-        true, // compact_support
-        "Biorthogonal", // family
-        name, // name
-        Wavelet::FilterBank(
-            Wavelet::FilterBank::build_biorthogonal_reconstruct_kernels(
-                reconstruct_lowpass_coeffs,
-                decompose_lowpass_coeffs
-            ),
-            Wavelet::FilterBank::build_biorthogonal_decompose_kernels(
-                reconstruct_lowpass_coeffs,
-                decompose_lowpass_coeffs
-            )
-        )
-    );
-}
-
+} // namespace internal
 } // namespace wavelet
 

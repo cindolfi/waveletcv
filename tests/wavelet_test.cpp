@@ -16,7 +16,7 @@ struct WaveletTestParam
     int vanishing_moments_phi;
     bool orthogonal;
     bool biorthogonal;
-    wavelet::Wavelet::Symmetry symmetry;
+    Symmetry symmetry;
     std::string family;
     std::string name;
     std::vector<double> decompose_lowpass;
@@ -32,11 +32,11 @@ void from_json(const json& json_param, WaveletTestParam& param)
     param.orthogonal = json_param["orthogonal"];
     param.biorthogonal = json_param["biorthogonal"];
     if (json_param["symmetry"] == "symmetric")
-        param.symmetry = Wavelet::Symmetry::SYMMETRIC;
+        param.symmetry = Symmetry::SYMMETRIC;
     else if (json_param["symmetry"] == "asymmetric")
-        param.symmetry = Wavelet::Symmetry::ASYMMETRIC;
+        param.symmetry = Symmetry::ASYMMETRIC;
     else if (json_param["symmetry"] == "near symmetric")
-        param.symmetry = Wavelet::Symmetry::NEAR_SYMMETRIC;
+        param.symmetry = Symmetry::NEAR_SYMMETRIC;
     else
         assert(false);
     param.family = json_param["family"];
@@ -51,13 +51,13 @@ void PrintTo(const WaveletTestParam& param, std::ostream* stream)
 {
     std::string symmetry;
     switch (param.symmetry) {
-    case Wavelet::Symmetry::ASYMMETRIC:
+    case Symmetry::ASYMMETRIC:
         symmetry = "ASYMMETRIC";
         break;
-    case Wavelet::Symmetry::NEAR_SYMMETRIC:
+    case Symmetry::NEAR_SYMMETRIC:
         symmetry = "NEAR_SYMMETRIC";
         break;
-    case Wavelet::Symmetry::SYMMETRIC:
+    case Symmetry::SYMMETRIC:
         symmetry = "SYMMETRIC";
         break;
     }

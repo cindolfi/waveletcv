@@ -96,8 +96,6 @@ public:
 } // namespace internal
 
 
-
-
 class DWT2D
 {
 public:
@@ -124,7 +122,7 @@ public:
     */
     class Coeffs
     {
-        friend class wavelet::DWT2D;
+        friend class DWT2D;
 
     public:
         class LevelIterator
@@ -399,7 +397,6 @@ public:
         ) const;
         void convert_and_copy(const cv::Mat& source, const cv::Mat& destination);
         int resolve_level(int level) const { return (level >= 0) ? level : level + levels(); }
-
 
     private:
         std::shared_ptr<internal::Dwt2dCoeffsImpl> _p;

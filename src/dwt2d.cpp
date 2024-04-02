@@ -6,8 +6,6 @@
 
 namespace wavelet
 {
-
-
 DWT2D::Coeffs::Coeffs() :
     _p(std::make_shared<internal::Dwt2dCoeffsImpl>())
 {
@@ -597,6 +595,11 @@ void DWT2D::forward(cv::InputArray input, DWT2D::Coeffs& output, int levels) con
         wavelet,
         border_type
     );
+
+    //  Must initialize to zero here in case of odd subband width/height.
+    //  Whenever there is an odd subband width/height there is a half row/column
+    //  of unused horizontal/vertical detail elements that need to be forced to
+    //  zero.
     output = 0.0;
 
     wavelet.filter_bank().prepare_forward(input.type());
@@ -675,10 +678,8 @@ DWT2D::Coeffs DWT2D::create_coeffs_for_input(const cv::Size& input_size, int typ
     auto size = coeffs_size_for_input(input_size, levels);
     type = wavelet.filter_bank().promote_type(type);
 
-    cv::Mat coeffs_matrix(size, type, 0.0);
-
     return Coeffs(
-        coeffs_matrix,
+        cv::Mat(size, type, cv::Scalar::all(0.0)),
         levels,
         input_size,
         calc_subband_sizes(input_size, levels),
@@ -785,7 +786,6 @@ void DWT2D::warn_if_border_effects_will_occur(const Coeffs& coeffs) const
         coeffs.input_size()
     );
 }
-
 #else
 inline void DWT2D::warn_if_border_effects_will_occur(int levels, int max_levels) const {}
 inline void DWT2D::warn_if_border_effects_will_occur(int levels, cv::InputArray x) const {}
