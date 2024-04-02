@@ -70,10 +70,16 @@ public:
         wavelet(wavelet),
         border_type(border_type)
     {
+        build_diagonal_subband_rects(subband_sizes);
+    }
+
+    void build_diagonal_subband_rects(const std::vector<cv::Size>& subband_sizes)
+    {
         cv::Point offset(
             coeff_matrix.size().width,
             coeff_matrix.size().height
         );
+        diagonal_subband_rects.clear();
         for (const auto& size : subband_sizes) {
             offset.x = offset.x - size.width;
             offset.y = offset.y - size.height;
@@ -171,6 +177,16 @@ protected:
         int levels,
         const cv::Size& input_size,
         const std::vector<cv::Rect>& diagonal_subband_rects,
+        const Wavelet& wavelet,
+        cv::BorderTypes border_type
+    );
+
+    void reset(
+        const cv::Size& size,
+        int type,
+        int levels,
+        const cv::Size& input_size,
+        const std::vector<cv::Size>& subband_sizes,
         const Wavelet& wavelet,
         cv::BorderTypes border_type
     );
@@ -341,7 +357,7 @@ public:
     Wavelet wavelet() const { return _p->wavelet; }
     cv::BorderTypes border_type() const { return _p->border_type; }
     DWT2D dwt() const;
-    cv::Size input_size(int level=0) const { return level == 0 ? _p->input_size : detail_size(level - 1); }
+    cv::Size input_size(int level=0) const { return level == 0 ? _p->input_size : diagonal_detail_rect(level - 1).size(); }
 
     cv::Mat invert() const;
     void invert(cv::OutputArray output) const;
@@ -486,24 +502,17 @@ public:
     {
         return max_levels_without_border_effects(x.size());
     }
-
-    // int max_levels(int rows, int cols) const;
-    // int max_levels(const cv::Size& size) const { return max_levels(size.height, size.width); }
-    // int max_levels(cv::InputArray x) const { return max_levels(x.size()); }
-
 protected:
     //  argument checkers - these all raise execeptions and can be disabled by
     //  defining DISABLE_ARG_CHECKS
     void check_levels_in_range(int levels) const;
-    // void check_levels_in_range(int levels, int max_levels) const;
-    // void check_levels_in_range(int levels, cv::InputArray x) const;
     void check_coeffs_size(cv::InputArray coeffs, const cv::Size& input_size, int levels) const;
 
     void warn_if_border_effects_will_occur(int levels, const cv::Size& input_size) const;
     void warn_if_border_effects_will_occur(int levels, cv::InputArray x) const;
     void warn_if_border_effects_will_occur(const Coeffs& coeffs) const;
 
-    void resolve_forward_output(DWT2D::Coeffs& output, cv::InputArray x, int levels) const;
+    std::vector<cv::Size> calc_subband_sizes(const cv::Size& input_size, int levels) const;
 
 public:
     Wavelet wavelet;

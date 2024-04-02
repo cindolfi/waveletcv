@@ -153,7 +153,6 @@ class DWT2DTestCases:
 
 
 
-
 class TestCaseJsonEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, pywt.Wavelet):
@@ -216,6 +215,8 @@ def main():
             diagonal_lines=DWT2DTestCases.make_diagonal_lines(shape),
             inverted_diagonal_lines=DWT2DTestCases.make_diagonal_lines(shape, inverted=True),
             random=np.random.randn(*shape),
+            random_rgb=np.random.randn(*shape, 3),
+            random_rgba=np.random.randn(*shape, 4),
         )
 
     def make_square_tall_and_wide_shapes(size):

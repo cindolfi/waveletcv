@@ -49,6 +49,49 @@ protected:
     cv::Mat _highpass;
 };
 
+struct DecomposeKernels
+{
+    DecomposeKernels() :
+        lowpass(0, 0, CV_64F),
+        highpass(0, 0, CV_64F)
+    {}
+
+    DecomposeKernels(const cv::Mat& lowpass, const cv::Mat& highpass) :
+        lowpass(lowpass),
+        highpass(highpass)
+    {}
+
+    cv::Mat lowpass;
+    cv::Mat highpass;
+};
+
+struct ReconstructKernels
+{
+    ReconstructKernels() :
+        even_lowpass(0, 0, CV_64F),
+        odd_lowpass(0, 0, CV_64F),
+        even_highpass(0, 0, CV_64F),
+        odd_highpass(0, 0, CV_64F)
+    {}
+
+    ReconstructKernels(
+        const cv::Mat& even_lowpass,
+        const cv::Mat& odd_lowpass,
+        const cv::Mat& even_highpass,
+        const cv::Mat& odd_highpass
+    ) :
+        even_lowpass(even_lowpass),
+        odd_lowpass(odd_lowpass),
+        even_highpass(even_highpass),
+        odd_highpass(odd_highpass)
+    {}
+
+    cv::Mat even_lowpass;
+    cv::Mat odd_lowpass;
+    cv::Mat even_highpass;
+    cv::Mat odd_highpass;
+};
+
 struct WaveletFilterBankImpl
 {
     WaveletFilterBankImpl();
@@ -78,17 +121,14 @@ struct WaveletFilterBankImpl
         const cv::Mat& decompose_highpass
     ) const;
 
-    KernelPair reconstruct_kernels() const;
     KernelPair decompose_kernels() const;
+    KernelPair reconstruct_kernels() const;
 
-    cv::Mat decompose_lowpass;
-    cv::Mat decompose_highpass;
-    cv::Mat reconstruct_even_lowpass;
-    cv::Mat reconstruct_odd_lowpass;
-    cv::Mat reconstruct_even_highpass;
-    cv::Mat reconstruct_odd_highpass;
+    DecomposeKernels decompose;
+    ReconstructKernels reconstruct;
     int filter_length;
 };
+
 
 class WaveletFilterBank
 {
@@ -107,7 +147,9 @@ public:
     WaveletFilterBank(const WaveletFilterBank& other) = default;
     WaveletFilterBank(WaveletFilterBank&& other) = default;
 
-    bool empty() const { return _p->decompose_lowpass.empty(); }
+    bool empty() const { return _p->decompose.lowpass.empty(); }
+    int type() const { return _p->decompose.lowpass.type(); }
+    int depth() const { return _p->decompose.lowpass.depth(); }
     int filter_length() const { return _p->filter_length; }
     KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
     KernelPair decompose_kernels() const { return _p->decompose_kernels(); }
@@ -155,6 +197,22 @@ public:
     int output_size(int input_size) const;
     cv::Size subband_size(const cv::Size& input_size) const;
     int subband_size(int input_size) const;
+
+    void prepare_forward(int type) const;
+    void finish_forward() const;
+    bool is_prepared_forward(int type) const
+    {
+        return (bool)_decompose
+        && _decompose->lowpass.type() == promote_type(type);
+    }
+
+    void prepare_inverse(int type) const;
+    void finish_inverse() const;
+    bool is_prepared_inverse(int type) const
+    {
+        return (bool)_reconstruct
+        && _reconstruct->even_lowpass.type() == promote_type(type);
+    }
 
     //  kernel pair factories
     template <typename T>
@@ -227,7 +285,23 @@ public:
 
     friend std::ostream& operator<<(std::ostream& stream, const WaveletFilterBank& filter_bank);
 
+    int promote_type(int type) const;
 protected:
+    void create_multichannel_kernel(
+        cv::InputArray kernel,
+        cv::OutputArray result,
+        int channels
+    ) const;
+    void promote_kernel(
+        cv::InputArray kernel,
+        cv::OutputArray promoted_kernel,
+        int type
+    ) const;
+    void promote_input(
+        cv::InputArray input,
+        cv::OutputArray promoted_input
+    ) const;
+
     void pad(
         cv::InputArray data,
         cv::OutputArray output,
@@ -259,8 +333,22 @@ protected:
         const cv::Size& valid_size
     ) const;
 
+    void check_forward_input(cv::InputArray input) const;
+    void check_inverse_inputs(
+        cv::InputArray approx,
+        cv::InputArray horizontal_detail,
+        cv::InputArray vertical_detail,
+        cv::InputArray diagonal_detail
+    ) const;
+
 protected:
     std::shared_ptr<WaveletFilterBankImpl> _p;
+    //  These are used as temporary caches for promoted kernels to avoid
+    //  converting kernels every time forward or inverse is called by multilevel
+    //  algorithms (e.g. DWT2D).  The caching and freeing is done by the
+    //  prepare_*() and finish_*() methods, respectively.
+    mutable std::shared_ptr<DecomposeKernels> _decompose;
+    mutable std::shared_ptr<ReconstructKernels> _reconstruct;
 };
 
 std::ostream& operator<<(std::ostream& stream, const WaveletFilterBank& filter_bank);
