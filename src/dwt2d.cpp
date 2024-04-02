@@ -173,17 +173,6 @@ cv::Mat DWT2D::Coeffs::detail(int level, int subband) const
     return cv::Mat();
 }
 
-void DWT2D::Coeffs::convert_and_copy(const cv::Mat& source, const cv::Mat& destination)
-{
-    if (source.type() != destination.type()) {
-        cv::Mat converted;
-        source.convertTo(converted, type());
-        converted.copyTo(destination);
-    } else {
-        source.copyTo(destination);
-    }
-}
-
 cv::Size DWT2D::Coeffs::level_size(int level) const
 {
     return level_rect(level).size();
@@ -354,10 +343,21 @@ void DWT2D::Coeffs::normalize(NormalizationMode approx_mode, NormalizationMode d
 
 double DWT2D::Coeffs::maximum_abs_value() const
 {
-    double min = 0;
-    double max = 0;
-    cv::minMaxLoc(_p->coeff_matrix, &min, &max);
-    return std::max({std::abs(min), std::abs(max)});
+    double min = std::numeric_limits<double>::max();
+    double max = std::numeric_limits<double>::min();
+
+    const cv::Mat* arrays[] = {&_p->coeff_matrix};
+    std::vector<cv::Mat> planes(channels());
+    cv::NAryMatIterator it(arrays, planes.data(), planes.size());
+    for (int p = 0; p < it.nplanes; ++p, ++it) {
+        double plane_min = 0;
+        double plane_max = 0;
+        cv::minMaxIdx(it.planes[0], &plane_min, &plane_max);
+        min = std::min(min, plane_min);
+        max = std::max(max, plane_max);
+    }
+
+    return std::max(std::abs(min), std::abs(max));
 }
 
 std::pair<double, double> DWT2D::Coeffs::normalization_constants(
@@ -381,6 +381,16 @@ std::pair<double, double> DWT2D::Coeffs::normalization_constants(
     return std::make_pair(alpha, beta);
 }
 
+void DWT2D::Coeffs::convert_and_copy(const cv::Mat& source, const cv::Mat& destination)
+{
+    if (source.type() != destination.type()) {
+        cv::Mat converted;
+        source.convertTo(converted, type());
+        converted.copyTo(destination);
+    } else {
+        source.copyTo(destination);
+    }
+}
 
 #ifndef DISABLE_ARG_CHECKS
 void DWT2D::Coeffs::check_size_for_assignment(cv::InputArray matrix) const
@@ -517,45 +527,51 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& coeffs)
     return stream;
 }
 
+std::vector<DWT2D::Coeffs> split(const DWT2D::Coeffs& coeffs)
+{
+    std::vector<cv::Mat> coeffs_channels;
+    cv::split(coeffs, coeffs_channels);
 
-// std::vector<internal::Dwt2dCoeffs> split(const internal::Dwt2dCoeffs& coeffs)
-// {
-//     std::vector<cv::Mat> coeffs_channels;
-//     cv::split(coeffs, coeffs_channels);
+    std::vector<DWT2D::Coeffs> result;
+    for (const auto& coeff_matrix : coeffs_channels) {
+        result.push_back(
+            DWT2D::Coeffs(
+                coeff_matrix,
+                coeffs._p->levels,
+                coeffs._p->input_size,
+                coeffs._p->diagonal_subband_rects,
+                coeffs._p->wavelet,
+                coeffs._p->border_type
+            )
+        );
+    }
 
-//     std::vector<DWT2D::Coeffs> result;
-//     for (const auto& coeff_matrix : coeffs_channels) {
-//         result.emplace_back(
-//             coeff_matrix,
-//             coeffs._p->levels,
-//             coeffs._p->input_size,
-//             coeffs._p->diagonal_subband_rects,
-//             coeffs._p->wavelet,
-//             coeffs._p->border_type
-//         );
-//     }
+    return result;
+}
 
-//     return result;
-// }
+DWT2D::Coeffs merge(const std::vector<DWT2D::Coeffs>& coeffs)
+{
+    if (coeffs.empty())
+        return DWT2D::Coeffs();
 
-// internal::Dwt2dCoeffs merge(const std::vector<internal::Dwt2dCoeffs>& coeffs)
-// {
-//     if (coeffs.empty())
-//         return internal::Dwt2dCoeffs();
+    std::vector<cv::Mat> coeff_matrices(coeffs.size());
+    std::ranges::transform(
+        coeffs,
+        coeff_matrices.begin(),
+        [](const auto& coeff) -> cv::Mat { return coeff; }
+    );
+    cv::Mat coeff_matrix;
+    cv::merge(coeff_matrices, coeff_matrix);
 
-//     cv::Mat coeff_matrix;
-//     cv::merge(coeffs, coeff_matrix);
-
-//     return internal::Dwt2dCoeffs(
-//         coeff_matrix,
-//         coeffs[0]._p->levels,
-//         coeffs[0]._p->input_size,
-//         coeffs[0]._p->diagonal_subband_rects,
-//         coeffs[0]._p->wavelet,
-//         coeffs[0]._p->border_type
-//     );
-// }
-
+    return DWT2D::Coeffs(
+        coeff_matrix,
+        coeffs[0]._p->levels,
+        coeffs[0]._p->input_size,
+        coeffs[0]._p->diagonal_subband_rects,
+        coeffs[0]._p->wavelet,
+        coeffs[0]._p->border_type
+    );
+}
 
 /**
  * =============================================================================
