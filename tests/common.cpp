@@ -8,14 +8,14 @@
 
 using namespace testing;
 
-namespace wavelet::internal
+namespace wavelet
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream)
 {
     PrintTo(cv::Mat(coeffs), stream);
     *stream << "(" << coeffs.levels() << " levels)\n";
 }
-}   // namespace wavelet::internal
+}   // namespace wavelet
 
 void clamp_near_zero(cv::InputArray input, cv::OutputArray output, double tolerance)
 {

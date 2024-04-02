@@ -15,7 +15,7 @@
 #include <wavelet/wavelet.hpp>
 #include <wavelet/dwt2d.hpp>
 
-namespace wavelet::internal
+namespace wavelet
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream);
 }
@@ -167,7 +167,6 @@ struct print_matrix_to
 cv::Mat create_matrix(int rows, int cols, int type, double initial_value = 0.0);
 
 bool matrix_equals(const cv::Mat& a, const cv::Mat& b, testing::MatchResultListener* result_listener = nullptr);
-// bool matrix_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener = nullptr);
 MATCHER_P(MatrixEq, matrix, "") { return matrix_equals(arg, matrix, result_listener); }
 
 bool matrix_all_equals(const cv::Mat& a, const cv::Scalar& b, testing::MatchResultListener* result_listener = nullptr);
