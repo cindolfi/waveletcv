@@ -387,13 +387,11 @@ protected:
     {
         int vanishing_moments_psi = 0;
         int vanishing_moments_phi = 0;
-        int support_width = 0;
         bool orthogonal = false;
         bool biorthogonal = false;
         Symmetry symmetry = Symmetry::ASYMMETRIC;
-        bool compact_support = true;
-        std::string family;
-        std::string name;
+        std::string family = "";
+        std::string name = "";
         FilterBank filter_bank;
     };
 
@@ -402,11 +400,9 @@ public:
     Wavelet(
         int vanishing_moments_psi,
         int vanishing_moments_phi,
-        int support_width,
         bool orthogonal,
         bool biorthogonal,
         Symmetry symmetry,
-        bool compact_support,
         const std::string& family,
         const std::string& name,
         const FilterBank& filter_bank
@@ -414,11 +410,9 @@ public:
 
     int vanishing_moments_psi() const { return _p->vanishing_moments_psi; }
     int vanishing_moments_phi() const { return _p->vanishing_moments_phi; }
-    int support_width() const { return _p->support_width; }
     bool orthogonal() const { return _p->orthogonal; }
     bool biorthogonal() const { return _p->biorthogonal; }
     Symmetry symmetry() const { return _p->symmetry; }
-    bool compact_support() const { return _p->compact_support; }
     std::string family() const { return _p->family; }
     std::string name() const { return _p->name; }
     FilterBank filter_bank() const { return _p->filter_bank; }

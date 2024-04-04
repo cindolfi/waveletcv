@@ -454,7 +454,7 @@ void FilterBank::forward(
     cv::Mat padded_input;
     pad(promoted_input, padded_input, border_type, border_value);
 
-    //  stage 1
+    //  Stage 1
     cv::Mat stage1_lowpass_output;
     convolve_rows_and_downsample_cols(
         padded_input,
@@ -468,7 +468,7 @@ void FilterBank::forward(
         _p->promoted_decompose.highpass
     );
 
-    //  stage 2
+    //  Stage 2
     convolve_cols_and_downsample_rows(
         stage1_lowpass_output,
         approx,
@@ -532,7 +532,7 @@ void FilterBank::inverse(
     cv::Mat promoted_diagonal_detail;
     promote_input(diagonal_detail, promoted_diagonal_detail);
 
-    //  stage 1a
+    //  Stage 1a
     cv::Mat stage1a_lowpass_output;
     upsample_rows_and_convolve_cols(
         promoted_approx,
@@ -550,7 +550,7 @@ void FilterBank::inverse(
         output_size
     );
 
-    //  stage 1b
+    //  Stage 1b
     cv::Mat stage1b_lowpass_output;
     upsample_rows_and_convolve_cols(
         promoted_vertical_detail,
@@ -568,7 +568,7 @@ void FilterBank::inverse(
         output_size
     );
 
-    //  stage 2
+    //  Stage 2
     cv::Mat stage2_lowpass_output;
     upsample_cols_and_convolve_rows(
         stage1a_lowpass_output + stage1a_highpass_output,
@@ -853,11 +853,9 @@ Wavelet::Wavelet() : _p(std::make_shared<WaveletImpl>())
 Wavelet::Wavelet(
     int vanishing_moments_psi,
     int vanishing_moments_phi,
-    int support_width,
     bool orthogonal,
     bool biorthogonal,
     Symmetry symmetry,
-    bool compact_support,
     const std::string& family,
     const std::string& name,
     const FilterBank& filter_bank
@@ -866,11 +864,9 @@ Wavelet::Wavelet(
         std::make_shared<WaveletImpl>(
             vanishing_moments_psi,
             vanishing_moments_phi,
-            support_width,
             orthogonal,
             biorthogonal,
             symmetry,
-            compact_support,
             family,
             name,
             filter_bank
@@ -1018,11 +1014,9 @@ Wavelet haar()
     return Wavelet(
         1, // vanishing_moments_psi
         0, // vanishing_moments_phi
-        1, // support_width
         true, // orthogonal
         true, // biorthogonal
         Symmetry::ASYMMETRIC, // symmetry
-        true, // compact_support
         "Haar", // family
         "haar", // name
         FilterBank(
@@ -1040,11 +1034,9 @@ Wavelet daubechies(int order)
         // 2 * order, // vanishing_moments_psi
         order, // vanishing_moments_psi
         0, // vanishing_moments_phi
-        2 * order - 1, // support_width
         true, // orthogonal
         true, // biorthogonal
         Symmetry::ASYMMETRIC, // symmetry
-        true, // compact_support
         "Daubechies", // family
         "db" + std::to_string(order), // name
         FilterBank(
@@ -1061,11 +1053,9 @@ Wavelet symlets(int order)
     return Wavelet(
         order, // vanishing_moments_psi
         0, // vanishing_moments_phi
-        2 * order - 1, // support_width
         true, // orthogonal
         true, // biorthogonal
         Symmetry::NEAR_SYMMETRIC, // symmetry
-        true, // compact_support
         "Symlets", // family
         "sym" + std::to_string(order), // name
         FilterBank(
@@ -1082,11 +1072,9 @@ Wavelet coiflets(int order)
     return Wavelet(
         2 * order, // vanishing_moments_psi
         2 * order - 1, // vanishing_moments_phi
-        6 * order - 1, // support_width
         true, // orthogonal
         true, // biorthogonal
         Symmetry::NEAR_SYMMETRIC, // symmetry
-        true, // compact_support
         "Coiflets", // family
         "coif" + std::to_string(order), // name
         FilterBank(
@@ -1105,11 +1093,9 @@ Wavelet biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
     return Wavelet(
         vanishing_moments_psi, // vanishing_moments_psi
         vanishing_moments_phi, // vanishing_moments_phi
-        -1, // support_width
         false, // orthogonal
         true, // biorthogonal
         Symmetry::SYMMETRIC, // symmetry
-        true, // compact_support
         "Biorthogonal", // family
         name, // name
         FilterBank(
