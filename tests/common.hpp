@@ -82,6 +82,11 @@ struct print_matrix_to
 
     void operator()(const cv::Mat& input, std::ostream* stream) const
     {
+        if (input.empty()) {
+            *stream << "\nEmpty\n";
+            return;
+        }
+
         cv::Mat matrix;
         clamp_near_zero(input, matrix, 1e-30);
         cv::Mat widths = calculate_widths(matrix);
@@ -117,7 +122,7 @@ struct print_matrix_to
             }
         }
 
-        *stream << "[" << input.size() << "]\n";
+        *stream << input.size() << "\n";
     }
 
     cv::Mat calculate_widths(const cv::Mat& matrix) const

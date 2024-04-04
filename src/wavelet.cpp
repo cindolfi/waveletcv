@@ -224,6 +224,11 @@ struct MergeEvenAndOddKernels
     }
 };
 
+cv::Mat as_column_vector(const cv::Mat& vector)
+{
+    assert(vector.rows == 1 || vector.cols == 1);
+    return (vector.cols == 1) ? vector : vector.t();
+}
 
 FilterBankImpl::FilterBankImpl() :
     filter_length(0),
@@ -235,27 +240,27 @@ FilterBankImpl::FilterBankImpl() :
 }
 
 FilterBankImpl::FilterBankImpl(
-    const cv::Mat& decompose_lowpass_,
-    const cv::Mat& decompose_highpass_,
-    const cv::Mat& reconstruct_lowpass_,
-    const cv::Mat& reconstruct_highpass_
+    const cv::Mat& decompose_lowpass,
+    const cv::Mat& decompose_highpass,
+    const cv::Mat& reconstruct_lowpass,
+    const cv::Mat& reconstruct_highpass
 ) :
-    filter_length(std::max(decompose_lowpass_.total(), decompose_highpass_.total())),
+    filter_length(std::max(decompose_lowpass.total(), reconstruct_lowpass.total())),
     promoted_decompose(),
     promoted_reconstruct()
 {
     check_kernels(
-        reconstruct_lowpass_,
-        reconstruct_highpass_,
-        decompose_lowpass_,
-        decompose_highpass_
+        reconstruct_lowpass,
+        reconstruct_highpass,
+        decompose_lowpass,
+        decompose_highpass
     );
 
-    cv::flip(decompose_lowpass_, decompose.lowpass, -1);
-    cv::flip(decompose_highpass_, decompose.highpass, -1);
+    cv::flip(as_column_vector(decompose_lowpass), decompose.lowpass, -1);
+    cv::flip(as_column_vector(decompose_highpass), decompose.highpass, -1);
 
     cv::Mat flipped_reconstruct_lowpass;
-    cv::flip(reconstruct_lowpass_, flipped_reconstruct_lowpass, -1);
+    cv::flip(as_column_vector(reconstruct_lowpass), flipped_reconstruct_lowpass, -1);
     split_kernel_into_odd_and_even_parts(
         flipped_reconstruct_lowpass,
         reconstruct.even_lowpass,
@@ -263,7 +268,7 @@ FilterBankImpl::FilterBankImpl(
     );
 
     cv::Mat flipped_reconstruct_highpass;
-    cv::flip(reconstruct_highpass_, flipped_reconstruct_highpass, -1);
+    cv::flip(as_column_vector(reconstruct_highpass), flipped_reconstruct_highpass, -1);
     split_kernel_into_odd_and_even_parts(
         flipped_reconstruct_highpass,
         reconstruct.even_highpass,
@@ -326,40 +331,45 @@ void FilterBankImpl::check_kernels(
     const cv::Mat& decompose_highpass
 ) const
 {
-    std::vector<cv::Mat> kernels = {
-        reconstruct_lowpass,
-        reconstruct_highpass,
-        decompose_lowpass,
-        decompose_highpass
-    };
-    if (!std::ranges::all_of(kernels, [](auto kernel) { return kernel.empty(); })
-        && !std::ranges::none_of(kernels, [](auto kernel) { return kernel.empty(); })) {
-        std::stringstream message;
-        message
-            << "FilterBank: Kernels must all be empty or all nonempty, got "
-            << (reconstruct_lowpass.empty() ? "empty" : "nonempty") << " reconstruct_lowpass, "
-            << (reconstruct_highpass.empty() ? "empty" : "nonempty") << " reconstruct_highpass, "
-            << (decompose_lowpass.empty() ? "empty" : "nonempty") << " decompose_lowpass, and "
-            << (decompose_highpass.empty() ? "empty" : "nonempty") << " decompose_highpass.";
-        CV_Error(cv::Error::StsBadArg, message.str());
-    }
+    auto all_empty = decompose_lowpass.empty()
+        && decompose_highpass.empty()
+        && reconstruct_lowpass.empty()
+        && reconstruct_highpass.empty();
 
-    if (reconstruct_lowpass.size() != reconstruct_highpass.size()) {
-        std::stringstream message;
-        message
-            << "FilterBank: reconstruct_lowpass must have same size as reconstruct_highpass, "
-            << "got reconstruct_lowpass.size() = " << reconstruct_lowpass.size() << ", "
-            << "reconstruct_highpass.size() = " << reconstruct_highpass.size() << ".";
-        CV_Error(cv::Error::StsBadSize, message.str());
-    }
+    if (!all_empty) {
+        if (decompose_lowpass.empty()
+            || decompose_highpass.empty()
+            || reconstruct_lowpass.empty()
+            || reconstruct_highpass.empty()
+        ) {
+            throw_bad_arg(
+                "FilterBank: Kernels must all be empty or all nonempty, got ",
+                (reconstruct_lowpass.empty() ? "empty" : "nonempty"), " reconstruct_lowpass, ",
+                (reconstruct_highpass.empty() ? "empty" : "nonempty"), " reconstruct_highpass, ",
+                (decompose_lowpass.empty() ? "empty" : "nonempty"), " decompose_lowpass, and ",
+                (decompose_highpass.empty() ? "empty" : "nonempty"), " decompose_highpass."
+            );
+        }
 
-    if (decompose_lowpass.size() != decompose_highpass.size()) {
-        std::stringstream message;
-        message
-            << "FilterBank: decompose_lowpass must have same size as decompose_highpass, "
-            << "got decompose_lowpass.size() = " << decompose_lowpass.size() << ", "
-            << "decompose_highpass.size() = " << decompose_highpass.size() << ".";
-        CV_Error(cv::Error::StsBadSize, message.str());
+        if (decompose_lowpass.size() != decompose_highpass.size()
+            || (decompose_lowpass.rows != 1 && decompose_lowpass.cols != 1)
+        ) {
+            throw_bad_size(
+                "FilterBank: decompose_lowpass and decompose_highpass must be row or column vectors of the same size, ",
+                "got decompose_lowpass.size() = ", decompose_lowpass.size(), ", ",
+                "decompose_highpass.size() = ", decompose_highpass.size(), "."
+            );
+        }
+
+        if (reconstruct_lowpass.size() != reconstruct_highpass.size()
+            || (reconstruct_lowpass.rows != 1 && reconstruct_lowpass.cols != 1)
+        ) {
+            throw_bad_size(
+                "FilterBank: reconstruct_lowpass and reconstruct_highpass must be row or column vectors of the same size, ",
+                "got reconstruct_lowpass.size() = ", reconstruct_lowpass.size(), ", ",
+                "reconstruct_highpass.size() = ", reconstruct_highpass.size(), "."
+            );
+        }
     }
 }
 #else
@@ -642,6 +652,50 @@ cv::Size FilterBank::subband_size(const cv::Size& input_size) const
 int FilterBank::subband_size(int input_size) const
 {
     return (input_size + filter_length() - 1) / 2;
+}
+
+KernelPair FilterBank::create_orthogonal_decompose_kernels(cv::InputArray reconstruct_lowpass_coeffs)
+{
+    return create_biorthogonal_decompose_kernels(
+        reconstruct_lowpass_coeffs,
+        reconstruct_lowpass_coeffs
+    );
+}
+
+KernelPair FilterBank::create_orthogonal_reconstruct_kernels(cv::InputArray reconstruct_lowpass_coeffs)
+{
+    return create_biorthogonal_reconstruct_kernels(
+        reconstruct_lowpass_coeffs,
+        reconstruct_lowpass_coeffs
+    );
+}
+
+KernelPair FilterBank::create_biorthogonal_decompose_kernels(
+    cv::InputArray reconstruct_lowpass_coeffs,
+    cv::InputArray decompose_lowpass_coeffs
+)
+{
+    cv::Mat lowpass;
+    cv::flip(decompose_lowpass_coeffs, lowpass, -1);
+
+    cv::Mat highpass;
+    negate_evens(reconstruct_lowpass_coeffs, highpass);
+
+    return KernelPair(lowpass, highpass);
+}
+
+KernelPair FilterBank::create_biorthogonal_reconstruct_kernels(
+    cv::InputArray reconstruct_lowpass_coeffs,
+    cv::InputArray decompose_lowpass_coeffs
+)
+{
+    cv::Mat lowpass = reconstruct_lowpass_coeffs.getMat().clone();
+
+    cv::Mat highpass;
+    cv::flip(decompose_lowpass_coeffs, highpass, -1);
+    negate_odds(highpass, highpass);
+
+    return KernelPair(lowpass, highpass);
 }
 
 int FilterBank::promote_type(int type) const
@@ -1011,6 +1065,8 @@ std::map<std::string, std::function<Wavelet()>> Wavelet::_wavelet_factories{
 */
 Wavelet haar()
 {
+    cv::Mat reconstruct_lowpass_coeffs(DAUBECHIES_FILTER_COEFFS[1]);
+
     return Wavelet(
         1, // vanishing_moments_psi
         0, // vanishing_moments_phi
@@ -1020,8 +1076,8 @@ Wavelet haar()
         "Haar", // family
         "haar", // name
         FilterBank(
-            FilterBank::create_orthogonal_decompose_kernels(DAUBECHIES_FILTER_COEFFS[1]),
-            FilterBank::create_orthogonal_reconstruct_kernels(DAUBECHIES_FILTER_COEFFS[1])
+            FilterBank::create_orthogonal_decompose_kernels(reconstruct_lowpass_coeffs),
+            FilterBank::create_orthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs)
         )
     );
 }
@@ -1029,9 +1085,9 @@ Wavelet haar()
 Wavelet daubechies(int order)
 {
     internal::check_wavelet_order(order, DAUBECHIES_MIN_ORDER, DAUBECHIES_MAX_ORDER, "Daubechies");
+    cv::Mat reconstruct_lowpass_coeffs(DAUBECHIES_FILTER_COEFFS[order]);
 
     return Wavelet(
-        // 2 * order, // vanishing_moments_psi
         order, // vanishing_moments_psi
         0, // vanishing_moments_phi
         true, // orthogonal
@@ -1040,8 +1096,8 @@ Wavelet daubechies(int order)
         "Daubechies", // family
         "db" + std::to_string(order), // name
         FilterBank(
-            FilterBank::create_orthogonal_decompose_kernels(DAUBECHIES_FILTER_COEFFS[order]),
-            FilterBank::create_orthogonal_reconstruct_kernels(DAUBECHIES_FILTER_COEFFS[order])
+            FilterBank::create_orthogonal_decompose_kernels(reconstruct_lowpass_coeffs),
+            FilterBank::create_orthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs)
         )
     );
 }
@@ -1049,6 +1105,7 @@ Wavelet daubechies(int order)
 Wavelet symlets(int order)
 {
     internal::check_wavelet_order(order, SYMLETS_MIN_ORDER, SYMLETS_MAX_ORDER, "Symlets");
+    cv::Mat reconstruct_lowpass_coeffs(SYMLET_FILTER_COEFFS[order]);
 
     return Wavelet(
         order, // vanishing_moments_psi
@@ -1059,8 +1116,8 @@ Wavelet symlets(int order)
         "Symlets", // family
         "sym" + std::to_string(order), // name
         FilterBank(
-            FilterBank::create_orthogonal_decompose_kernels(SYMLET_FILTER_COEFFS[order]),
-            FilterBank::create_orthogonal_reconstruct_kernels(SYMLET_FILTER_COEFFS[order])
+            FilterBank::create_orthogonal_decompose_kernels(reconstruct_lowpass_coeffs),
+            FilterBank::create_orthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs)
         )
     );
 }
@@ -1068,6 +1125,7 @@ Wavelet symlets(int order)
 Wavelet coiflets(int order)
 {
     internal::check_wavelet_order(order, COIFLETS_MIN_ORDER, COIFLETS_MAX_ORDER, "Coiflets");
+    cv::Mat reconstruct_lowpass_coeffs(COIFLETS_FILTER_COEFFS[order]);
 
     return Wavelet(
         2 * order, // vanishing_moments_psi
@@ -1078,8 +1136,8 @@ Wavelet coiflets(int order)
         "Coiflets", // family
         "coif" + std::to_string(order), // name
         FilterBank(
-            FilterBank::create_orthogonal_decompose_kernels(COIFLETS_FILTER_COEFFS[order]),
-            FilterBank::create_orthogonal_reconstruct_kernels(COIFLETS_FILTER_COEFFS[order])
+            FilterBank::create_orthogonal_decompose_kernels(reconstruct_lowpass_coeffs),
+            FilterBank::create_orthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs)
         )
     );
 }
@@ -1087,8 +1145,9 @@ Wavelet coiflets(int order)
 Wavelet biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
 {
     auto name = internal::get_and_check_biorthogonal_name(vanishing_moments_psi, vanishing_moments_phi);
-    auto reconstruct_lowpass_coeffs = BIORTHOGONAL_FILTER_COEFFS.at(name).first;
-    auto decompose_lowpass_coeffs = BIORTHOGONAL_FILTER_COEFFS.at(name).second;
+
+    cv::Mat reconstruct_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).first);
+    cv::Mat decompose_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).second);
 
     return Wavelet(
         vanishing_moments_psi, // vanishing_moments_psi

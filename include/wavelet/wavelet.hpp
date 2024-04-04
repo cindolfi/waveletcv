@@ -48,6 +48,8 @@ protected:
 
 namespace internal
 {
+cv::Mat as_column_vector(const cv::Mat& vector);
+
 struct DecomposeKernels
 {
     DecomposeKernels() :
@@ -56,9 +58,10 @@ struct DecomposeKernels
     {}
 
     DecomposeKernels(const cv::Mat& lowpass, const cv::Mat& highpass) :
-        lowpass(lowpass),
-        highpass(highpass)
-    {}
+        lowpass(as_column_vector(lowpass)),
+        highpass(as_column_vector(highpass))
+    {
+    }
 
     DecomposeKernels(const DecomposeKernels& other) = default;
     DecomposeKernels(DecomposeKernels&& other) = default;
@@ -91,10 +94,10 @@ struct ReconstructKernels
         const cv::Mat& even_highpass,
         const cv::Mat& odd_highpass
     ) :
-        even_lowpass(even_lowpass),
-        odd_lowpass(odd_lowpass),
-        even_highpass(even_highpass),
-        odd_highpass(odd_highpass)
+        even_lowpass(as_column_vector(even_lowpass)),
+        odd_lowpass(as_column_vector(odd_lowpass)),
+        even_highpass(as_column_vector(even_highpass)),
+        odd_highpass(as_column_vector(odd_highpass))
     {}
 
     ReconstructKernels(const ReconstructKernels& other) = default;
@@ -246,74 +249,21 @@ public:
     cv::Size subband_size(const cv::Size& input_size) const;
     int subband_size(int input_size) const;
 
-    //  kernel pair factories
-    template <typename T>
-    static KernelPair create_orthogonal_decompose_kernels(const std::vector<T>& reconstruct_lowpass_coeffs)
-    {
-        return create_biorthogonal_decompose_kernels(
-            reconstruct_lowpass_coeffs,
-            reconstruct_lowpass_coeffs
-        );
-    }
-
-    template <typename T>
-    static KernelPair create_orthogonal_reconstruct_kernels(const std::vector<T>& reconstruct_lowpass_coeffs)
-    {
-        return create_biorthogonal_reconstruct_kernels(
-            reconstruct_lowpass_coeffs,
-            reconstruct_lowpass_coeffs
-        );
-    }
-
-    template <typename T>
+    //  Kernel Pair Factories
+    static KernelPair create_orthogonal_decompose_kernels(
+        cv::InputArray reconstruct_lowpass_coeffs
+    );
+    static KernelPair create_orthogonal_reconstruct_kernels(
+        cv::InputArray reconstruct_lowpass_coeffs
+    );
     static KernelPair create_biorthogonal_decompose_kernels(
-        const std::vector<T>& reconstruct_lowpass_coeffs,
-        const std::vector<T>& decompose_lowpass_coeffs
-    )
-    {
-        std::vector<T> lowpass(decompose_lowpass_coeffs.size());
-        std::ranges::reverse_copy(decompose_lowpass_coeffs, lowpass.begin());
-
-        std::vector<T> highpass = reconstruct_lowpass_coeffs;
-        negate_evens(highpass);
-
-        return KernelPair(lowpass, highpass);
-    }
-
-    template <typename T>
+        cv::InputArray reconstruct_lowpass_coeffs,
+        cv::InputArray decompose_lowpass_coeffs
+    );
     static KernelPair create_biorthogonal_reconstruct_kernels(
-        const std::vector<T>& reconstruct_lowpass_coeffs,
-        const std::vector<T>& decompose_lowpass_coeffs
-    )
-    {
-        std::vector<T> lowpass = reconstruct_lowpass_coeffs;
-
-        std::vector<T> highpass(decompose_lowpass_coeffs.size());
-        std::ranges::reverse_copy(decompose_lowpass_coeffs, highpass.begin());
-        negate_odds(highpass);
-
-        return KernelPair(lowpass, highpass);
-    }
-
-    template <typename T>
-    static void negate_odds(std::vector<T>& coeffs)
-    {
-        std::ranges::transform(
-            coeffs,
-            coeffs.begin(),
-            [&, i = 0] (auto coeff) mutable { return (i++ % 2 ? -1 : 1) * coeff; }
-        );
-    }
-
-    template <typename T>
-    static void negate_evens(std::vector<T>& coeffs)
-    {
-        std::ranges::transform(
-            coeffs,
-            coeffs.begin(),
-            [&, i = 0] (auto coeff) mutable { return (i++ % 2 ? 1 : -1) * coeff; }
-        );
-    }
+        cv::InputArray reconstruct_lowpass_coeffs,
+        cv::InputArray decompose_lowpass_coeffs
+    );
 
     int promote_type(int type) const;
 protected:

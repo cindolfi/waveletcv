@@ -10,6 +10,26 @@ void collect_masked(cv::InputArray input, cv::OutputArray output, cv::InputArray
 bool equals(const cv::Mat& a, const cv::Mat& b);
 cv::Scalar median(cv::InputArray input);
 cv::Scalar median(cv::InputArray input, cv::InputArray mask);
+void negate_evens(cv::InputArray input, cv::OutputArray output);
+void negate_odds(cv::InputArray input, cv::OutputArray output);
+
+void throw_error(cv::Error::Code code, auto... message_parts)
+{
+    std::stringstream message;
+    (message << ... << message_parts);
+
+    CV_Error(code, message.str());
+}
+
+void throw_bad_size(auto... message_parts)
+{
+    throw_error(cv::Error::StsBadSize, message_parts...);
+}
+
+void throw_bad_arg(auto... message_parts)
+{
+    throw_error(cv::Error::StsBadArg, message_parts...);
+}
 
 namespace internal
 {
@@ -123,6 +143,26 @@ private:
         }
 
         return result;
+    }
+};
+
+template <typename T, int CHANNELS, int EVEN_OR_ODD>
+requires(EVEN_OR_ODD == 0 || EVEN_OR_ODD == 1)
+struct NegateEveryOther
+{
+    void operator()(cv::InputArray input, cv::OutputArray output) const
+    {
+        output.create(input.size(), input.type());
+        if (input.empty())
+            return;
+
+        cv::Mat output_matrix = output.getMat();
+        input.getMat().forEach<T>(
+            [&](const auto& coeff, const auto index) {
+                int i = index[0];
+                output_matrix.at<T>(i) = (i % 2 == EVEN_OR_ODD ? -1 : 1) * coeff;
+            }
+        );
     }
 };
 }   // namespace internal

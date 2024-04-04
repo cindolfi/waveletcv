@@ -712,3 +712,106 @@ INSTANTIATE_TEST_CASE_P(
     testing::ValuesIn(MultiChannelCollectMaskedTest::create_params())
 );
 
+
+
+
+/**
+ * -----------------------------------------------------------------------------
+ * Negate Every Other Tests
+ * -----------------------------------------------------------------------------
+*/
+struct NegateEveryOtherTestParam
+{
+    cv::Mat input;
+    cv::Mat negated_at_evens_indices;
+};
+
+void PrintTo(const NegateEveryOtherTestParam& param, std::ostream* stream)
+{
+    *stream << "\n";
+    *stream << "input =";
+    PrintTo(param.input, stream);
+    // *stream << "negated_at_evens_indices =";
+    // PrintTo(param.negated_at_evens_indices, stream);
+}
+
+class NegateEveryOtherTest : public testing::TestWithParam<NegateEveryOtherTestParam>
+{
+public:
+    static cv::Mat create_vector(const std::initializer_list<double>& values)
+    {
+        return cv::Mat(std::vector<double>(values), true);
+    }
+
+    static std::vector<ParamType> create_test_params()
+    {
+        return {
+            //  0
+            {
+                .input = cv::Mat(),
+                .negated_at_evens_indices = cv::Mat(),
+            },
+            //  1
+            {
+                .input = create_vector({1}),
+                .negated_at_evens_indices = create_vector({-1}),
+            },
+            //  2
+            {
+                .input = create_vector({1, 2}),
+                .negated_at_evens_indices = create_vector({-1, 2}),
+            },
+            //  3
+            {
+                .input = create_vector({1, 2, 3}),
+                .negated_at_evens_indices = create_vector({-1, 2, -3}),
+            },
+            //  4
+            {
+                .input = create_vector({1, 2, 3, 4}),
+                .negated_at_evens_indices = create_vector({-1, 2, -3, 4}),
+            },
+            //  5
+            {
+                .input = create_vector({1, 2, 3, 4, 5}),
+                .negated_at_evens_indices = create_vector({-1, 2, -3, 4, -5}),
+            },
+            //  6
+            {
+                .input = create_vector({1, 2, 3, 4, 5, 6}),
+                .negated_at_evens_indices = create_vector({-1, 2, -3, 4, -5, 6}),
+            },
+        };
+    }
+};
+
+TEST_P(NegateEveryOtherTest, NegateEvens)
+{
+    auto param = GetParam();
+    auto expected_output = param.negated_at_evens_indices;
+
+    cv::Mat actual_output;
+    negate_evens(param.input, actual_output);
+
+    EXPECT_THAT(actual_output, MatrixEq(expected_output));
+}
+
+TEST_P(NegateEveryOtherTest, NegateOdds)
+{
+    auto param = GetParam();
+    auto expected_output = param.negated_at_evens_indices.empty()
+                         ? cv::Mat()
+                         : -param.negated_at_evens_indices;
+
+    cv::Mat actual_output;
+    negate_odds(param.input, actual_output);
+
+    EXPECT_THAT(actual_output, MatrixEq(expected_output));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    NegateGroup,
+    NegateEveryOtherTest,
+    testing::ValuesIn(NegateEveryOtherTest::create_test_params())
+);
+
