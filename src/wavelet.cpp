@@ -226,9 +226,11 @@ struct MergeEvenAndOddKernels
 
 
 FilterBankImpl::FilterBankImpl() :
+    filter_length(0),
     decompose(),
     reconstruct(),
-    filter_length(0)
+    promoted_decompose(),
+    promoted_reconstruct()
 {
 }
 
@@ -238,7 +240,9 @@ FilterBankImpl::FilterBankImpl(
     const cv::Mat& reconstruct_lowpass_,
     const cv::Mat& reconstruct_highpass_
 ) :
-    filter_length(std::max(decompose_lowpass_.total(), decompose_highpass_.total()))
+    filter_length(std::max(decompose_lowpass_.total(), decompose_highpass_.total())),
+    promoted_decompose(),
+    promoted_reconstruct()
 {
     check_kernels(
         reconstruct_lowpass_,
@@ -452,15 +456,39 @@ void FilterBank::forward(
 
     //  stage 1
     cv::Mat stage1_lowpass_output;
-    convolve_rows_and_downsample_cols(padded_input, stage1_lowpass_output, _decompose->lowpass);
+    convolve_rows_and_downsample_cols(
+        padded_input,
+        stage1_lowpass_output,
+        _p->promoted_decompose.lowpass
+    );
     cv::Mat stage1_highpass_output;
-    convolve_rows_and_downsample_cols(padded_input, stage1_highpass_output, _decompose->highpass);
+    convolve_rows_and_downsample_cols(
+        padded_input,
+        stage1_highpass_output,
+        _p->promoted_decompose.highpass
+    );
 
     //  stage 2
-    convolve_cols_and_downsample_rows(stage1_lowpass_output, approx, _decompose->lowpass);
-    convolve_cols_and_downsample_rows(stage1_lowpass_output, horizontal_detail, _decompose->highpass);
-    convolve_cols_and_downsample_rows(stage1_highpass_output, vertical_detail, _decompose->lowpass);
-    convolve_cols_and_downsample_rows(stage1_highpass_output, diagonal_detail, _decompose->highpass);
+    convolve_cols_and_downsample_rows(
+        stage1_lowpass_output,
+        approx,
+        _p->promoted_decompose.lowpass
+    );
+    convolve_cols_and_downsample_rows(
+        stage1_lowpass_output,
+        horizontal_detail,
+        _p->promoted_decompose.highpass
+    );
+    convolve_cols_and_downsample_rows(
+        stage1_highpass_output,
+        vertical_detail,
+        _p->promoted_decompose.lowpass
+    );
+    convolve_cols_and_downsample_rows(
+        stage1_highpass_output,
+        diagonal_detail,
+        _p->promoted_decompose.highpass
+    );
 
     if (!was_prepared)
         finish_forward();
@@ -471,20 +499,13 @@ void FilterBank::prepare_forward(int type) const
     if (is_prepared_forward(type))
         return;
 
-    cv::Mat lowpass_kernel;
-    promote_kernel(_p->decompose.lowpass, lowpass_kernel, type);
-    cv::Mat highpass_kernel;
-    promote_kernel(_p->decompose.highpass, highpass_kernel, type);
-
-    _decompose = std::make_shared<internal::DecomposeKernels>(
-        lowpass_kernel,
-        highpass_kernel
-    );
+    promote_kernel(_p->decompose.lowpass, _p->promoted_decompose.lowpass, type);
+    promote_kernel(_p->decompose.highpass, _p->promoted_decompose.highpass, type);
 }
 
 void FilterBank::finish_forward() const
 {
-    _decompose = nullptr;
+    _p->promoted_decompose.release();
 }
 
 void FilterBank::inverse(
@@ -516,16 +537,16 @@ void FilterBank::inverse(
     upsample_rows_and_convolve_cols(
         promoted_approx,
         stage1a_lowpass_output,
-        _reconstruct->even_lowpass,
-        _reconstruct->odd_lowpass,
+        _p->promoted_reconstruct.even_lowpass,
+        _p->promoted_reconstruct.odd_lowpass,
         output_size
     );
     cv::Mat stage1a_highpass_output;
     upsample_rows_and_convolve_cols(
         promoted_horizontal_detail,
         stage1a_highpass_output,
-        _reconstruct->even_highpass,
-        _reconstruct->odd_highpass,
+        _p->promoted_reconstruct.even_highpass,
+        _p->promoted_reconstruct.odd_highpass,
         output_size
     );
 
@@ -534,16 +555,16 @@ void FilterBank::inverse(
     upsample_rows_and_convolve_cols(
         promoted_vertical_detail,
         stage1b_lowpass_output,
-        _reconstruct->even_lowpass,
-        _reconstruct->odd_lowpass,
+        _p->promoted_reconstruct.even_lowpass,
+        _p->promoted_reconstruct.odd_lowpass,
         output_size
     );
     cv::Mat stage1b_highpass_output;
     upsample_rows_and_convolve_cols(
         promoted_diagonal_detail,
         stage1b_highpass_output,
-        _reconstruct->even_highpass,
-        _reconstruct->odd_highpass,
+        _p->promoted_reconstruct.even_highpass,
+        _p->promoted_reconstruct.odd_highpass,
         output_size
     );
 
@@ -552,16 +573,16 @@ void FilterBank::inverse(
     upsample_cols_and_convolve_rows(
         stage1a_lowpass_output + stage1a_highpass_output,
         stage2_lowpass_output,
-        _reconstruct->even_lowpass,
-        _reconstruct->odd_lowpass,
+        _p->promoted_reconstruct.even_lowpass,
+        _p->promoted_reconstruct.odd_lowpass,
         output_size
     );
     cv::Mat stage2_highpass_output;
     upsample_cols_and_convolve_rows(
         stage1b_lowpass_output + stage1b_highpass_output,
         stage2_highpass_output,
-        _reconstruct->even_highpass,
-        _reconstruct->odd_highpass,
+        _p->promoted_reconstruct.even_highpass,
+        _p->promoted_reconstruct.odd_highpass,
         output_size
     );
 
@@ -576,26 +597,31 @@ void FilterBank::prepare_inverse(int type) const
     if (is_prepared_inverse(type))
         return;
 
-    cv::Mat even_lowpass_kernel;
-    promote_kernel(_p->reconstruct.even_lowpass, even_lowpass_kernel, type);
-    cv::Mat odd_lowpass_kernel;
-    promote_kernel(_p->reconstruct.odd_lowpass, odd_lowpass_kernel, type);
-    cv::Mat even_highpass_kernel;
-    promote_kernel(_p->reconstruct.even_highpass, even_highpass_kernel, type);
-    cv::Mat odd_highpass_kernel;
-    promote_kernel(_p->reconstruct.odd_highpass, odd_highpass_kernel, type);
-
-    _reconstruct = std::make_shared<internal::ReconstructKernels>(
-        even_lowpass_kernel,
-        odd_lowpass_kernel,
-        even_highpass_kernel,
-        odd_highpass_kernel
+    promote_kernel(
+        _p->reconstruct.even_lowpass,
+        _p->promoted_reconstruct.even_lowpass,
+        type
+    );
+    promote_kernel(
+        _p->reconstruct.odd_lowpass,
+        _p->promoted_reconstruct.odd_lowpass,
+        type
+    );
+    promote_kernel(
+        _p->reconstruct.even_highpass,
+        _p->promoted_reconstruct.even_highpass,
+        type
+    );
+    promote_kernel(
+        _p->reconstruct.odd_highpass,
+        _p->promoted_reconstruct.odd_highpass,
+        type
     );
 }
 
 void FilterBank::finish_inverse() const
 {
-    _reconstruct = nullptr;
+    _p->promoted_reconstruct.release();
 }
 
 cv::Size FilterBank::output_size(const cv::Size& input_size) const

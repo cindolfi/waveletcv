@@ -63,6 +63,15 @@ struct DecomposeKernels
     DecomposeKernels(const DecomposeKernels& other) = default;
     DecomposeKernels(DecomposeKernels&& other) = default;
 
+    bool empty() const { return lowpass.empty(); }
+    int type() const { return lowpass.type(); }
+    int depth() const { return lowpass.depth(); }
+    void release()
+    {
+        lowpass.release();
+        highpass.release();
+    }
+
     cv::Mat lowpass;
     cv::Mat highpass;
 };
@@ -90,6 +99,17 @@ struct ReconstructKernels
 
     ReconstructKernels(const ReconstructKernels& other) = default;
     ReconstructKernels(ReconstructKernels&& other) = default;
+
+    bool empty() const { return even_lowpass.empty(); }
+    int type() const { return even_lowpass.type(); }
+    int depth() const { return even_lowpass.depth(); }
+    void release()
+    {
+        even_lowpass.release();
+        odd_lowpass.release();
+        even_highpass.release();
+        odd_highpass.release();
+    }
 
     cv::Mat even_lowpass;
     cv::Mat odd_lowpass;
@@ -129,9 +149,16 @@ struct FilterBankImpl
     KernelPair decompose_kernels() const;
     KernelPair reconstruct_kernels() const;
 
+    int filter_length;
     DecomposeKernels decompose;
     ReconstructKernels reconstruct;
-    int filter_length;
+    //  These are used as temporary caches for promoted kernels to avoid
+    //  converting kernels every time FilterBank::forward or FilterBank::inverse
+    //  is called by multilevel algorithms (e.g. DWT2D).  The caching and
+    //  freeing is done by the FilterBank::prepare_*() and
+    //  FilterBank::finish_*() methods, respectively.
+    DecomposeKernels promoted_decompose;
+    ReconstructKernels promoted_reconstruct;
 };
 } // namespace internal
 
@@ -153,9 +180,9 @@ public:
     FilterBank(const FilterBank& other) = default;
     FilterBank(FilterBank&& other) = default;
 
-    bool empty() const { return _p->decompose.lowpass.empty(); }
-    int type() const { return _p->decompose.lowpass.type(); }
-    int depth() const { return _p->decompose.lowpass.depth(); }
+    bool empty() const { return _p->decompose.empty(); }
+    int type() const { return _p->decompose.type(); }
+    int depth() const { return _p->decompose.depth(); }
     int filter_length() const { return _p->filter_length; }
     KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
     KernelPair decompose_kernels() const { return _p->decompose_kernels(); }
@@ -176,8 +203,8 @@ public:
     void finish_forward() const;
     bool is_prepared_forward(int type) const
     {
-        return (bool)_decompose
-        && _decompose->lowpass.type() == promote_type(type);
+        return !_p->promoted_decompose.empty()
+            && _p->promoted_decompose.type() == promote_type(type);
     }
 
     void inverse(
@@ -210,8 +237,8 @@ public:
     void finish_inverse() const;
     bool is_prepared_inverse(int type) const
     {
-        return (bool)_reconstruct
-        && _reconstruct->even_lowpass.type() == promote_type(type);
+        return !_p->promoted_reconstruct.empty()
+            && _p->promoted_reconstruct.type() == promote_type(type);
     }
 
     cv::Size output_size(const cv::Size& input_size) const;
@@ -342,12 +369,6 @@ protected:
 
 protected:
     std::shared_ptr<internal::FilterBankImpl> _p;
-    //  These are used as temporary caches for promoted kernels to avoid
-    //  converting kernels every time forward or inverse is called by multilevel
-    //  algorithms (e.g. DWT2D).  The caching and freeing is done by the
-    //  prepare_*() and finish_*() methods, respectively.
-    mutable std::shared_ptr<internal::DecomposeKernels> _decompose;
-    mutable std::shared_ptr<internal::ReconstructKernels> _reconstruct;
 };
 
 std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
