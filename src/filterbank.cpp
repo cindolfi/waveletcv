@@ -436,7 +436,7 @@ FilterBank::FilterBank(
 }
 
 void FilterBank::decompose(
-    cv::InputArray input,
+    cv::InputArray image,
     cv::OutputArray approx,
     cv::OutputArray horizontal_detail,
     cv::OutputArray vertical_detail,
@@ -445,28 +445,28 @@ void FilterBank::decompose(
     const cv::Scalar& border_value
 ) const
 {
-    check_forward_input(input);
+    check_decompose_args(image);
 
-    bool was_prepared = is_decompose_prepared(input.type());
+    bool was_prepared = is_decompose_prepared(image.type());
     if (!was_prepared)
-        prepare_decompose(input.type());
+        prepare_decompose(image.type());
 
-    cv::Mat promoted_input;
-    promote_input(input, promoted_input);
+    cv::Mat promoted_image;
+    promote_image(image, promoted_image);
 
-    cv::Mat padded_input;
-    pad(promoted_input, padded_input, border_type, border_value);
+    cv::Mat padded_image;
+    pad(promoted_image, padded_image, border_type, border_value);
 
     //  Stage 1
     cv::Mat stage1_lowpass_output;
     convolve_rows_and_downsample_cols(
-        padded_input,
+        padded_image,
         stage1_lowpass_output,
         _p->promoted_decompose.lowpass
     );
     cv::Mat stage1_highpass_output;
     convolve_rows_and_downsample_cols(
-        padded_input,
+        padded_image,
         stage1_highpass_output,
         _p->promoted_decompose.highpass
     );
@@ -520,20 +520,20 @@ void FilterBank::reconstruct(
     const cv::Size& output_size
 ) const
 {
-    check_inverse_inputs(approx, horizontal_detail, vertical_detail, diagonal_detail);
+    check_reconstruct_args(approx, horizontal_detail, vertical_detail, diagonal_detail);
 
     bool was_prepared = is_reconstruct_prepared(approx.type());
     if (!was_prepared)
         prepare_reconstruct(approx.type());
 
     cv::Mat promoted_approx;
-    promote_input(approx, promoted_approx);
+    promote_image(approx, promoted_approx);
     cv::Mat promoted_horizontal_detail;
-    promote_input(horizontal_detail, promoted_horizontal_detail);
+    promote_image(horizontal_detail, promoted_horizontal_detail);
     cv::Mat promoted_vertical_detail;
-    promote_input(vertical_detail, promoted_vertical_detail);
+    promote_image(vertical_detail, promoted_vertical_detail);
     cv::Mat promoted_diagonal_detail;
-    promote_input(diagonal_detail, promoted_diagonal_detail);
+    promote_image(diagonal_detail, promoted_diagonal_detail);
 
     //  Stage 1a
     cv::Mat stage1a_lowpass_output;
@@ -627,24 +627,24 @@ void FilterBank::finish_reconstruct() const
     _p->promoted_reconstruct.release();
 }
 
-cv::Size FilterBank::output_size(const cv::Size& input_size) const
+cv::Size FilterBank::output_size(const cv::Size& image_size) const
 {
-    return cv::Size(output_size(input_size.width), output_size(input_size.height));
+    return cv::Size(output_size(image_size.width), output_size(image_size.height));
 }
 
-int FilterBank::output_size(int input_size) const
+int FilterBank::output_size(int image_size) const
 {
-    return 2 * subband_size(input_size);
+    return 2 * subband_size(image_size);
 }
 
-cv::Size FilterBank::subband_size(const cv::Size& input_size) const
+cv::Size FilterBank::subband_size(const cv::Size& image_size) const
 {
-    return cv::Size(subband_size(input_size.width), subband_size(input_size.height));
+    return cv::Size(subband_size(image_size.width), subband_size(image_size.height));
 }
 
-int FilterBank::subband_size(int input_size) const
+int FilterBank::subband_size(int image_size) const
 {
-    return (input_size + filter_length() - 1) / 2;
+    return (image_size + filter_length() - 1) / 2;
 }
 
 KernelPair FilterBank::create_orthogonal_decompose_kernels(cv::InputArray reconstruct_lowpass_coeffs)
@@ -699,13 +699,13 @@ int FilterBank::promote_type(int type) const
     );
 }
 
-void FilterBank::promote_input(
-    cv::InputArray input,
-    cv::OutputArray promoted_input
+void FilterBank::promote_image(
+    cv::InputArray image,
+    cv::OutputArray promoted_image
 ) const
 {
-    int type = promote_type(input.type());
-    input.getMat().convertTo(promoted_input, type);
+    int type = promote_type(image.type());
+    image.getMat().convertTo(promoted_image, type);
 }
 
 void FilterBank::promote_kernel(
@@ -730,14 +730,14 @@ void FilterBank::promote_kernel(
 }
 
 void FilterBank::pad(
-    cv::InputArray input,
+    cv::InputArray image,
     cv::OutputArray output,
     int border_type,
     const cv::Scalar& border_value
 ) const
 {
     cv::copyMakeBorder(
-        input,
+        image,
         output,
         filter_length() - 2,
         filter_length(),
@@ -749,35 +749,35 @@ void FilterBank::pad(
 }
 
 void FilterBank::convolve_rows_and_downsample_cols(
-    cv::InputArray data,
+    cv::InputArray input,
     cv::OutputArray output,
     const cv::Mat& kernel
 ) const
 {
     internal::dispatch_on_pixel_type<internal::ConvolveRowsAndDownsampleCols>(
-        data.type(),
-        data,
+        input.type(),
+        input,
         output,
         kernel.t()
     );
 }
 
 void FilterBank::convolve_cols_and_downsample_rows(
-    cv::InputArray data,
+    cv::InputArray input,
     cv::OutputArray output,
     const cv::Mat& kernel
 ) const
 {
     internal::dispatch_on_pixel_type<internal::ConvolveColsAndDownsampleRows>(
-        data.type(),
-        data,
+        input.type(),
+        input,
         output,
         kernel
     );
 }
 
 void FilterBank::upsample_cols_and_convolve_rows(
-    cv::InputArray data,
+    cv::InputArray input,
     cv::OutputArray output,
     const cv::Mat& even_kernel,
     const cv::Mat& odd_kernel,
@@ -785,8 +785,8 @@ void FilterBank::upsample_cols_and_convolve_rows(
 ) const
 {
     internal::dispatch_on_pixel_type<internal::UpsampleColsAndConvolveRows>(
-        data.type(),
-        data,
+        input.type(),
+        input,
         output,
         even_kernel.t(),
         odd_kernel.t(),
@@ -795,7 +795,7 @@ void FilterBank::upsample_cols_and_convolve_rows(
 }
 
 void FilterBank::upsample_rows_and_convolve_cols(
-    cv::InputArray data,
+    cv::InputArray input,
     cv::OutputArray output,
     const cv::Mat& even_kernel,
     const cv::Mat& odd_kernel,
@@ -803,8 +803,8 @@ void FilterBank::upsample_rows_and_convolve_cols(
 ) const
 {
     internal::dispatch_on_pixel_type<internal::UpsampleRowsAndConvolveCols>(
-        data.type(),
-        data,
+        input.type(),
+        input,
         output,
         even_kernel,
         odd_kernel,
@@ -825,16 +825,16 @@ bool FilterBank::operator==(const FilterBank& other) const
 }
 
 #ifndef DISABLE_ARG_CHECKS
-void FilterBank::check_forward_input(cv::InputArray input) const
+void FilterBank::check_decompose_args(cv::InputArray image) const
 {
-    if (input.rows() <= 1 || input.cols() <= 1) {
+    if (image.rows() <= 1 || image.cols() <= 1) {
         std::stringstream message;
-        message << "FilterBank: Input size must be greater [1 x 1], got " << input.size();
+        message << "FilterBank: Input size must be greater [1 x 1], got " << image.size();
         CV_Error(cv::Error::StsBadSize, message.str());
     }
 }
 
-void FilterBank::check_inverse_inputs(
+void FilterBank::check_reconstruct_args(
     cv::InputArray approx,
     cv::InputArray horizontal_detail,
     cv::InputArray vertical_detail,
@@ -866,8 +866,8 @@ void FilterBank::check_inverse_inputs(
     }
 }
 #else
-inline void WaveletFilterBank::check_forward_input(cv::InputArray input) const {}
-inline void WaveletFilterBank::check_inverse_inputs(
+inline void WaveletFilterBank::check_decompose_args(cv::InputArray image) const {}
+inline void WaveletFilterBank::check_reconstruct_args(
     cv::InputArray approx,
     cv::InputArray horizontal_detail,
     cv::InputArray vertical_detail,

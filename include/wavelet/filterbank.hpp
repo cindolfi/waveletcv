@@ -192,7 +192,7 @@ public:
     friend std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
 
     void decompose(
-        cv::InputArray x,
+        cv::InputArray image,
         cv::OutputArray approx,
         cv::OutputArray horizontal_detail,
         cv::OutputArray vertical_detail,
@@ -242,10 +242,10 @@ public:
             && _p->promoted_reconstruct.type() == promote_type(type);
     }
 
-    cv::Size output_size(const cv::Size& input_size) const;
-    int output_size(int input_size) const;
-    cv::Size subband_size(const cv::Size& input_size) const;
-    int subband_size(int input_size) const;
+    cv::Size output_size(const cv::Size& image_size) const;
+    int output_size(int image_size) const;
+    cv::Size subband_size(const cv::Size& image_size) const;
+    int subband_size(int image_size) const;
 
     //  Kernel Pair Factories
     static KernelPair create_orthogonal_decompose_kernels(
@@ -265,9 +265,9 @@ public:
 
     int promote_type(int type) const;
 protected:
-    void promote_input(
-        cv::InputArray input,
-        cv::OutputArray promoted_input
+    void promote_image(
+        cv::InputArray image,
+        cv::OutputArray promoted_image
     ) const;
     void promote_kernel(
         cv::InputArray kernel,
@@ -275,30 +275,30 @@ protected:
         int type
     ) const;
     void pad(
-        cv::InputArray data,
+        cv::InputArray image,
         cv::OutputArray output,
         int border_type=cv::BORDER_DEFAULT,
         const cv::Scalar& border_value=cv::Scalar()
     ) const;
     void convolve_rows_and_downsample_cols(
-        cv::InputArray data,
+        cv::InputArray input,
         cv::OutputArray output,
         const cv::Mat& kernel
     ) const;
     void convolve_cols_and_downsample_rows(
-        cv::InputArray data,
+        cv::InputArray input,
         cv::OutputArray output,
         const cv::Mat& kernel
     ) const;
     void upsample_cols_and_convolve_rows(
-        cv::InputArray data,
+        cv::InputArray input,
         cv::OutputArray output,
         const cv::Mat& even_kernel,
         const cv::Mat& odd_kernel,
         const cv::Size& output_size
     ) const;
     void upsample_rows_and_convolve_cols(
-        cv::InputArray data,
+        cv::InputArray input,
         cv::OutputArray output,
         const cv::Mat& even_kernel,
         const cv::Mat& odd_kernel,
@@ -307,8 +307,8 @@ protected:
 
     //  Argument Checkers - these all raise execeptions and can be disabled by
     //  defining DISABLE_ARG_CHECKS
-    void check_forward_input(cv::InputArray input) const;
-    void check_inverse_inputs(
+    void check_decompose_args(cv::InputArray image) const;
+    void check_reconstruct_args(
         cv::InputArray approx,
         cv::InputArray horizontal_detail,
         cv::InputArray vertical_detail,

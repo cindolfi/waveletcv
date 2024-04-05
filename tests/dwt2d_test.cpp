@@ -31,7 +31,7 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, LevelsIsZero)
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, InputSizeIsEmpty)
 {
-    ASSERT_TRUE(coeffs.input_size().empty());
+    ASSERT_TRUE(coeffs.image_size().empty());
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, WaveletIsInvalid)
@@ -328,14 +328,14 @@ TEST_P(Dwt2dCoeffsTest, ClonedTypeIsCorrect)
     ASSERT_EQ(cloned_coeffs.type(), coeffs.type());
 }
 
-TEST_P(Dwt2dCoeffsTest, ClonedInputSizeIsCorrect)
+TEST_P(Dwt2dCoeffsTest, ClonedImageSizeIsCorrect)
 {
     auto cloned_coeffs = coeffs.clone();
     for (int level = 0; level < coeffs.levels(); ++level) {
         ASSERT_EQ(
-            cloned_coeffs.input_size(level),
-            coeffs.input_size(level)
-        ) << "cloned input size does not equal orginal detail size at level " << level;
+            cloned_coeffs.image_size(level),
+            coeffs.image_size(level)
+        ) << "cloned image size does not equal orginal detail size at level " << level;
     }
 }
 
@@ -2626,7 +2626,7 @@ protected:
 TEST_P(DWT2DDecomposeTest, CoeffSizeForInput)
 {
     if (!expected_output.empty()) {
-        auto coeffs_size = dwt.coeffs_size_for_input(input, levels);
+        auto coeffs_size = dwt.coeffs_size_for_image(input, levels);
 
         EXPECT_EQ(coeffs_size, expected_output.size());
     }
@@ -2645,7 +2645,7 @@ TEST_P(DWT2DDecomposeTest, Decompose)
         clamp_small_to_zero(actual_output, expected_output);
 
         EXPECT_EQ(actual_output.levels(), levels);
-        EXPECT_EQ(actual_output.input_size(), input.size());
+        EXPECT_EQ(actual_output.image_size(), input.size());
         EXPECT_EQ(actual_output.wavelet(), dwt.wavelet);
         EXPECT_EQ(actual_output.border_type(), dwt.border_type);
         EXPECT_THAT(actual_output, MatrixNear(expected_output, nearness_tolerance));
@@ -2665,7 +2665,7 @@ TEST_P(DWT2DDecomposeTest, CallOperator)
         clamp_small_to_zero(actual_output, expected_output);
 
         EXPECT_EQ(actual_output.levels(), levels);
-        EXPECT_EQ(actual_output.input_size(), input.size());
+        EXPECT_EQ(actual_output.image_size(), input.size());
         EXPECT_EQ(actual_output.wavelet(), dwt.wavelet);
         EXPECT_EQ(actual_output.border_type(), dwt.border_type);
         EXPECT_THAT(actual_output, MatrixNear(expected_output, nearness_tolerance));

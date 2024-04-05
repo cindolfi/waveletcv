@@ -13,7 +13,7 @@ DWT2D::Coeffs::Coeffs() :
 DWT2D::Coeffs::Coeffs(
     const cv::Mat& coeff_matrix,
     int levels,
-    const cv::Size& input_size,
+    const cv::Size& image_size,
     const std::vector<cv::Size>& subband_sizes,
     const Wavelet& wavelet,
     cv::BorderTypes border_type
@@ -22,7 +22,7 @@ DWT2D::Coeffs::Coeffs(
         std::make_shared<internal::Dwt2dCoeffsImpl>(
             coeff_matrix,
             levels,
-            input_size,
+            image_size,
             subband_sizes,
             wavelet,
             border_type
@@ -34,7 +34,7 @@ DWT2D::Coeffs::Coeffs(
 DWT2D::Coeffs::Coeffs(
     const cv::Mat& coeff_matrix,
     int levels,
-    const cv::Size& input_size,
+    const cv::Size& image_size,
     const std::vector<cv::Rect>& diagonal_subband_rects,
     const Wavelet& wavelet,
     cv::BorderTypes border_type
@@ -43,7 +43,7 @@ DWT2D::Coeffs::Coeffs(
         std::make_shared<internal::Dwt2dCoeffsImpl>(
             coeff_matrix,
             levels,
-            input_size,
+            image_size,
             diagonal_subband_rects,
             wavelet,
             border_type
@@ -56,7 +56,7 @@ void DWT2D::Coeffs::reset(
     const cv::Size& size,
     int type,
     int levels,
-    const cv::Size& input_size,
+    const cv::Size& image_size,
     const std::vector<cv::Size>& subband_sizes,
     const Wavelet& wavelet,
     cv::BorderTypes border_type
@@ -64,7 +64,7 @@ void DWT2D::Coeffs::reset(
 {
     _p->coeff_matrix.create(size, type);
     _p->levels = levels;
-    _p->input_size = input_size;
+    _p->image_size = image_size;
     _p->wavelet = wavelet;
     _p->border_type = border_type;
     _p->build_diagonal_subband_rects(subband_sizes);
@@ -90,7 +90,7 @@ DWT2D::Coeffs DWT2D::Coeffs::clone() const
     return DWT2D::Coeffs(
         _p->coeff_matrix.clone(),
         _p->levels,
-        _p->input_size,
+        _p->image_size,
         _p->diagonal_subband_rects,
         _p->wavelet,
         _p->border_type
@@ -151,7 +151,7 @@ DWT2D::Coeffs DWT2D::Coeffs::at_level(int level) const
     return DWT2D::Coeffs(
         _p->coeff_matrix(level_rect(level)),
         levels() - level,
-        input_size(level),
+        image_size(level),
         detail_rects,
         wavelet(),
         border_type()
@@ -535,7 +535,7 @@ std::vector<DWT2D::Coeffs> split(const DWT2D::Coeffs& coeffs)
             DWT2D::Coeffs(
                 coeff_matrix,
                 coeffs._p->levels,
-                coeffs._p->input_size,
+                coeffs._p->image_size,
                 coeffs._p->diagonal_subband_rects,
                 coeffs._p->wavelet,
                 coeffs._p->border_type
@@ -563,7 +563,7 @@ DWT2D::Coeffs merge(const std::vector<DWT2D::Coeffs>& coeffs)
     return DWT2D::Coeffs(
         coeff_matrix,
         coeffs[0]._p->levels,
-        coeffs[0]._p->input_size,
+        coeffs[0]._p->image_size,
         coeffs[0]._p->diagonal_subband_rects,
         coeffs[0]._p->wavelet,
         coeffs[0]._p->border_type
@@ -581,16 +581,16 @@ DWT2D::DWT2D(const Wavelet& wavelet, cv::BorderTypes border_type) :
 {
 }
 
-void DWT2D::decompose(cv::InputArray input, DWT2D::Coeffs& output, int levels) const
+void DWT2D::decompose(cv::InputArray image, DWT2D::Coeffs& output, int levels) const
 {
     check_levels_in_range(levels);
-    warn_if_border_effects_will_occur(levels, input);
+    warn_if_border_effects_will_occur(levels, image);
     output.reset(
-        coeffs_size_for_input(input, levels),
-        wavelet.filter_bank().promote_type(input.type()),
+        coeffs_size_for_image(image, levels),
+        wavelet.filter_bank().promote_type(image.type()),
         levels,
-        input.size(),
-        calc_subband_sizes(input.size(), levels),
+        image.size(),
+        calc_subband_sizes(image.size(), levels),
         wavelet,
         border_type
     );
@@ -601,8 +601,8 @@ void DWT2D::decompose(cv::InputArray input, DWT2D::Coeffs& output, int levels) c
     //  zero.
     output = 0.0;
 
-    wavelet.filter_bank().prepare_decompose(input.type());
-    auto running_approx = input.getMat();
+    wavelet.filter_bank().prepare_decompose(image.type());
+    auto running_approx = image.getMat();
     for (int level = 0; level < levels; ++level) {
         cv::Mat approx;
         cv::Mat horizontal_detail;
@@ -640,7 +640,7 @@ void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray output) con
             coeffs.vertical_detail(level),
             coeffs.diagonal_detail(level),
             result,
-            coeffs.input_size(level)
+            coeffs.image_size(level)
         );
         approx = result;
     }
@@ -655,42 +655,42 @@ void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray output) con
 
 DWT2D::Coeffs DWT2D::create_coeffs(
     cv::InputArray coeffs_matrix,
-    const cv::Size& input_size,
+    const cv::Size& image_size,
     int levels
 ) const
 {
     check_levels_in_range(levels);
-    check_coeffs_size(coeffs_matrix, input_size, levels);
+    check_coeffs_size(coeffs_matrix, image_size, levels);
 
     return Coeffs(
         coeffs_matrix.getMat(),
         levels,
-        input_size,
-        calc_subband_sizes(input_size, levels),
+        image_size,
+        calc_subband_sizes(image_size, levels),
         wavelet,
         border_type
     );
 }
 
-DWT2D::Coeffs DWT2D::create_coeffs_for_input(const cv::Size& input_size, int type, int levels) const
+DWT2D::Coeffs DWT2D::create_coeffs_for_image(const cv::Size& image_size, int type, int levels) const
 {
-    auto size = coeffs_size_for_input(input_size, levels);
+    auto size = coeffs_size_for_image(image_size, levels);
     type = wavelet.filter_bank().promote_type(type);
 
     return Coeffs(
         cv::Mat(size, type, cv::Scalar::all(0.0)),
         levels,
-        input_size,
-        calc_subband_sizes(input_size, levels),
+        image_size,
+        calc_subband_sizes(image_size, levels),
         wavelet,
         border_type
     );
 }
 
-std::vector<cv::Size> DWT2D::calc_subband_sizes(const cv::Size& input_size, int levels) const
+std::vector<cv::Size> DWT2D::calc_subband_sizes(const cv::Size& image_size, int levels) const
 {
     std::vector<cv::Size> subband_sizes;
-    cv::Size subband_size = input_size;
+    cv::Size subband_size = image_size;
     for (int i = 0; i < levels; ++i) {
         subband_size = wavelet.filter_bank().subband_size(subband_size);
         subband_sizes.push_back(subband_size);
@@ -699,11 +699,11 @@ std::vector<cv::Size> DWT2D::calc_subband_sizes(const cv::Size& input_size, int 
     return subband_sizes;
 }
 
-cv::Size DWT2D::coeffs_size_for_input(const cv::Size& input_size, int levels) const
+cv::Size DWT2D::coeffs_size_for_image(const cv::Size& image_size, int levels) const
 {
     check_levels_in_range(levels);
 
-    cv::Size level_subband_size = wavelet.filter_bank().subband_size(input_size);
+    cv::Size level_subband_size = wavelet.filter_bank().subband_size(image_size);
     cv::Size accumulator = level_subband_size;
     for (int i = 1; i < levels; ++i) {
         level_subband_size = wavelet.filter_bank().subband_size(level_subband_size);
@@ -739,15 +739,15 @@ void DWT2D::check_levels_in_range(int levels) const
     }
 }
 
-void DWT2D::check_coeffs_size(cv::InputArray coeffs, const cv::Size& input_size, int levels) const
+void DWT2D::check_coeffs_size(cv::InputArray coeffs, const cv::Size& image_size, int levels) const
 {
-    auto required_coeffs_size = coeffs_size_for_input(input_size, levels);
+    auto required_coeffs_size = coeffs_size_for_image(image_size, levels);
     if (coeffs.size() != required_coeffs_size) {
         std::stringstream message;
         message
-            << "DWT2D: coefficients size is not consistent with input size. "
+            << "DWT2D: coefficients size is not consistent with image size. "
             << "Coefficients size must be " << required_coeffs_size << " "
-            << "for input size = " << input_size << " and levels = " << levels << ", "
+            << "for image size = " << image_size << " and levels = " << levels << ", "
             << "got coeffs.size() = " << coeffs.size() << ". "
             << "(Note: use DWT2D::coeffs_size_for_input() to get the required size)";
         CV_Error(cv::Error::StsBadSize, message.str());
@@ -755,39 +755,39 @@ void DWT2D::check_coeffs_size(cv::InputArray coeffs, const cv::Size& input_size,
 }
 #else
 inline void DWT2D::check_levels_in_range(int levels, int max_levels) const {}
-inline void DWT2D::check_levels_in_range(int levels, cv::InputArray x) const {}
-inline void DWT2D::check_coeffs_size(cv::InputArray coeffs, const cv::Size& input_size, int levels) const {}
+inline void DWT2D::check_levels_in_range(int levels, cv::InputArray image) const {}
+inline void DWT2D::check_coeffs_size(cv::InputArray coeffs, const cv::Size& image_size, int levels) const {}
 #endif // DISABLE_ARG_CHECKS
 
 #ifndef DISABLE_DWT_WARNINGS
-void DWT2D::warn_if_border_effects_will_occur(int levels, const cv::Size& input_size) const
+void DWT2D::warn_if_border_effects_will_occur(int levels, const cv::Size& image_size) const
 {
-    int max_levels = max_levels_without_border_effects(input_size);
+    int max_levels = max_levels_without_border_effects(image_size);
     if (levels > max_levels) {
         std::stringstream message;
         message
             << "DWT2D: border effects will occur for a " << levels << " level DWT "
-            << "of a " << input_size << " input using the " << wavelet.name() << " wavelet. "
+            << "of a " << image_size << " image using the " << wavelet.name() << " wavelet. "
             << "Must have levels <= " << max_levels << " to avoid border effects.";
         CV_LOG_WARNING(NULL, message.str());
     }
 }
 
-void DWT2D::warn_if_border_effects_will_occur(int levels, cv::InputArray x) const
+void DWT2D::warn_if_border_effects_will_occur(int levels, cv::InputArray image) const
 {
-    warn_if_border_effects_will_occur(levels, x.size());
+    warn_if_border_effects_will_occur(levels, image.size());
 }
 
 void DWT2D::warn_if_border_effects_will_occur(const Coeffs& coeffs) const
 {
     warn_if_border_effects_will_occur(
         coeffs.levels(),
-        coeffs.input_size()
+        coeffs.image_size()
     );
 }
 #else
 inline void DWT2D::warn_if_border_effects_will_occur(int levels, int max_levels) const {}
-inline void DWT2D::warn_if_border_effects_will_occur(int levels, cv::InputArray x) const {}
+inline void DWT2D::warn_if_border_effects_will_occur(int levels, cv::InputArray image) const {}
 #endif // DISABLE_DWT_WARNINGS
 
 
@@ -797,83 +797,83 @@ inline void DWT2D::warn_if_border_effects_will_occur(int levels, cv::InputArray 
  * -----------------------------------------------------------------------------
 */
 DWT2D::Coeffs dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     const Wavelet& wavelet,
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).decompose(input);
+    return DWT2D(wavelet, border_type).decompose(image);
 }
 
 DWT2D::Coeffs dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     const std::string& wavelet,
     cv::BorderTypes border_type
 )
 {
-    return dwt2d(input, Wavelet::create(wavelet), border_type);
+    return dwt2d(image, Wavelet::create(wavelet), border_type);
 }
 
 DWT2D::Coeffs dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     const Wavelet& wavelet,
     int levels,
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).decompose(input, levels);
+    return DWT2D(wavelet, border_type).decompose(image, levels);
 }
 
 DWT2D::Coeffs dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     const std::string& wavelet,
     int levels,
     cv::BorderTypes border_type
 )
 {
-    return dwt2d(input, Wavelet::create(wavelet), levels, border_type);
+    return dwt2d(image, Wavelet::create(wavelet), levels, border_type);
 }
 
 void dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     DWT2D::Coeffs& output,
     const Wavelet& wavelet,
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).decompose(input, output);
+    return DWT2D(wavelet, border_type).decompose(image, output);
 }
 
 void dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     DWT2D::Coeffs& output,
     const std::string& wavelet,
     cv::BorderTypes border_type
 )
 {
-    dwt2d(input, output, Wavelet::create(wavelet), border_type);
+    dwt2d(image, output, Wavelet::create(wavelet), border_type);
 }
 
 void dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     DWT2D::Coeffs& output,
     const Wavelet& wavelet,
     int levels,
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).decompose(input, output, levels);
+    return DWT2D(wavelet, border_type).decompose(image, output, levels);
 }
 
 void dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     DWT2D::Coeffs& output,
     const std::string& wavelet,
     int levels,
     cv::BorderTypes border_type
 )
 {
-    dwt2d(input, output, Wavelet::create(wavelet), levels, border_type);
+    dwt2d(image, output, Wavelet::create(wavelet), levels, border_type);
 }
 
 void idwt2d(

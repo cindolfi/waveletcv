@@ -29,7 +29,7 @@ public:
     Dwt2dCoeffsImpl() :
         coeff_matrix(),
         levels(0),
-        input_size(),
+        image_size(),
         diagonal_subband_rects(),
         wavelet(),
         border_type(cv::BORDER_DEFAULT)
@@ -39,14 +39,14 @@ public:
     Dwt2dCoeffsImpl(
         const cv::Mat& coeff_matrix,
         int levels,
-        const cv::Size& input_size,
+        const cv::Size& image_size,
         const std::vector<cv::Rect>& diagonal_subband_rects,
         const Wavelet& wavelet,
         cv::BorderTypes border_type
     ) :
         coeff_matrix(coeff_matrix),
         levels(levels),
-        input_size(input_size),
+        image_size(image_size),
         diagonal_subband_rects(diagonal_subband_rects),
         wavelet(wavelet),
         border_type(border_type)
@@ -56,14 +56,14 @@ public:
     Dwt2dCoeffsImpl(
         const cv::Mat& coeff_matrix,
         int levels,
-        const cv::Size& input_size,
+        const cv::Size& image_size,
         const std::vector<cv::Size>& subband_sizes,
         const Wavelet& wavelet,
         cv::BorderTypes border_type
     ) :
         coeff_matrix(coeff_matrix),
         levels(levels),
-        input_size(input_size),
+        image_size(image_size),
         diagonal_subband_rects(),
         wavelet(wavelet),
         border_type(border_type)
@@ -88,7 +88,7 @@ public:
 public:
     cv::Mat coeff_matrix;
     int levels;
-    cv::Size input_size;
+    cv::Size image_size;
     std::vector<cv::Rect> diagonal_subband_rects;
     Wavelet wavelet;
     cv::BorderTypes border_type;
@@ -169,7 +169,7 @@ public:
         Coeffs(
             const cv::Mat& matrix,
             int levels,
-            const cv::Size& input_size,
+            const cv::Size& image_size,
             const std::vector<cv::Size>& subband_sizes,
             const Wavelet& wavelet,
             cv::BorderTypes border_type
@@ -178,7 +178,7 @@ public:
         Coeffs(
             const cv::Mat& matrix,
             int levels,
-            const cv::Size& input_size,
+            const cv::Size& image_size,
             const std::vector<cv::Rect>& diagonal_subband_rects,
             const Wavelet& wavelet,
             cv::BorderTypes border_type
@@ -188,7 +188,7 @@ public:
             const cv::Size& size,
             int type,
             int levels,
-            const cv::Size& input_size,
+            const cv::Size& image_size,
             const std::vector<cv::Size>& subband_sizes,
             const Wavelet& wavelet,
             cv::BorderTypes border_type
@@ -359,7 +359,7 @@ public:
         Wavelet wavelet() const { return _p->wavelet; }
         cv::BorderTypes border_type() const { return _p->border_type; }
         DWT2D dwt() const;
-        cv::Size input_size(int level=0) const { return level == 0 ? _p->input_size : diagonal_detail_rect(level - 1).size(); }
+        cv::Size image_size(int level=0) const { return level == 0 ? _p->image_size : diagonal_detail_rect(level - 1).size(); }
 
         cv::Mat invert() const;
         void invert(cv::OutputArray output) const;
@@ -408,26 +408,26 @@ public:
     DWT2D(const DWT2D& other) = default;
     DWT2D(DWT2D&& other) = default;
 
-    Coeffs operator()(cv::InputArray x) const { return decompose(x); }
-    Coeffs operator()(cv::InputArray x, int levels) const { return decompose(x, levels); }
-    void operator()(cv::InputArray x, Coeffs& output) const { decompose(x, output); }
-    void operator()(cv::InputArray x, Coeffs& output, int levels) const { decompose(x, output, levels); }
+    Coeffs operator()(cv::InputArray image) const { return decompose(image); }
+    Coeffs operator()(cv::InputArray image, int levels) const { return decompose(image, levels); }
+    void operator()(cv::InputArray image, Coeffs& output) const { decompose(image, output); }
+    void operator()(cv::InputArray image, Coeffs& output, int levels) const { decompose(image, output, levels); }
 
-    void decompose(cv::InputArray x, Coeffs& output, int levels) const;
-    Coeffs decompose(cv::InputArray x) const
+    void decompose(cv::InputArray image, Coeffs& output, int levels) const;
+    Coeffs decompose(cv::InputArray image) const
     {
         Coeffs coeffs;
-        decompose(x, coeffs);
+        decompose(image, coeffs);
         return coeffs;
     }
-    void decompose(cv::InputArray x, Coeffs& output) const
+    void decompose(cv::InputArray image, Coeffs& output) const
     {
-        decompose(x, output, max_levels_without_border_effects(x));
+        decompose(image, output, max_levels_without_border_effects(image));
     }
-    Coeffs decompose(cv::InputArray x, int levels) const
+    Coeffs decompose(cv::InputArray image, int levels) const
     {
         DWT2D::Coeffs coeffs;
-        decompose(x, coeffs, levels);
+        decompose(image, coeffs, levels);
         return coeffs;
     }
 
@@ -439,35 +439,35 @@ public:
         return output;
     }
 
-    Coeffs create_coeffs(cv::InputArray coeffs_matrix, const cv::Size& input_size, int levels) const;
-    Coeffs create_coeffs(const cv::Size& input_size, int type, int levels) const
+    Coeffs create_coeffs(cv::InputArray coeffs_matrix, const cv::Size& image_size, int levels) const;
+    Coeffs create_coeffs(const cv::Size& image_size, int type, int levels) const
     {
-        auto size = coeffs_size_for_input(input_size, levels);
-        return create_coeffs(cv::Mat(size, type, 0.0), input_size, levels);
+        auto size = coeffs_size_for_image(image_size, levels);
+        return create_coeffs(cv::Mat(size, type, 0.0), image_size, levels);
     }
     Coeffs create_coeffs(int input_rows, int input_cols, int type, int levels) const
     {
         return create_coeffs(cv::Size(input_cols, input_rows), type, levels);
     }
 
-    Coeffs create_coeffs_for_input(const cv::Size& size, int type, int levels) const;
-    Coeffs create_coeffs_for_input(cv::InputArray input, int levels) const
+    Coeffs create_coeffs_for_image(const cv::Size& size, int type, int levels) const;
+    Coeffs create_coeffs_for_image(cv::InputArray image, int levels) const
     {
-        return create_coeffs_for_input(input.size(), input.type(), levels);
+        return create_coeffs_for_image(image.size(), image.type(), levels);
     }
-    Coeffs create_coeffs_for_input(int rows, int cols, int type, int levels) const
+    Coeffs create_coeffs_for_image(int rows, int cols, int type, int levels) const
     {
-        return create_coeffs_for_input(cv::Size(cols, rows), type, levels);
+        return create_coeffs_for_image(cv::Size(cols, rows), type, levels);
     }
 
-    cv::Size coeffs_size_for_input(const cv::Size& input_size, int levels) const;
-    cv::Size coeffs_size_for_input(cv::InputArray input, int levels) const
+    cv::Size coeffs_size_for_image(const cv::Size& image_size, int levels) const;
+    cv::Size coeffs_size_for_image(cv::InputArray image, int levels) const
     {
-        return coeffs_size_for_input(input.size(), levels);
+        return coeffs_size_for_image(image.size(), levels);
     }
-    cv::Size coeffs_size_for_input(int rows, int cols, int levels) const
+    cv::Size coeffs_size_for_image(int rows, int cols, int levels) const
     {
-        return coeffs_size_for_input(cv::Size(cols, rows), levels);
+        return coeffs_size_for_image(cv::Size(cols, rows), levels);
     }
 
     int max_levels_without_border_effects(int rows, int cols) const;
@@ -475,21 +475,21 @@ public:
     {
         return max_levels_without_border_effects(size.height, size.width);
     }
-    int max_levels_without_border_effects(cv::InputArray x) const
+    int max_levels_without_border_effects(cv::InputArray image) const
     {
-        return max_levels_without_border_effects(x.size());
+        return max_levels_without_border_effects(image.size());
     }
 protected:
     //  Argument Checkers - these all raise execeptions and can be disabled by
     //  defining DISABLE_ARG_CHECKS
     void check_levels_in_range(int levels) const;
-    void check_coeffs_size(cv::InputArray coeffs, const cv::Size& input_size, int levels) const;
+    void check_coeffs_size(cv::InputArray coeffs, const cv::Size& image_size, int levels) const;
 
-    void warn_if_border_effects_will_occur(int levels, const cv::Size& input_size) const;
-    void warn_if_border_effects_will_occur(int levels, cv::InputArray x) const;
+    void warn_if_border_effects_will_occur(int levels, const cv::Size& image_size) const;
+    void warn_if_border_effects_will_occur(int levels, cv::InputArray image) const;
     void warn_if_border_effects_will_occur(const Coeffs& coeffs) const;
 
-    std::vector<cv::Size> calc_subband_sizes(const cv::Size& input_size, int levels) const;
+    std::vector<cv::Size> calc_subband_sizes(const cv::Size& image_size, int levels) const;
 public:
     Wavelet wavelet;
     cv::BorderTypes border_type;
@@ -506,47 +506,47 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& wavelet);
  * -----------------------------------------------------------------------------
 */
 DWT2D::Coeffs dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     const Wavelet& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 DWT2D::Coeffs dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     const std::string& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 DWT2D::Coeffs dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     const Wavelet& wavelet,
     int levels,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 DWT2D::Coeffs dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     const std::string& wavelet,
     int levels,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 void dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     DWT2D::Coeffs& output,
     const Wavelet& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 void dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     DWT2D::Coeffs& output,
     const std::string& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 void dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     DWT2D::Coeffs& output,
     const Wavelet& wavelet,
     int levels,
@@ -554,7 +554,7 @@ void dwt2d(
 );
 
 void dwt2d(
-    cv::InputArray input,
+    cv::InputArray image,
     DWT2D::Coeffs& output,
     const std::string& wavelet,
     int levels,
@@ -562,27 +562,27 @@ void dwt2d(
 );
 
 void idwt2d(
-    const DWT2D::Coeffs& input,
+    const DWT2D::Coeffs& coeffs,
     cv::OutputArray output,
     const Wavelet& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 void idwt2d(
-    const DWT2D::Coeffs& input,
+    const DWT2D::Coeffs& coeffs,
     cv::OutputArray output,
     const std::string& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 cv::Mat idwt2d(
-    const DWT2D::Coeffs& input,
+    const DWT2D::Coeffs& coeffs,
     const Wavelet& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
 cv::Mat idwt2d(
-    const DWT2D::Coeffs& input,
+    const DWT2D::Coeffs& coeffs,
     const std::string& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
