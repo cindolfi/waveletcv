@@ -32,8 +32,6 @@ class CoefficientTestCases:
             )
 
 
-
-
 @dataclass
 class TestCase:
     wavelet: str
@@ -162,8 +160,8 @@ class TestCaseJsonEncoder(json.JSONEncoder):
                 orthogonal=obj.orthogonal,
                 biorthogonal=obj.biorthogonal,
                 symmetry=obj.symmetry,
-                family=obj.family_name,
-                name=obj.name,
+                family=obj.family_name.title(),
+                name=self.fix_reverse_biorthogonal_name(obj.name),
                 decompose_lowpass=obj.dec_lo,
                 decompose_highpass=obj.dec_hi,
                 reconstruct_lowpass=obj.rec_lo,
@@ -171,7 +169,7 @@ class TestCaseJsonEncoder(json.JSONEncoder):
             )
         elif isinstance(obj, DWT2DParam):
             result = dict(
-                wavelet_name=obj.wavelet_name,
+                wavelet_name=self.fix_reverse_biorthogonal_name(obj.wavelet_name),
                 input_name=obj.input_name,
                 coeffs=obj.coeffs,
                 levels=obj.levels,
@@ -188,6 +186,15 @@ class TestCaseJsonEncoder(json.JSONEncoder):
         return result
 
 
+    def fix_reverse_biorthogonal_name(self, wavelet_name):
+        #   Fix naming mismatch between pywt and opencv wavelet lib
+        #   for reverse biorthogonal wavelets.
+        if wavelet_name.startswith('rbio'):
+            wavelet_name = wavelet_name.replace('o', 'or')
+
+        return wavelet_name
+
+
 
 
 def main():
@@ -199,6 +206,7 @@ def main():
             'sym',
             'coif',
             'bior',
+            'rbio',
         ],
     )
     coeffs_test_cases.generate('wavelet_test_data.json')
@@ -415,6 +423,52 @@ def main():
             ),
             TestCase(
                 wavelet='bior4.4',
+                patterns=large_wide_name,
+                levels=levels,
+            ),
+            #   ----------------------------------------------------------------
+            TestCase(
+                wavelet='rbio1.1',
+                patterns=small_square_name,
+                levels=levels,
+            ),
+            TestCase(
+                wavelet='rbio1.1',
+                patterns=small_tall_name,
+                levels=levels,
+            ),
+            TestCase(
+                wavelet='rbio1.1',
+                patterns=small_wide_name,
+                levels=levels,
+            ),
+            TestCase(
+                wavelet='rbio2.2',
+                patterns=medium_square_name,
+                levels=levels,
+            ),
+            TestCase(
+                wavelet='rbio2.2',
+                patterns=medium_tall_name,
+                levels=levels,
+            ),
+            TestCase(
+                wavelet='rbio2.2',
+                patterns=medium_wide_name,
+                levels=levels,
+            ),
+            TestCase(
+                wavelet='rbio4.4',
+                patterns=large_square_name,
+                levels=levels,
+            ),
+            TestCase(
+                wavelet='rbio4.4',
+                patterns=large_tall_name,
+                levels=levels,
+            ),
+            TestCase(
+                wavelet='rbio4.4',
                 patterns=large_wide_name,
                 levels=levels,
             ),

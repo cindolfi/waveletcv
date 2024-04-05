@@ -1991,7 +1991,7 @@ public:
         assert(values.size() == 3 * LEVELS);
 
         auto type = cv::traits::Type<Pixel>::value;
-        DWT2D dwt(haar());
+        DWT2D dwt(create_haar());
         auto coeffs = dwt.create_coeffs(ROWS, COLS, type, LEVELS);
         int i = 0;
         for (const auto& value : values) {
@@ -2016,7 +2016,7 @@ public:
         assert(values.size() == 3 * LEVELS);
 
         auto type = cv::traits::Type<Pixel>::value;
-        DWT2D dwt(haar());
+        DWT2D dwt(create_haar());
         auto coeffs = dwt.create_coeffs(ROWS, COLS, type, LEVELS);
         int i = 0;
         for (const auto& value : values) {

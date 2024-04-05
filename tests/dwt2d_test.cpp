@@ -237,7 +237,7 @@ protected:
 protected:
     Dwt2dCoeffsTest() :
         testing::TestWithParam<int>(),
-        dwt(haar())
+        dwt(create_haar())
     {
     }
 
@@ -582,7 +582,7 @@ public:
 protected:
     Dwt2dCoeffsLevelsTest() :
         testing::TestWithParam<ParamType>(),
-        dwt(haar())
+        dwt(create_haar())
     {
     }
 
@@ -1521,7 +1521,7 @@ protected:
 protected:
     Dwt2dCoeffsNormalizeTest() :
         testing::TestWithParam<ParamType>(),
-        dwt(haar())
+        dwt(create_haar())
     {
     }
 

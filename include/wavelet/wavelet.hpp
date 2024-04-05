@@ -394,16 +394,28 @@ std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
 /**
  * Factories
 */
-Wavelet daubechies(int order);
-Wavelet haar();
-Wavelet symlets(int order);
-Wavelet coiflets(int order);
-Wavelet biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
+Wavelet create_daubechies(int order);
+Wavelet create_haar();
+Wavelet create_symlets(int order);
+Wavelet create_coiflets(int order);
+Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
+Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
 
 namespace internal
 {
-    void check_wavelet_order(int order, int min_order, int max_order, const std::string family);
-    std::string get_and_check_biorthogonal_name(int vanishing_moments_psi, int vanishing_moments_phi);
+    std::string get_orthogonal_name(const std::string& prefix, int order);
+    std::string get_biorthogonal_name(
+        const std::string& prefix,
+        int vanishing_moments_psi,
+        int vanishing_moments_phi
+    );
+    template <typename V>
+    void check_wavelet_name(
+        const std::string& name,
+        const std::string& family,
+        const std::map<std::string, V>& filter_coeffs,
+        const std::string& name_prefix = ""
+    );
 } // namespace internal
 } // namespace wavelet
 
