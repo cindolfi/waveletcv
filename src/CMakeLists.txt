@@ -3,6 +3,7 @@
 set(
     HEADER_LIST
     "${Wavelet_SOURCE_DIR}/include/wavelet/wavelet.hpp"
+    "${Wavelet_SOURCE_DIR}/include/wavelet/filterbank.hpp"
     "${Wavelet_SOURCE_DIR}/include/wavelet/dwt2d.hpp"
     "${Wavelet_SOURCE_DIR}/include/wavelet/shrinkage.hpp"
     "${Wavelet_SOURCE_DIR}/include/wavelet/utils.hpp"
@@ -26,6 +27,7 @@ FetchContent_MakeAvailable(nlopt)
 add_library(
     wavelet_library
     wavelet.cpp
+    filterbank.cpp
     dwt2d.cpp
     shrinkage.cpp
     utils.cpp

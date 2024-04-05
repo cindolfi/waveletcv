@@ -1,5 +1,5 @@
 /**
- * Wavelet & DWT2D Unit Tests
+ * Wavelet Unit Tests
 */
 #include <fstream>
 #include <nlohmann/json.hpp>

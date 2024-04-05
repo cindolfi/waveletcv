@@ -5,7 +5,7 @@
 #include <opencv2/core.hpp>
 #include <string>
 #include <vector>
-#include <iostream>
+#include <memory>
 
 namespace wavelet
 {
@@ -408,34 +408,34 @@ public:
     DWT2D(const DWT2D& other) = default;
     DWT2D(DWT2D&& other) = default;
 
-    Coeffs operator()(cv::InputArray x) const { return forward(x); }
-    Coeffs operator()(cv::InputArray x, int levels) const { return forward(x, levels); }
-    void operator()(cv::InputArray x, Coeffs& output) const { forward(x, output); }
-    void operator()(cv::InputArray x, Coeffs& output, int levels) const { forward(x, output, levels); }
+    Coeffs operator()(cv::InputArray x) const { return decompose(x); }
+    Coeffs operator()(cv::InputArray x, int levels) const { return decompose(x, levels); }
+    void operator()(cv::InputArray x, Coeffs& output) const { decompose(x, output); }
+    void operator()(cv::InputArray x, Coeffs& output, int levels) const { decompose(x, output, levels); }
 
-    void forward(cv::InputArray x, Coeffs& output, int levels) const;
-    Coeffs forward(cv::InputArray x) const
+    void decompose(cv::InputArray x, Coeffs& output, int levels) const;
+    Coeffs decompose(cv::InputArray x) const
     {
         Coeffs coeffs;
-        forward(x, coeffs);
+        decompose(x, coeffs);
         return coeffs;
     }
-    void forward(cv::InputArray x, Coeffs& output) const
+    void decompose(cv::InputArray x, Coeffs& output) const
     {
-        forward(x, output, max_levels_without_border_effects(x));
+        decompose(x, output, max_levels_without_border_effects(x));
     }
-    Coeffs forward(cv::InputArray x, int levels) const
+    Coeffs decompose(cv::InputArray x, int levels) const
     {
         DWT2D::Coeffs coeffs;
-        forward(x, coeffs, levels);
+        decompose(x, coeffs, levels);
         return coeffs;
     }
 
-    void inverse(const Coeffs& coeffs, cv::OutputArray output) const;
-    cv::Mat inverse(const Coeffs& coeffs) const
+    void reconstruct(const Coeffs& coeffs, cv::OutputArray output) const;
+    cv::Mat reconstruct(const Coeffs& coeffs) const
     {
         cv::Mat output;
-        inverse(coeffs, output);
+        reconstruct(coeffs, output);
         return output;
     }
 

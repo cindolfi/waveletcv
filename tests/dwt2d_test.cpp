@@ -1,25 +1,18 @@
 /**
- * Wavelet & DWT2D Unit Tests
+ * DWT2D Unit Tests
 */
 #include <vector>
-#include <map>
-#include <fstream>
-#include <ranges>
-#include <nlohmann/json.hpp>
 #include <wavelet/dwt2d.hpp>
 #include <wavelet/utils.hpp>
 #include "common.hpp"
+#include "base_dwt2d.hpp"
 
 using namespace wavelet;
 using namespace testing;
-using json = nlohmann::json;
 
-
-/**
- * =============================================================================
- * DWT2D::Coeffs
- * =============================================================================
-*/
+//  ============================================================================
+//  DWT2D::Coeffs Tests
+//  ============================================================================
 class Dwt2dCoeffsDefaultConstructorTest : public testing::Test
 {
 protected:
@@ -2396,369 +2389,9 @@ INSTANTIATE_TEST_CASE_P(
 
 
 
-/**
- * =============================================================================
- * Transformation Tests
- * =============================================================================
-*/
-struct DWT2DTestParam
-{
-    std::string wavelet_name;
-    std::string input_name;
-    int levels;
-    int type;
-    cv::Mat coeffs;
-};
-
-void PrintTo(const DWT2DTestParam& param, std::ostream* stream)
-{
-    *stream << "\nwavelet_name: " << param.wavelet_name
-            << "\ninput_name: " << param.input_name
-            << "\nlevels: " << param.levels
-            << "\ncoeffs: " << param.coeffs;
-}
-
-namespace cv
-{
-    void from_json(const json& json_matrix, Mat& matrix)
-    {
-        auto shape = json_matrix["shape"].get<std::vector<int>>();
-        int type;
-        if (json_matrix["dtype"] == "float64")
-            type = CV_64F;
-        else if (json_matrix["dtype"] == "float32")
-            type = CV_32F;
-        else
-            assert(false);
-
-        std::vector<double> data = json_matrix["data"];
-
-
-        Mat data_matrix(data, true);
-        matrix.create(data_matrix.size(), type);
-        data_matrix.convertTo(matrix, CV_64F);
-        if (!matrix.empty()) {
-            int channels = (shape.size() == 3) ? shape[2] : 1;
-            matrix = matrix.reshape(channels, shape[0]);
-        }
-    }
-}
-
-auto print_dwt2d_test_label  = [](const auto& info) {
-    std::string wavelet_name = info.param.wavelet_name;
-    std::ranges::replace(wavelet_name, '.', '_');
-    return wavelet_name + "_"
-        + info.param.input_name + "_"
-        + std::to_string(info.param.levels) + "_"
-        + get_type_name(info.param.type);
-};
-
-class BaseDWT2DTest : public testing::TestWithParam<DWT2DTestParam>
-{
-public:
-    const double SINGLE_NEARNESS_TOLERANCE = 1e-6;
-    const double DOUBLE_NEARNESS_TOLERANCE = 1e-10;
-
-protected:
-    BaseDWT2DTest() :
-        testing::TestWithParam<DWT2DTestParam>(),
-        wavelet(Wavelet::create(GetParam().wavelet_name))
-    {}
-
-    void SetUp() override
-    {
-        levels = GetParam().levels;
-        if (CV_MAT_DEPTH(GetParam().type) == CV_32F) {
-            nearness_tolerance = SINGLE_NEARNESS_TOLERANCE;
-        } else {
-            nearness_tolerance = DOUBLE_NEARNESS_TOLERANCE;
-        }
-    }
-
-    void clamp_small_to_zero(auto& ...matrices) const
-    {
-        // (clamp_near_zero(matrices, CLAMP_TOLERANCE), ...);
-        (clamp_near_zero(matrices, 0.1 * nearness_tolerance), ...);
-    }
-
-    void get_forward_input(cv::OutputArray input) const
-    {
-        //  Inputs are stored as doubles, so we need to explicitly convert them
-        //  here to test for various input types.
-        auto param = GetParam();
-        BaseDWT2DTest::inputs.at(param.input_name).convertTo(input, param.type);
-    }
-
-    void get_forward_output(cv::OutputArray output) const
-    {
-        //  Need to convert coeffs because filter bank kernels are stored as
-        //  doubles, which forces a type promotion during forward.
-        auto param = GetParam();
-        param.coeffs.convertTo(output, CV_64F);
-    }
-
-    void get_inverse_output(cv::OutputArray output) const
-    {
-        //  Need to convert output because filter bank kernels are stored as
-        //  doubles, which forces a type promotion during inversion.
-        auto param = GetParam();
-        BaseDWT2DTest::inputs.at(param.input_name).convertTo(output, CV_64F);
-    }
-
-    Wavelet wavelet;
-    int levels;
-    double nearness_tolerance;
-    static std::map<std::string, cv::Mat> inputs;
-    static std::vector<DWT2DTestParam> params;
-
-public:
-    static void create_test_params()
-    {
-        if (!params.empty() && !inputs.empty())
-            return;
-
-        //  DWT2D_TEST_DATA_PATH is defined in CMakeLists.txt
-        std::ifstream test_case_data_file(DWT2D_TEST_DATA_PATH);
-        auto test_case_data = json::parse(test_case_data_file);
-
-        for (auto& [input_name, input] : test_case_data["inputs"].items())
-            inputs[input_name] = input.get<cv::Mat>();
-
-        for (auto& test_case : test_case_data["test_cases"]) {
-            auto double_precision_coeffs = test_case["coeffs"].get<cv::Mat>();
-            cv::Mat single_precision_coeffs;
-            double_precision_coeffs.convertTo(single_precision_coeffs, CV_32F);
-
-            params.push_back({
-                .wavelet_name = test_case["wavelet_name"],
-                .input_name = test_case["input_name"],
-                .levels = test_case["levels"],
-                .type = double_precision_coeffs.type(),
-                .coeffs = double_precision_coeffs
-            });
-            params.push_back({
-                .wavelet_name = test_case["wavelet_name"],
-                .input_name = test_case["input_name"],
-                .levels = test_case["levels"],
-                .type = single_precision_coeffs.type(),
-                .coeffs = single_precision_coeffs,
-            });
-        }
-    }
-
-    static std::vector<DWT2DTestParam> get_test_params(int levels=0)
-    {
-        create_test_params();
-        if (levels > 0) {
-            std::vector<DWT2DTestParam> levels_params;
-            std::ranges::copy_if(
-                params,
-                std::back_inserter(levels_params),
-                [&](auto param) { return param.levels == levels; }
-            );
-
-            return levels_params;
-        } else {
-            return params;
-        }
-    }
-};
-
-std::map<std::string, cv::Mat> BaseDWT2DTest::inputs;
-std::vector<DWT2DTestParam> BaseDWT2DTest::params;
-
-
-/**
- * -----------------------------------------------------------------------------
- * Filter Bank
- * -----------------------------------------------------------------------------
-*/
-class FilterBankTest : public BaseDWT2DTest
-{
-protected:
-    void get_subbands(
-        const cv::Mat& coeffs,
-        cv::Mat& approx,
-        cv::Mat& horizontal_detail,
-        cv::Mat& vertical_detail,
-        cv::Mat& diagonal_detail
-    )
-    {
-        BaseDWT2DTest::SetUp();
-
-        cv::Size subband_size = coeffs.size() / 2;
-        approx = coeffs(
-            cv::Rect(0, 0, subband_size.width, subband_size.height)
-        );
-        horizontal_detail = coeffs(
-            cv::Rect(0, subband_size.height, subband_size.width, subband_size.height)
-        );
-        vertical_detail = coeffs(
-            cv::Rect(subband_size.width, 0, subband_size.width, subband_size.height)
-        );
-        diagonal_detail = coeffs(
-            cv::Rect(subband_size.width, subband_size.height, subband_size.width, subband_size.height)
-        );
-    }
-};
-
-class ForwardFilterBankTest : public FilterBankTest
-{
-protected:
-    void SetUp() override
-    {
-        FilterBankTest::SetUp();
-
-        get_forward_input(input);
-        get_forward_output(expected_output);
-        get_subbands(
-            expected_output,
-            expected_approx,
-            expected_horizontal_detail,
-            expected_vertical_detail,
-            expected_diagonal_detail
-        );
-    }
-
-    cv::Mat input;
-    cv::Mat expected_approx;
-    cv::Mat expected_horizontal_detail;
-    cv::Mat expected_vertical_detail;
-    cv::Mat expected_diagonal_detail;
-    cv::Mat expected_output;
-};
-
-TEST_P(ForwardFilterBankTest, OutputSize)
-{
-    auto output_size = wavelet.filter_bank().output_size(input.size());
-
-    EXPECT_EQ(output_size, expected_output.size());
-}
-
-TEST_P(ForwardFilterBankTest, SubbandSize)
-{
-    auto subband_size = wavelet.filter_bank().subband_size(input.size());
-
-    EXPECT_EQ(subband_size, expected_approx.size());
-}
-
-TEST_P(ForwardFilterBankTest, Forward)
-{
-    cv::Mat actual_approx;
-    cv::Mat actual_horizontal_detail;
-    cv::Mat actual_vertical_detail;
-    cv::Mat actual_diagonal_detail;
-
-    wavelet.filter_bank().forward(
-        input,
-        actual_approx,
-        actual_horizontal_detail,
-        actual_vertical_detail,
-        actual_diagonal_detail,
-        cv::BORDER_REFLECT101
-    );
-
-    //  Clamping is only for readability of failure messages.  It does not
-    //  impact the test because the clamp tolerance is smaller than the
-    //  the nearness_tolerance.
-    clamp_small_to_zero(
-        actual_approx,
-        actual_horizontal_detail,
-        actual_vertical_detail,
-        actual_diagonal_detail,
-        expected_approx,
-        expected_horizontal_detail,
-        expected_vertical_detail,
-        expected_diagonal_detail
-    );
-
-    EXPECT_THAT(
-        actual_approx,
-        MatrixNear(expected_approx, nearness_tolerance)
-    ) << "approx is incorrect";
-    EXPECT_THAT(
-        actual_horizontal_detail,
-        MatrixNear(expected_horizontal_detail, nearness_tolerance)
-    ) << "horizontal_detail is incorrect";
-    EXPECT_THAT(
-        actual_vertical_detail,
-        MatrixNear(expected_vertical_detail, nearness_tolerance)
-    ) << "vertical_detail is incorrect";
-    EXPECT_THAT(
-        actual_diagonal_detail,
-        MatrixNear(expected_diagonal_detail, nearness_tolerance)
-    ) << "diagonal_detail is incorrect";
-}
-
-
-INSTANTIATE_TEST_CASE_P(
-    FilterBankGroup,
-    ForwardFilterBankTest,
-    testing::ValuesIn(ForwardFilterBankTest::get_test_params(1)),
-    print_dwt2d_test_label
-);
-
-
-//  ----------------------------------------------------------------------------
-class InverseFilterBankTest : public FilterBankTest
-{
-protected:
-    void SetUp() override
-    {
-        FilterBankTest::SetUp();
-
-        auto param = GetParam();
-        get_subbands(
-            param.coeffs,
-            approx,
-            horizontal_detail,
-            vertical_detail,
-            diagonal_detail
-        );
-        get_inverse_output(expected_output);
-    }
-
-    cv::Mat approx;
-    cv::Mat horizontal_detail;
-    cv::Mat vertical_detail;
-    cv::Mat diagonal_detail;
-    cv::Mat expected_output;
-};
-
-TEST_P(InverseFilterBankTest, Inverse)
-{
-    cv::Mat actual_output;
-    wavelet.filter_bank().inverse(
-        approx,
-        horizontal_detail,
-        vertical_detail,
-        diagonal_detail,
-        actual_output,
-        expected_output.size()
-    );
-
-    //  Clamping is only for readability of failure messages.  It does not
-    //  impact the test because the clamp tolerance is smaller than the
-    //  the nearness_tolerance.
-    clamp_small_to_zero(actual_output, expected_output);
-
-    EXPECT_THAT(actual_output, MatrixNear(expected_output, nearness_tolerance));
-}
-
-
-INSTANTIATE_TEST_CASE_P(
-    FilterBankGroup,
-    InverseFilterBankTest,
-    testing::ValuesIn(InverseFilterBankTest::get_test_params(1)),
-    print_dwt2d_test_label
-);
-
-
-/**
- * -----------------------------------------------------------------------------
- * DWT2D
- * -----------------------------------------------------------------------------
-*/
+//  ============================================================================
+//  Transformation Tests
+//  ============================================================================
 struct DWT2DMaxLevelsTestParam
 {
     std::string wavelet_name;
@@ -2959,10 +2592,21 @@ INSTANTIATE_TEST_CASE_P(
 
 
 //  ----------------------------------------------------------------------------
-class ForwardDWT2DTest : public BaseDWT2DTest
+//  Decompose
+//  ----------------------------------------------------------------------------
+auto print_dwt2d_test_label  = [](const auto& info) {
+    std::string wavelet_name = info.param.wavelet_name;
+    std::ranges::replace(wavelet_name, '.', '_');
+    return wavelet_name + "_"
+        + info.param.input_name + "_"
+        + std::to_string(info.param.levels) + "_"
+        + get_type_name(info.param.type);
+};
+
+class DWT2DDecomposeTest : public BaseDWT2DTest
 {
 protected:
-    ForwardDWT2DTest() :
+    DWT2DDecomposeTest() :
         BaseDWT2DTest(),
         dwt(wavelet, cv::BORDER_REFLECT101)
     {}
@@ -2979,7 +2623,7 @@ protected:
     cv::Mat expected_output;
 };
 
-TEST_P(ForwardDWT2DTest, CoeffSizeForInput)
+TEST_P(DWT2DDecomposeTest, CoeffSizeForInput)
 {
     if (!expected_output.empty()) {
         auto coeffs_size = dwt.coeffs_size_for_input(input, levels);
@@ -2988,12 +2632,12 @@ TEST_P(ForwardDWT2DTest, CoeffSizeForInput)
     }
 }
 
-TEST_P(ForwardDWT2DTest, Forward)
+TEST_P(DWT2DDecomposeTest, Decompose)
 {
     if (expected_output.empty()) {
-        EXPECT_THROW({ dwt.forward(input, levels); }, cv::Exception);
+        EXPECT_THROW({ dwt.decompose(input, levels); }, cv::Exception);
     } else {
-        auto actual_output = dwt.forward(input, levels);
+        auto actual_output = dwt.decompose(input, levels);
 
         //  Clamping is only for readability of failure messages.  It does not
         //  impact the test because the clamp tolerance is smaller than the
@@ -3008,7 +2652,7 @@ TEST_P(ForwardDWT2DTest, Forward)
     }
 }
 
-TEST_P(ForwardDWT2DTest, CallOperator)
+TEST_P(DWT2DDecomposeTest, CallOperator)
 {
     if (expected_output.empty()) {
         EXPECT_THROW({ dwt(input, levels); }, cv::Exception);
@@ -3031,17 +2675,19 @@ TEST_P(ForwardDWT2DTest, CallOperator)
 
 INSTANTIATE_TEST_CASE_P(
     DWT2DGroup,
-    ForwardDWT2DTest,
-    testing::ValuesIn(ForwardDWT2DTest::get_test_params()),
+    DWT2DDecomposeTest,
+    testing::ValuesIn(DWT2DDecomposeTest::create_test_params()),
     print_dwt2d_test_label
 );
 
 
 //  ----------------------------------------------------------------------------
-class InverseDWT2DTest : public BaseDWT2DTest
+//  Reconstruct
+//  ----------------------------------------------------------------------------
+class DWT2DReconstructTest : public BaseDWT2DTest
 {
 protected:
-    InverseDWT2DTest() :
+    DWT2DReconstructTest() :
         BaseDWT2DTest(),
         dwt(wavelet, cv::BORDER_REFLECT101)
     {}
@@ -3060,12 +2706,12 @@ protected:
     cv::Mat expected_output;
 };
 
-TEST_P(InverseDWT2DTest, Inverse)
+TEST_P(DWT2DReconstructTest, Reconstruct)
 {
     if (coeffs.empty()) {
-        EXPECT_THROW({ dwt.inverse(coeffs); }, cv::Exception);
+        EXPECT_THROW({ dwt.reconstruct(coeffs); }, cv::Exception);
     } else {
-        auto actual_output = dwt.inverse(coeffs);
+        auto actual_output = dwt.reconstruct(coeffs);
 
         //  Clamping is only for readability of failure messages.  It does not
         //  impact the test because the clamp tolerance is smaller than the
@@ -3076,7 +2722,7 @@ TEST_P(InverseDWT2DTest, Inverse)
     }
 }
 
-TEST_P(InverseDWT2DTest, Invert)
+TEST_P(DWT2DReconstructTest, Invert)
 {
     if (coeffs.empty()) {
         EXPECT_THROW({ coeffs.invert(); }, cv::Exception);
@@ -3095,8 +2741,8 @@ TEST_P(InverseDWT2DTest, Invert)
 
 INSTANTIATE_TEST_CASE_P(
     DWT2DGroup,
-    InverseDWT2DTest,
-    testing::ValuesIn(InverseDWT2DTest::get_test_params()),
+    DWT2DReconstructTest,
+    testing::ValuesIn(DWT2DReconstructTest::create_test_params()),
     print_dwt2d_test_label
 );
 

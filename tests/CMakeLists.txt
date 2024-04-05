@@ -29,10 +29,13 @@ add_executable(
     wavelet_test
     utils_test.cpp
     wavelet_test.cpp
+    filterbank_test.cpp
     dwt2d_test.cpp
     shrinkage_test.cpp
-    common.cpp
+    base_dwt2d.hpp
+    base_dwt2d.cpp
     common.hpp
+    common.cpp
 )
 
 #   ----------------------------------------------------------------------------

@@ -1,4 +1,3 @@
-#include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/logger.hpp>
 #include "wavelet/dwt2d.hpp"
@@ -78,12 +77,12 @@ DWT2D DWT2D::Coeffs::dwt() const
 
 cv::Mat DWT2D::Coeffs::invert() const
 {
-    return dwt().inverse(*this);
+    return dwt().reconstruct(*this);
 }
 
 void DWT2D::Coeffs::invert(cv::OutputArray output) const
 {
-    dwt().inverse(*this, output);
+    dwt().reconstruct(*this, output);
 }
 
 DWT2D::Coeffs DWT2D::Coeffs::clone() const
@@ -582,7 +581,7 @@ DWT2D::DWT2D(const Wavelet& wavelet, cv::BorderTypes border_type) :
 {
 }
 
-void DWT2D::forward(cv::InputArray input, DWT2D::Coeffs& output, int levels) const
+void DWT2D::decompose(cv::InputArray input, DWT2D::Coeffs& output, int levels) const
 {
     check_levels_in_range(levels);
     warn_if_border_effects_will_occur(levels, input);
@@ -602,14 +601,14 @@ void DWT2D::forward(cv::InputArray input, DWT2D::Coeffs& output, int levels) con
     //  zero.
     output = 0.0;
 
-    wavelet.filter_bank().prepare_forward(input.type());
+    wavelet.filter_bank().prepare_decompose(input.type());
     auto running_approx = input.getMat();
     for (int level = 0; level < levels; ++level) {
         cv::Mat approx;
         cv::Mat horizontal_detail;
         cv::Mat vertical_detail;
         cv::Mat diagonal_detail;
-        wavelet.filter_bank().forward(
+        wavelet.filter_bank().decompose(
             running_approx,
             approx,
             horizontal_detail,
@@ -624,18 +623,18 @@ void DWT2D::forward(cv::InputArray input, DWT2D::Coeffs& output, int levels) con
     }
 
     output.set_approx(running_approx);
-    wavelet.filter_bank().finish_forward();
+    wavelet.filter_bank().finish_decompose();
 }
 
-void DWT2D::inverse(const DWT2D::Coeffs& coeffs, cv::OutputArray output) const
+void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray output) const
 {
     warn_if_border_effects_will_occur(coeffs);
 
-    wavelet.filter_bank().prepare_inverse(coeffs.type());
+    wavelet.filter_bank().prepare_reconstruct(coeffs.type());
     cv::Mat approx = coeffs.approx();
     for (int level = coeffs.levels() - 1; level >= 0; --level) {
         cv::Mat result;
-        wavelet.filter_bank().inverse(
+        wavelet.filter_bank().reconstruct(
             approx,
             coeffs.horizontal_detail(level),
             coeffs.vertical_detail(level),
@@ -651,7 +650,7 @@ void DWT2D::inverse(const DWT2D::Coeffs& coeffs, cv::OutputArray output) const
     else
         approx.copyTo(output);
 
-    wavelet.filter_bank().finish_inverse();
+    wavelet.filter_bank().finish_reconstruct();
 }
 
 DWT2D::Coeffs DWT2D::create_coeffs(
@@ -803,7 +802,7 @@ DWT2D::Coeffs dwt2d(
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).forward(input);
+    return DWT2D(wavelet, border_type).decompose(input);
 }
 
 DWT2D::Coeffs dwt2d(
@@ -822,7 +821,7 @@ DWT2D::Coeffs dwt2d(
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).forward(input, levels);
+    return DWT2D(wavelet, border_type).decompose(input, levels);
 }
 
 DWT2D::Coeffs dwt2d(
@@ -842,7 +841,7 @@ void dwt2d(
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).forward(input, output);
+    return DWT2D(wavelet, border_type).decompose(input, output);
 }
 
 void dwt2d(
@@ -863,7 +862,7 @@ void dwt2d(
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).forward(input, output, levels);
+    return DWT2D(wavelet, border_type).decompose(input, output, levels);
 }
 
 void dwt2d(
@@ -884,7 +883,7 @@ void idwt2d(
     cv::BorderTypes border_type
 )
 {
-    DWT2D(wavelet, border_type).inverse(coeffs, output);
+    DWT2D(wavelet, border_type).reconstruct(coeffs, output);
 }
 
 void idwt2d(
@@ -903,7 +902,7 @@ cv::Mat idwt2d(
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).inverse(coeffs);
+    return DWT2D(wavelet, border_type).reconstruct(coeffs);
 }
 
 cv::Mat idwt2d(
