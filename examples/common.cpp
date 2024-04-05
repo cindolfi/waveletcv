@@ -110,7 +110,7 @@ void print_available_wavelets()
     std::cout << "Wavelets: ";
     for (const auto& name : Wavelet::registered_wavelets())
         std::cout << name << " ";
-    std::cout << std::endl;
+    std::cout << "\n";
 }
 
 int execute(
@@ -123,7 +123,7 @@ int execute(
     try {
         auto args = options.parse(argc, argv);
         if (args.count("help")) {
-            std::cout << options.help() << std::endl;
+            std::cout << options.help() << "\n";
         } else if (args.count("available-wavelets")) {
             print_available_wavelets();
         } else {
@@ -133,11 +133,12 @@ int execute(
             body(args);
         }
     } catch (const cxxopts::exceptions::exception& error) {
-        std::cerr << options.program() << ": " << error.what() << std::endl;
-        std::cerr << options.help() << std::endl;
+        std::cerr
+            << options.program() << ": " << error.what() << "\n"
+            << options.help() << "\n";
         return EXIT_FAILURE;
     } catch (const std::exception& error) {
-        std::cerr << error.what() << std::endl;
+        std::cerr << error.what() << "\n";
         return EXIT_FAILURE;
     }
 

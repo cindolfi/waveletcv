@@ -146,7 +146,7 @@ struct MultiChannelMedianTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const MultiChannelMedianTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     PrintTo(param.values, stream);
     *stream << "=> " << param.expected_median;
 }
@@ -426,7 +426,7 @@ struct MultiChannelCollectMaskedTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const MultiChannelCollectMaskedTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "matrix =";
     PrintTo(param.matrix, stream);
     *stream << "mask =";

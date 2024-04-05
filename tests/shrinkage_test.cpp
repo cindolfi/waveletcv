@@ -26,8 +26,8 @@ struct SoftThresholdTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const SoftThresholdTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
-    *stream << "threshold = " << param.threshold << std::endl;
+    *stream << "\n";
+    *stream << "threshold = " << param.threshold << "\n";
     *stream << "matrix =";
     PrintTo(param.matrix, stream);
 }
@@ -262,12 +262,12 @@ struct MaskedSoftThresholdTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const MaskedSoftThresholdTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "matrix =";
     PrintTo(param.matrix, stream);
     *stream << "mask =";
     PrintTo(param.mask, stream);
-    *stream << "threshold = " << param.threshold << std::endl;
+    *stream << "threshold = " << param.threshold << "\n";
 }
 
 /**
@@ -604,10 +604,10 @@ struct HardThresholdTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const HardThresholdTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "matrix =";
     PrintTo(param.matrix, stream);
-    *stream << "threshold = " << param.threshold << std::endl;
+    *stream << "threshold = " << param.threshold << "\n";
 }
 
 /**
@@ -856,12 +856,12 @@ struct MaskedHardThresholdTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const MaskedHardThresholdTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "matrix =";
     PrintTo(param.matrix, stream);
     *stream << "mask =";
     PrintTo(param.mask, stream);
-    *stream << "threshold = " << param.threshold << std::endl;
+    *stream << "threshold = " << param.threshold << "\n";
 }
 
 /**
@@ -1356,11 +1356,11 @@ struct SureRiskTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const SureRiskTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "matrix =";
     PrintTo(param.matrix, stream);
-    *stream << "stdev = " << param.stdev << std::endl;
-    *stream << "threshold = " << param.threshold << std::endl;
+    *stream << "stdev = " << param.stdev << "\n";
+    *stream << "threshold = " << param.threshold << "\n";
 }
 
 class SureRiskTest : public SureTestBase<SureRiskTestParam<double, 4>>
@@ -1818,10 +1818,10 @@ struct SureThresholdTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const SureThresholdTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "matrix =";
     PrintTo(param.matrix, stream);
-    *stream << "stdev = " << param.stdev << std::endl;
+    *stream << "stdev = " << param.stdev << "\n";
 }
 
 class SureThresholdTest : public SureTestBase<SureThresholdTestParam<double, 4>>
@@ -1961,12 +1961,12 @@ struct ShrinkTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const ShrinkTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "coeffs =";
     PrintTo(param.coeffs, stream);
-    *stream << "threshold = " << param.threshold << std::endl;
-    *stream << "lower_level = " << param.lower_level << std::endl;
-    *stream << "upper_level = " << param.upper_level << std::endl;
+    *stream << "threshold = " << param.threshold << "\n";
+    *stream << "lower_level = " << param.lower_level << "\n";
+    *stream << "upper_level = " << param.upper_level << "\n";
 }
 
 template<typename ParamType>
@@ -2479,10 +2479,10 @@ struct ShrinkLevelsTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const ShrinkLevelsTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "coeffs =";
     PrintTo(param.coeffs, stream);
-    *stream << "thresholds = " << join(param.thresholds, ", ") << std::endl;
+    *stream << "thresholds = " << join(param.thresholds, ", ") << "\n";
 }
 
 /**
@@ -2966,7 +2966,7 @@ struct ShrinkSubbandsTestParam
 template<typename T, int CHANNELS>
 void PrintTo(const ShrinkSubbandsTestParam<T, CHANNELS>& param, std::ostream* stream)
 {
-    *stream << std::endl;
+    *stream << "\n";
     *stream << "coeffs =";
     PrintTo(param.coeffs, stream);
     *stream << "thresholds =";

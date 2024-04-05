@@ -91,7 +91,7 @@ struct print_matrix_to
         clamp_near_zero(input, matrix, 1e-30);
         cv::Mat widths = calculate_widths(matrix);
 
-        *stream << std::endl;
+        *stream << "\n";
         for (int row = 0; row < matrix.rows; ++row) {
             if (is_row_ellipsis(matrix, row)) {
                 *stream << ".\n.\n.\n";

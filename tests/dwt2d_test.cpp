@@ -1620,12 +1620,12 @@ void PrintTo(const Dwt2dCoeffsNormalizeTest::ParamType& param, std::ostream* str
     );
 
     *stream << std::setprecision(2)
-        << std::endl
+        << "\n"
         << "APPROX: " << normalize_mode_string(param.approx_mode) << " "
         << "[" << param.min_approx_value << ", " << param.max_approx_value << "] "
         << "/ " << abs_max << " "
         << "-> [" << param.expected_min_approx_value << ", " << param.expected_max_approx_value << "] "
-        << std::endl
+        << "\n"
         << "DETAIL: " << normalize_mode_string(param.detail_mode) << " "
         << "[" << param.min_detail_value << ", " << param.max_detail_value << "] "
         << "/ " << abs_max << " "
