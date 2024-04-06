@@ -96,13 +96,24 @@ namespace internal
         int vanishing_moments_psi,
         int vanishing_moments_phi
     );
+    #if CVWT_ARGUMENT_CHECKING_ENABLED
     template <typename V>
-    void check_wavelet_name(
+    void throw_if_invalid_wavelet_name(
         const std::string& name,
         const std::string& family,
         const std::map<std::string, V>& filter_coeffs,
         const std::string& name_prefix = ""
     );
+    #else
+    template <typename V>
+    void throw_if_invalid_wavelet_name(
+        const std::string& name,
+        const std::string& family,
+        const std::map<std::string, V>& filter_coeffs,
+        const std::string& name_prefix = ""
+    ) noexcept
+    {}
+    #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 } // namespace internal
 } // namespace wavelet
 

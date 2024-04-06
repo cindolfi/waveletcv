@@ -242,7 +242,7 @@ FilterBankImpl::FilterBankImpl(
     promoted_decompose(),
     promoted_reconstruct()
 {
-    check_kernels(
+    throw_if_wrong_size(
         reconstruct_lowpass,
         reconstruct_highpass,
         decompose_lowpass,
@@ -316,8 +316,8 @@ KernelPair FilterBankImpl::reconstruct_kernels() const
     return KernelPair(lowpass, highpass);
 }
 
-#ifndef DISABLE_ARG_CHECKS
-void FilterBankImpl::check_kernels(
+#if CVWT_ARGUMENT_CHECKING_ENABLED
+void FilterBankImpl::throw_if_wrong_size(
     const cv::Mat& reconstruct_lowpass,
     const cv::Mat& reconstruct_highpass,
     const cv::Mat& decompose_lowpass,
@@ -365,16 +365,7 @@ void FilterBankImpl::check_kernels(
         }
     }
 }
-#else
-inline void FilterBankImpl::check_kernels(
-    const cv::Mat& reconstruct_lowpass,
-    const cv::Mat& reconstruct_highpass,
-    const cv::Mat& decompose_lowpass,
-    const cv::Mat& decompose_highpass
-) const
-{
-}
-#endif
+#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 } // namespace internal
 
 
@@ -445,7 +436,7 @@ void FilterBank::decompose(
     const cv::Scalar& border_value
 ) const
 {
-    check_decompose_args(image);
+    throw_if_decompose_image_is_wrong_size(image);
 
     bool was_prepared = is_decompose_prepared(image.type());
     if (!was_prepared)
@@ -520,7 +511,7 @@ void FilterBank::reconstruct(
     const cv::Size& output_size
 ) const
 {
-    check_reconstruct_args(approx, horizontal_detail, vertical_detail, diagonal_detail);
+    throw_if_reconstruct_coeffs_are_wrong_size(approx, horizontal_detail, vertical_detail, diagonal_detail);
 
     bool was_prepared = is_reconstruct_prepared(approx.type());
     if (!was_prepared)
@@ -824,17 +815,17 @@ bool FilterBank::operator==(const FilterBank& other) const
     );
 }
 
-#ifndef DISABLE_ARG_CHECKS
-void FilterBank::check_decompose_args(cv::InputArray image) const
+#if CVWT_ARGUMENT_CHECKING_ENABLED
+void FilterBank::throw_if_decompose_image_is_wrong_size(cv::InputArray image) const
 {
     if (image.rows() <= 1 || image.cols() <= 1) {
-        std::stringstream message;
-        message << "FilterBank: Input size must be greater [1 x 1], got " << image.size();
-        CV_Error(cv::Error::StsBadSize, message.str());
+        throw_bad_size(
+            "FilterBank: Input size must be greater [1 x 1], got ", image.size()
+        );
     }
 }
 
-void FilterBank::check_reconstruct_args(
+void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
     cv::InputArray approx,
     cv::InputArray horizontal_detail,
     cv::InputArray vertical_detail,
@@ -844,36 +835,28 @@ void FilterBank::check_reconstruct_args(
     if (horizontal_detail.size() != approx.size()
         || vertical_detail.size() != approx.size()
         || diagonal_detail.size() != approx.size()) {
-        std::stringstream message;
-        message << "FilterBank: Inputs must all be the same size, got "
-            << "approx.size() = " << approx.size() << ", "
-            << "horizontal_detail.size() = " << horizontal_detail.size() << ", "
-            << "vertical_detail.size() = " << vertical_detail.size() << ", and "
-            << "diagonal_detail.size() = " << diagonal_detail.size() << ".";
-        CV_Error(cv::Error::StsBadSize, message.str());
+        throw_bad_size(
+            "FilterBank: Inputs must all be the same size, got ",
+            "approx.size() = ", approx.size(), ", ",
+            "horizontal_detail.size() = ", horizontal_detail.size(), ", ",
+            "vertical_detail.size() = ", vertical_detail.size(), ", and ",
+            "diagonal_detail.size() = ", diagonal_detail.size(), "."
+        );
     }
 
     if (horizontal_detail.channels() != approx.channels()
         || vertical_detail.channels() != approx.channels()
         || diagonal_detail.channels() != approx.channels()) {
-        std::stringstream message;
-        message << "FilterBank: Inputs must all be the same number of channels, got "
-            << "approx.channels() = " << approx.channels() << ", "
-            << "horizontal_detail.channels() = " << horizontal_detail.channels() << ", "
-            << "vertical_detail.channels() = " << vertical_detail.channels() << ", and "
-            << "diagonal_detail.channels() = " << diagonal_detail.channels() << ".";
-        CV_Error(cv::Error::StsBadSize, message.str());
+        throw_bad_size(
+            "FilterBank: Inputs must all be the same number of channels, got ",
+            "approx.channels() = ", approx.channels(), ", ",
+            "horizontal_detail.channels() = ", horizontal_detail.channels(), ", ",
+            "vertical_detail.channels() = ", vertical_detail.channels(), ", and ",
+            "diagonal_detail.channels() = ", diagonal_detail.channels(), "."
+        );
     }
 }
-#else
-inline void WaveletFilterBank::check_decompose_args(cv::InputArray image) const {}
-inline void WaveletFilterBank::check_reconstruct_args(
-    cv::InputArray approx,
-    cv::InputArray horizontal_detail,
-    cv::InputArray vertical_detail,
-    cv::InputArray diagonal_detail
-) const {}
-#endif // DISABLE_ARG_CHECKS
+#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
 std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank)
 {

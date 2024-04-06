@@ -31,6 +31,11 @@ void throw_bad_arg(auto... message_parts)
     throw_error(cv::Error::StsBadArg, message_parts...);
 }
 
+void throw_out_of_range(auto... message_parts)
+{
+    throw_error(cv::Error::StsOutOfRange, message_parts...);
+}
+
 namespace internal
 {
 template <template <typename T, int N, auto ...> class Functor, auto ...TemplateArgs>

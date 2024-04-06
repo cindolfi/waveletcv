@@ -219,7 +219,7 @@ public:
         Coeffs at_level(int level) const;
         void set_level(int level, const cv::Mat& coeffs)
         {
-            check_size_for_set_level(coeffs, level);
+            throw_if_wrong_size_for_set_level(coeffs, level);
             convert_and_copy(coeffs, _p->coeff_matrix(level_rect(level)));
         }
         void set_level(int level, const cv::Scalar& scalar) { _p->coeff_matrix(level_rect(level)) = scalar; }
@@ -231,7 +231,7 @@ public:
         }
         void set_approx(const cv::Mat& coeffs)
         {
-            check_size_for_set_approx(coeffs);
+            throw_if_wrong_size_for_set_approx(coeffs);
             convert_and_copy(coeffs, approx());
         }
         void set_approx(const cv::Scalar& scalar) { approx() = scalar; }
@@ -241,8 +241,8 @@ public:
         cv::Mat detail(int subband) const { return detail(0, subband); }
         void set_detail(int level, int subband, const cv::Mat& coeffs)
         {
-            check_size_for_set_detail(coeffs, level, subband);
-            check_subband(subband);
+            throw_if_wrong_size_for_set_detail(coeffs, level, subband);
+            throw_if_invalid_subband(subband);
             convert_and_copy(coeffs, detail(level, subband));
         }
         void set_detail(int subband, const cv::Mat& coeffs) { set_detail(0, subband, coeffs); }
@@ -259,7 +259,7 @@ public:
         cv::Mat horizontal_detail() const { return horizontal_detail(0); }
         void set_horizontal_detail(int level, const cv::Mat& coeffs)
         {
-            check_size_for_set_detail(coeffs, level, HORIZONTAL);
+            throw_if_wrong_size_for_set_detail(coeffs, level, HORIZONTAL);
             convert_and_copy(coeffs, horizontal_detail(level));
         }
         void set_horizontal_detail(const cv::Mat& coeffs) { set_horizontal_detail(0, coeffs); }
@@ -276,7 +276,7 @@ public:
         cv::Mat vertical_detail() const { return vertical_detail(0); }
         void set_vertical_detail(int level, const cv::Mat& coeffs)
         {
-            check_size_for_set_detail(coeffs, level, VERTICAL);
+            throw_if_wrong_size_for_set_detail(coeffs, level, VERTICAL);
             convert_and_copy(coeffs, vertical_detail(level));
         }
         void set_vertical_detail(const cv::Mat& coeffs) { set_vertical_detail(0, coeffs); }
@@ -293,7 +293,7 @@ public:
         cv::Mat diagonal_detail() const { return diagonal_detail(0); }
         void set_diagonal_detail(int level, const cv::Mat& coeffs)
         {
-            check_size_for_set_detail(coeffs, level, DIAGONAL);
+            throw_if_wrong_size_for_set_detail(coeffs, level, DIAGONAL);
             convert_and_copy(coeffs, diagonal_detail(level));
         }
         void set_diagonal_detail(const cv::Mat& coeffs) { set_diagonal_detail(0, coeffs); }
@@ -378,16 +378,25 @@ public:
         friend std::ostream& operator<<(std::ostream& stream, const Coeffs& wavelet);
 
     protected:
-        //  Argument Checkers - these all raise execeptions and can be disabled by
-        //  defining DISABLE_ARG_CHECKS
-        void check_size_for_assignment(cv::InputArray matrix) const;
-        void check_size_for_set_level(const cv::Mat& matrix, int level) const;
-        void check_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const;
-        void check_size_for_set_approx(const cv::Mat& matrix) const;
-        void check_level_in_range(int level, const std::string level_name = "level") const;
-        void check_constructor_level(int level, int max_level) const;
-        void check_nonempty() const;
-        void check_subband(int subband) const;
+        //  Argument Checkers - these can be disabled by building with cmake
+        //  option CVWT_ARGUMENT_CHECKING = OFF
+        #if CVWT_ARGUMENT_CHECKING_ENABLED
+        void throw_if_wrong_size_for_assignment(cv::InputArray matrix) const;
+        void throw_if_wrong_size_for_set_level(const cv::Mat& matrix, int level) const;
+        void throw_if_wrong_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const;
+        void throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const;
+        void throw_if_level_out_of_range(int level, const std::string level_name = "level") const;
+        void throw_if_this_is_empty() const;
+        void throw_if_invalid_subband(int subband) const;
+        #else
+        void throw_if_wrong_size_for_assignment(cv::InputArray matrix) const noexcept {}
+        void throw_if_wrong_size_for_set_level(const cv::Mat& matrix, int level) const noexcept {}
+        void throw_if_wrong_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const noexcept {}
+        void throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const noexcept {}
+        void throw_if_level_out_of_range(int level, const std::string level_name = "level") const noexcept {}
+        void throw_if_this_is_empty() const noexcept {}
+        void throw_if_invalid_subband(int subband) const noexcept {}
+        #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
         //  Helpers
         double maximum_abs_value() const;
@@ -480,14 +489,29 @@ public:
         return max_levels_without_border_effects(image.size());
     }
 protected:
-    //  Argument Checkers - these all raise execeptions and can be disabled by
-    //  defining DISABLE_ARG_CHECKS
-    void check_levels_in_range(int levels) const;
-    void check_coeffs_size(cv::InputArray coeffs, const cv::Size& image_size, int levels) const;
+    //  Argument Checkers - these can be disabled by building with cmake
+    //  option CVWT_ARGUMENT_CHECKING = OFF
+    #if CVWT_ARGUMENT_CHECKING_ENABLED
+    void throw_if_levels_out_of_range(int levels) const;
+    void throw_if_inconsistent_coeffs_and_image_sizes(
+        cv::InputArray coeffs,
+        const cv::Size& image_size,
+        int levels
+    ) const;
+    #else
+    void throw_if_levels_out_of_range(int levels) const noexcept {}
+    void throw_if_inconsistent_coeffs_and_image_sizes(
+        cv::InputArray coeffs,
+        const cv::Size& image_size,
+        int levels
+    ) const noexcept
+    {}
+    #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
-    void warn_if_border_effects_will_occur(int levels, const cv::Size& image_size) const;
-    void warn_if_border_effects_will_occur(int levels, cv::InputArray image) const;
-    void warn_if_border_effects_will_occur(const Coeffs& coeffs) const;
+    //  Log warnings - these can be disabled by defining CVWT_DISABLE_DWT_WARNINGS_ENABLED
+    void warn_if_border_effects_will_occur(int levels, const cv::Size& image_size) const noexcept;
+    void warn_if_border_effects_will_occur(int levels, cv::InputArray image) const noexcept;
+    void warn_if_border_effects_will_occur(const Coeffs& coeffs) const noexcept;
 
     std::vector<cv::Size> calc_subband_sizes(const cv::Size& image_size, int levels) const;
 public:

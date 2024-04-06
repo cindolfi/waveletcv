@@ -140,15 +140,27 @@ struct FilterBankImpl
         cv::OutputArray kernel
     ) const;
 
-    void check_kernels(
+    KernelPair decompose_kernels() const;
+    KernelPair reconstruct_kernels() const;
+
+    //  Argument Checkers - these can be disabled by building with cmake
+    //  option CVWT_ARGUMENT_CHECKING = OFF
+    #if CVWT_ARGUMENT_CHECKING_ENABLED
+    void throw_if_wrong_size(
         const cv::Mat& reconstruct_lowpass,
         const cv::Mat& reconstruct_highpass,
         const cv::Mat& decompose_lowpass,
         const cv::Mat& decompose_highpass
     ) const;
-
-    KernelPair decompose_kernels() const;
-    KernelPair reconstruct_kernels() const;
+    #else
+    void throw_if_wrong_size(
+        const cv::Mat& reconstruct_lowpass,
+        const cv::Mat& reconstruct_highpass,
+        const cv::Mat& decompose_lowpass,
+        const cv::Mat& decompose_highpass
+    ) const noexcept
+    {}
+    #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
     int filter_length;
     DecomposeKernels decompose;
@@ -305,15 +317,31 @@ protected:
         const cv::Size& output_size
     ) const;
 
-    //  Argument Checkers - these all raise execeptions and can be disabled by
-    //  defining DISABLE_ARG_CHECKS
-    void check_decompose_args(cv::InputArray image) const;
-    void check_reconstruct_args(
+    //  Argument Checkers - these can be disabled by building with cmake
+    //  option CVWT_ARGUMENT_CHECKING = OFF
+    #if CVWT_ARGUMENT_CHECKING_ENABLED
+    void throw_if_decompose_image_is_wrong_size(
+        cv::InputArray image
+    ) const;
+    void throw_if_reconstruct_coeffs_are_wrong_size(
         cv::InputArray approx,
         cv::InputArray horizontal_detail,
         cv::InputArray vertical_detail,
         cv::InputArray diagonal_detail
     ) const;
+    #else
+    void throw_if_decompose_image_is_wrong_size(
+        cv::InputArray image
+    ) const noexcept
+    {}
+    void throw_if_reconstruct_coeffs_are_wrong_size(
+        cv::InputArray approx,
+        cv::InputArray horizontal_detail,
+        cv::InputArray vertical_detail,
+        cv::InputArray diagonal_detail
+    ) const noexcept
+    {}
+    #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
 protected:
     std::shared_ptr<internal::FilterBankImpl> _p;

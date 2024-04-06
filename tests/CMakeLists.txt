@@ -50,9 +50,6 @@ target_link_libraries (
     # absl::strings
     nlohmann_json::nlohmann_json
 )
-
-
-
 target_compile_features(wavelet_test PRIVATE cxx_std_20)
 target_compile_definitions(
     wavelet_test
@@ -60,6 +57,7 @@ target_compile_definitions(
     WAVELET_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/wavelet_test_data.json"
     DWT2D_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/dwt2d_test_data.json"
 )
+
 #   ----------------------------------------------------------------------------
 #   Add Tests
 #   ----------------------------------------------------------------------------

@@ -209,7 +209,7 @@ Wavelet create_haar()
 Wavelet create_daubechies(int order)
 {
     auto name = internal::get_orthogonal_name(DAUBECHIES_PREFIX, order);
-    internal::check_wavelet_name(name, DAUBECHIES_FAMILY, DAUBECHIES_FILTER_COEFFS);
+    internal::throw_if_invalid_wavelet_name(name, DAUBECHIES_FAMILY, DAUBECHIES_FILTER_COEFFS);
     cv::Mat reconstruct_lowpass_coeffs(DAUBECHIES_FILTER_COEFFS[name]);
 
     return Wavelet(
@@ -230,7 +230,7 @@ Wavelet create_daubechies(int order)
 Wavelet create_symlets(int order)
 {
     auto name = internal::get_orthogonal_name(SYMLETS_PREFIX, order);
-    internal::check_wavelet_name(name, SYMLETS_FAMILY, SYMLETS_FILTER_COEFFS);
+    internal::throw_if_invalid_wavelet_name(name, SYMLETS_FAMILY, SYMLETS_FILTER_COEFFS);
     cv::Mat reconstruct_lowpass_coeffs(SYMLETS_FILTER_COEFFS[name]);
 
     return Wavelet(
@@ -251,7 +251,7 @@ Wavelet create_symlets(int order)
 Wavelet create_coiflets(int order)
 {
     auto name = internal::get_orthogonal_name(COIFLETS_PREFIX, order);
-    internal::check_wavelet_name(name, COIFLETS_FAMILY, COIFLETS_FILTER_COEFFS);
+    internal::throw_if_invalid_wavelet_name(name, COIFLETS_FAMILY, COIFLETS_FILTER_COEFFS);
     cv::Mat reconstruct_lowpass_coeffs(COIFLETS_FILTER_COEFFS[name]);
 
     return Wavelet(
@@ -276,7 +276,7 @@ Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi
         vanishing_moments_psi,
         vanishing_moments_phi
     );
-    internal::check_wavelet_name(name, BIORTHOGONAL_FAMILY, BIORTHOGONAL_FILTER_COEFFS);
+    internal::throw_if_invalid_wavelet_name(name, BIORTHOGONAL_FAMILY, BIORTHOGONAL_FILTER_COEFFS);
     cv::Mat reconstruct_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).first);
     cv::Mat decompose_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).second);
 
@@ -309,7 +309,7 @@ Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_mom
         vanishing_moments_phi
     );
     auto family = "Reverse " + BIORTHOGONAL_FAMILY;
-    internal::check_wavelet_name(name, family, BIORTHOGONAL_FILTER_COEFFS, "r");
+    internal::throw_if_invalid_wavelet_name(name, family, BIORTHOGONAL_FILTER_COEFFS, "r");
     cv::Mat reconstruct_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).first);
     cv::Mat decompose_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).second);
 
@@ -355,9 +355,9 @@ std::string get_biorthogonal_name(
     return prefix + std::to_string(vanishing_moments_psi) + "." + std::to_string(vanishing_moments_phi);
 }
 
-#ifndef DISABLE_ARG_CHECK
+#if CVWT_ARGUMENT_CHECKING_ENABLED
 template <typename V>
-void check_wavelet_name(
+void throw_if_invalid_wavelet_name(
     const std::string& name,
     const std::string& family,
     const std::map<std::string, V>& filter_coeffs,
@@ -378,17 +378,7 @@ void check_wavelet_name(
         );
     }
 }
-#else
-template <typename V>
-inline void check_wavelet_name(
-    const std::string& name,
-    const std::string& family,
-    const std::map<std::string, V>& filter_coeffs,
-    const std::string& name_prefix
-)
-{
-}
-#endif  // DISABLE_ARG_CHECK
+#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 } // namespace internal
 } // namespace wavelet
 

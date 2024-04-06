@@ -34,9 +34,13 @@ add_library(
     ${HEADER_LIST}
 )
 
+
 #   ----------------------------------------------------------------------------
 #   Target Settings
 #   ----------------------------------------------------------------------------
+option(CVWT_ARGUMENT_CHECKING "Build exception throwing for bad function arguments" ON)
+option(CVWT_DWT_WARNINGS "Build log warnings when performing DWT with border effects" ON)
+
 target_include_directories(wavelet_library PUBLIC ../include)
 target_link_libraries(
     wavelet_library
@@ -44,6 +48,39 @@ target_link_libraries(
     nlopt
 )
 target_compile_features(wavelet_library PUBLIC cxx_std_20)
+
+message(STATUS "CVWT_ARGUMENT_CHECKING ${CVWT_ARGUMENT_CHECKING}")
+message(STATUS "CVWT_DWT_WARNINGS ${CVWT_DWT_WARNINGS}")
+
+if(CVWT_ARGUMENT_CHECKING)
+    target_compile_definitions(
+        wavelet_library
+        PUBLIC
+        CVWT_ARGUMENT_CHECKING_ENABLED=true
+    )
+else()
+    target_compile_definitions(
+        wavelet_library
+        PUBLIC
+        CVWT_ARGUMENT_CHECKING_ENABLED=false
+    )
+endif()
+
+if(CVWT_DWT_WARNINGS)
+    target_compile_definitions(
+        wavelet_library
+        PUBLIC
+        CVWT_DISABLE_DWT_WARNINGS_ENABLED=true
+    )
+else()
+    target_compile_definitions(
+        wavelet_library
+        PUBLIC
+        CVWT_DISABLE_DWT_WARNINGS_ENABLED=false
+    )
+endif()
+
+message(STATUS ${COMPILE_DEFINITIONS})
 
 #   ----------------------------------------------------------------------------
 #   IDE Settings
