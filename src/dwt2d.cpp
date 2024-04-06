@@ -460,7 +460,7 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) co
     }
 }
 
-void DWT2D::Coeffs::throw_if_level_out_of_range(int level, const std::string level_name) const
+void DWT2D::Coeffs::throw_if_level_out_of_range(int level, const std::string& level_name) const
 {
     if (level < -levels() || level >= levels()) {
         throw_out_of_range(

@@ -385,7 +385,7 @@ public:
         void throw_if_wrong_size_for_set_level(const cv::Mat& matrix, int level) const;
         void throw_if_wrong_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const;
         void throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const;
-        void throw_if_level_out_of_range(int level, const std::string level_name = "level") const;
+        void throw_if_level_out_of_range(int level, const std::string& level_name = "level") const;
         void throw_if_this_is_empty() const;
         void throw_if_invalid_subband(int subband) const;
         #else
@@ -393,7 +393,7 @@ public:
         void throw_if_wrong_size_for_set_level(const cv::Mat& matrix, int level) const noexcept {}
         void throw_if_wrong_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const noexcept {}
         void throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const noexcept {}
-        void throw_if_level_out_of_range(int level, const std::string level_name = "level") const noexcept {}
+        void throw_if_level_out_of_range(int level, const std::string& level_name = "level") const noexcept {}
         void throw_if_this_is_empty() const noexcept {}
         void throw_if_invalid_subband(int subband) const noexcept {}
         #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
