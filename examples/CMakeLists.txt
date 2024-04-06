@@ -9,7 +9,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(cxxopts)
 
 #   ----------------------------------------------------------------------------
-#   DWT
+#   Build dwt2d
 #   ----------------------------------------------------------------------------
 add_executable(
     dwt2d
@@ -20,24 +20,25 @@ add_executable(
 target_link_libraries (
     dwt2d
     PRIVATE
-    wavelet_library
+    cvwt_library
     cxxopts
 )
 target_compile_features(dwt2d PRIVATE cxx_std_20)
 
 #   ----------------------------------------------------------------------------
-#   Denoise
+#   Build denoise
 #   ----------------------------------------------------------------------------
 add_executable(
-    denoise
+    dwt2d-denoise
     denoise.cpp
     common.hpp
     common.cpp
 )
 target_link_libraries (
-    denoise
+    dwt2d-denoise
     PRIVATE
-    wavelet_library
+    cvwt_library
     cxxopts
 )
-target_compile_features(denoise PRIVATE cxx_std_20)
+target_compile_features(dwt2d-denoise PRIVATE cxx_std_20)
+

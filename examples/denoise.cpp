@@ -15,7 +15,7 @@
 
 using namespace cvwt;
 
-const std::string PROGRAM_NAME = "denoise";
+const std::string PROGRAM_NAME = "dwt2d-denoise";
 const std::set<std::string> AVAILABLE_SHRINK_METHODS = {
     "sure",
     "sure-levelwise",
