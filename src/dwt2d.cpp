@@ -3,7 +3,7 @@
 #include "wavelet/dwt2d.hpp"
 #include "wavelet/utils.hpp"
 
-namespace wavelet
+namespace cvwt
 {
 DWT2D::Coeffs::Coeffs() :
     _p(std::make_shared<internal::Dwt2dCoeffsImpl>())
@@ -892,5 +892,5 @@ cv::Mat idwt2d(
     return idwt2d(coeffs, Wavelet::create(wavelet), border_type);
 }
 
-} // namespace wavelet
+} // namespace cvwt
 

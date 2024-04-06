@@ -6,7 +6,7 @@
 #include <numeric>
 #include <opencv2/imgproc.hpp>
 
-namespace wavelet
+namespace cvwt
 {
 cv::Scalar estimate_stdev(cv::InputArray x)
 {
@@ -511,5 +511,5 @@ cv::Scalar bayes_shrink_threshold(const DWT2D::Coeffs& coeffs)
 void bayes_shrink(DWT2D::Coeffs& coeffs)
 {
 }
-}   // namespace wavelet
+}   // namespace cvwt
 

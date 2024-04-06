@@ -1,5 +1,5 @@
-#ifndef WAVELET_WAVELET_HPP
-#define WAVELET_WAVELET_HPP
+#ifndef CVWT_WAVELET_HPP
+#define CVWT_WAVELET_HPP
 
 #include <opencv2/core.hpp>
 #include <string>
@@ -9,7 +9,7 @@
 #include <map>
 #include "wavelet/filterbank.hpp"
 
-namespace wavelet
+namespace cvwt
 {
 enum class Symmetry {
     SYMMETRIC,
@@ -115,7 +115,7 @@ namespace internal
     {}
     #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 } // namespace internal
-} // namespace wavelet
+} // namespace cvwt
 
-#endif  // WAVELET_WAVELET_HPP
+#endif  // CVWT_WAVELET_HPP
 

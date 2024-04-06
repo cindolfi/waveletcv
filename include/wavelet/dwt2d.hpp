@@ -1,5 +1,5 @@
-#ifndef WAVELET_DWT2D_HPP
-#define WAVELET_DWT2D_HPP
+#ifndef CVWT_DWT2D_HPP
+#define CVWT_DWT2D_HPP
 
 #include "wavelet/wavelet.hpp"
 #include <opencv2/core.hpp>
@@ -7,7 +7,7 @@
 #include <vector>
 #include <memory>
 
-namespace wavelet
+namespace cvwt
 {
 enum Dwt2DSubband {
     HORIZONTAL = 0,
@@ -611,7 +611,7 @@ cv::Mat idwt2d(
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 
-} // namespace wavelet
+} // namespace cvwt
 
-#endif  // WAVELET_DWT2D_HPP
+#endif  // CVWT_DWT2D_HPP
 

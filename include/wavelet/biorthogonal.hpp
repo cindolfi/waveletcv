@@ -1,5 +1,5 @@
-#ifndef WAVELET_BIORTHOGONAL_HPP
-#define WAVELET_BIORTHOGONAL_HPP
+#ifndef CVWT_BIORTHOGONAL_HPP
+#define CVWT_BIORTHOGONAL_HPP
 
 #include <map>
 #include <string>
@@ -496,4 +496,4 @@ std::map<std::string, std::pair<std::vector<double>, std::vector<double>>> BIORT
     },
 };
 
-#endif  // WAVELET_BIORTHOGONAL_HPP
+#endif  // CVWT_BIORTHOGONAL_HPP

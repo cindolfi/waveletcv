@@ -5,7 +5,7 @@
 #include <wavelet/utils.hpp>
 #include "common.hpp"
 
-using namespace wavelet;
+using namespace cvwt;
 using namespace testing;
 
 /**

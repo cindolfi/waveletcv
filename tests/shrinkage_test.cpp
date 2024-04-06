@@ -4,7 +4,7 @@
 #include <wavelet/shrinkage.hpp>
 #include "common.hpp"
 
-using namespace wavelet;
+using namespace cvwt;
 using namespace testing;
 
 /**
@@ -1370,7 +1370,7 @@ public:
 
     auto compute_sure_risk(const cv::Mat& matrix, const cv::Scalar& threshold, const cv::Scalar& stdev)
     {
-        wavelet::internal::compute_sure_threshold<
+        cvwt::internal::compute_sure_threshold<
             SureRiskTest::Pixel::value_type,
             SureRiskTest::Pixel::channels
         > compute;

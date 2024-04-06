@@ -1,6 +1,6 @@
 #include "wavelet/utils.hpp"
 
-namespace wavelet
+namespace cvwt
 {
 void flatten(cv::InputArray input, cv::OutputArray output)
 {
@@ -80,4 +80,4 @@ void negate_odds(cv::InputArray input, cv::OutputArray output)
         output
     );
 }
-}   // namespace wavelet
+}   // namespace cvwt

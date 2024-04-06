@@ -5,9 +5,12 @@
 #include <wavelet/wavelet.hpp>
 #include "common.hpp"
 
-using namespace wavelet;
+using namespace cvwt;
 
-std::pair<cv::Mat, std::filesystem::path> open_image(const std::filesystem::path& input_filename, int type)
+std::pair<cv::Mat, std::filesystem::path> open_image(
+    const std::filesystem::path& input_filename,
+    int type
+)
 {
     auto filepath = std::filesystem::canonical(input_filename);
     auto image = cv::imread(filepath);

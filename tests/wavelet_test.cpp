@@ -6,7 +6,7 @@
 #include <wavelet/wavelet.hpp>
 #include "common.hpp"
 
-using namespace wavelet;
+using namespace cvwt;
 using namespace testing;
 using json = nlohmann::json;
 
@@ -76,10 +76,10 @@ class WaveletTest : public testing::TestWithParam<WaveletTestParam>
 protected:
     WaveletTest() :
         testing::TestWithParam<WaveletTestParam>(),
-        wavelet(wavelet::Wavelet::create(GetParam().name))
+        wavelet(cvwt::Wavelet::create(GetParam().name))
     {}
 
-    wavelet::Wavelet wavelet;
+    cvwt::Wavelet wavelet;
 
 public:
     static std::vector<WaveletTestParam> create_test_params()

@@ -1,5 +1,5 @@
-#ifndef WAVELET_SYMLETS_HPP
-#define WAVELET_SYMLETS_HPP
+#ifndef CVWT_SYMLETS_HPP
+#define CVWT_SYMLETS_HPP
 
 #include <map>
 #include <string>
@@ -526,4 +526,4 @@ std::map<std::string, std::vector<double>> SYMLETS_FILTER_COEFFS = {
     },
 };
 
-#endif  // WAVELET_SYMLETS_HPP
+#endif  // CVWT_SYMLETS_HPP

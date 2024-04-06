@@ -1,5 +1,5 @@
-#ifndef WAVELET_SHRINKAGE_HPP
-#define WAVELET_SHRINKAGE_HPP
+#ifndef CVWT_SHRINKAGE_HPP
+#define CVWT_SHRINKAGE_HPP
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/utils/logger.hpp>
@@ -11,7 +11,7 @@
 #include "wavelet/dwt2d.hpp"
 #include "wavelet/utils.hpp"
 
-namespace wavelet
+namespace cvwt
 {
 cv::Scalar estimate_std(cv::InputArray x);
 cv::Scalar estimate_std(cv::InputArray x, cv::InputArray mask);
@@ -546,9 +546,9 @@ double nlopt_sure_threshold_objective(const std::vector<double>& x, std::vector<
     return compute_sure_object->single_channel_sure_risk(channel, x[0], stdev);
 };
 }   // namespace internal
-} // namespace wavelet
+} // namespace cvwt
 
-#endif  // WAVELET_SHRINKAGE_HPP
+#endif  // CVWT_SHRINKAGE_HPP
 
 
 

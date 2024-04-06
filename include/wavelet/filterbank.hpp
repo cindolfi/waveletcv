@@ -1,5 +1,5 @@
-#ifndef WAVELET_FILTERBANK_HPP
-#define WAVELET_FILTERBANK_HPP
+#ifndef CVWT_FILTERBANK_HPP
+#define CVWT_FILTERBANK_HPP
 
 #include <opencv2/core.hpp>
 #include <string>
@@ -7,7 +7,7 @@
 #include <vector>
 #include <array>
 
-namespace wavelet
+namespace cvwt
 {
 class KernelPair
 {
@@ -348,7 +348,7 @@ protected:
 };
 
 std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
-} // namespace wavelet
+} // namespace cvwt
 
-#endif  // WAVELET_FILTERBANK_HPP
+#endif  // CVWT_FILTERBANK_HPP
 

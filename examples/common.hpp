@@ -1,5 +1,5 @@
-#ifndef WAVELET_EXAMPLES_COMMON_HPP
-#define WAVELET_EXAMPLES_COMMON_HPP
+#ifndef CVWT_EXAMPLES_COMMON_HPP
+#define CVWT_EXAMPLES_COMMON_HPP
 
 #include <map>
 #include <ranges>
@@ -13,7 +13,7 @@
 
 std::pair<cv::Mat, std::filesystem::path> open_image(const std::filesystem::path& input_filename, int type = CV_64F);
 void save_image(const cv::Mat& image, const std::filesystem::path& filepath);
-void save_coeffs(const wavelet::DWT2D::Coeffs& coeffs, const std::filesystem::path& filepath);
+void save_coeffs(const cvwt::DWT2D::Coeffs& coeffs, const std::filesystem::path& filepath);
 
 const std::map<std::string, cv::utils::logging::LogLevel> AVAILABLE_LOG_LEVELS = {
     {"fatal", cv::utils::logging::LOG_LEVEL_FATAL},
@@ -58,5 +58,5 @@ std::string make_title(auto&& ...parts)
     return title.str();
 }
 
-#endif  // WAVELET_EXAMPLES_COMMON_HPP
+#endif  // CVWT_EXAMPLES_COMMON_HPP
 

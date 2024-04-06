@@ -3,7 +3,7 @@
 #include <opencv2/imgproc.hpp>
 #include <ranges>
 
-namespace wavelet
+namespace cvwt
 {
 namespace internal
 {
@@ -870,5 +870,5 @@ std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank)
 
     return stream;
 }
-} // namespace wavelet
+} // namespace cvwt
 

@@ -6,7 +6,7 @@
 #include "common.hpp"
 #include "base_dwt2d.hpp"
 
-using namespace wavelet;
+using namespace cvwt;
 using namespace testing;
 
 void PrintTo(const DWT2DTestParam& param, std::ostream* stream)

@@ -1,5 +1,5 @@
-#ifndef WAVELET_COIFLETS_HPP
-#define WAVELET_COIFLETS_HPP
+#ifndef CVWT_COIFLETS_HPP
+#define CVWT_COIFLETS_HPP
 
 #include <map>
 #include <string>
@@ -1016,4 +1016,4 @@ std::map<std::string, std::vector<double>> COIFLETS_FILTER_COEFFS = {
     },
 };
 
-#endif  // WAVELET_COIFLETS_HPP
+#endif  // CVWT_COIFLETS_HPP

@@ -1,9 +1,9 @@
-#ifndef WAVELET_UTILS_HPP
-#define WAVELET_UTILS_HPP
+#ifndef CVWT_UTILS_HPP
+#define CVWT_UTILS_HPP
 
 #include <opencv2/core.hpp>
 
-namespace wavelet
+namespace cvwt
 {
 void flatten(cv::InputArray input, cv::OutputArray output);
 void collect_masked(cv::InputArray input, cv::OutputArray output, cv::InputArray mask);
@@ -171,7 +171,7 @@ struct NegateEveryOther
     }
 };
 }   // namespace internal
-}   // namespace wavelet
+}   // namespace cvwt
 
-#endif  // WAVELET_UTILS_HPP
+#endif  // CVWT_UTILS_HPP
 

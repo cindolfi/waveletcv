@@ -1,5 +1,5 @@
-#ifndef WAVELET_TEST_COMMON_HPP
-#define WAVELET_TEST_COMMON_HPP
+#ifndef CVWT_TEST_COMMON_HPP
+#define CVWT_TEST_COMMON_HPP
 /**
  * Common Helpers & Utilitites
 */
@@ -15,7 +15,7 @@
 #include <wavelet/wavelet.hpp>
 #include <wavelet/dwt2d.hpp>
 
-namespace wavelet
+namespace cvwt
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream);
 }
@@ -313,5 +313,5 @@ bool float_equals(T a, T b, int num_ulps, T zero_tolerance=0.0)
     return result;
 }
 
-#endif  // WAVELET_TEST_COMMON_HPP
+#endif  // CVWT_TEST_COMMON_HPP
 

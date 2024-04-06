@@ -1,5 +1,5 @@
-#ifndef WAVELET_DAUBECHIES_H
-#define WAVELET_DAUBECHIES_H
+#ifndef CVWT_DAUBECHIES_H
+#define CVWT_DAUBECHIES_H
 
 #include <map>
 #include <string>
@@ -1685,4 +1685,4 @@ std::map<std::string, std::vector<double>> DAUBECHIES_FILTER_COEFFS = {
     },
 };
 
-#endif  // WAVELET_DAUBECHIES_H
+#endif  // CVWT_DAUBECHIES_H

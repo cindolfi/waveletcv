@@ -8,14 +8,14 @@
 
 using namespace testing;
 
-namespace wavelet
+namespace cvwt
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream)
 {
     PrintTo(cv::Mat(coeffs), stream);
     *stream << "(" << coeffs.levels() << " levels)\n";
 }
-}   // namespace wavelet
+}   // namespace cvwt
 
 void clamp_near_zero(cv::InputArray input, cv::OutputArray output, double tolerance)
 {
@@ -36,7 +36,7 @@ namespace cv
 {
 void PrintTo(const cv::Mat& matrix, std::ostream* stream)
 {
-    wavelet::internal::dispatch_on_pixel_type<print_matrix_to>(
+    cvwt::internal::dispatch_on_pixel_type<print_matrix_to>(
         matrix.type(),
         matrix,
         stream
@@ -47,9 +47,9 @@ void PrintTo(const cv::Mat& matrix, std::ostream* stream)
 std::string get_subband_name(int subband)
 {
     switch (subband){
-        case wavelet::HORIZONTAL: return "horizontal";
-        case wavelet::VERTICAL: return "vertical";
-        case wavelet::DIAGONAL: return "diagonal";
+        case cvwt::HORIZONTAL: return "horizontal";
+        case cvwt::VERTICAL: return "vertical";
+        case cvwt::DIAGONAL: return "diagonal";
     }
     assert(false);
     return "";

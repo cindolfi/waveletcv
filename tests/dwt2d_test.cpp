@@ -7,7 +7,7 @@
 #include "common.hpp"
 #include "base_dwt2d.hpp"
 
-using namespace wavelet;
+using namespace cvwt;
 using namespace testing;
 
 //  ============================================================================

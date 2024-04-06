@@ -1,5 +1,5 @@
-#ifndef WAVELET_TEST_BASE_DWT2D_HPP
-#define WAVELET_TEST_BASE_DWT2D_HPP
+#ifndef CVWT_TEST_BASE_DWT2D_HPP
+#define CVWT_TEST_BASE_DWT2D_HPP
 
 #include <vector>
 #include <map>
@@ -52,7 +52,7 @@ protected:
 
     static void init_test_params();
 
-    wavelet::Wavelet wavelet;
+    cvwt::Wavelet wavelet;
     int levels;
     double nearness_tolerance;
     static std::map<std::string, cv::Mat> inputs;
@@ -62,5 +62,5 @@ public:
     static std::vector<DWT2DTestParam> create_test_params();
 };
 
-#endif  // WAVELET_TEST_BASE_DWT2D_HPP
+#endif  // CVWT_TEST_BASE_DWT2D_HPP
 

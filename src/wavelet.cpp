@@ -8,7 +8,7 @@
 #include <ranges>
 #include <functional>
 
-namespace wavelet
+namespace cvwt
 {
 Wavelet::Wavelet() : _p(std::make_shared<WaveletImpl>())
 {
@@ -380,5 +380,5 @@ void throw_if_invalid_wavelet_name(
 }
 #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 } // namespace internal
-} // namespace wavelet
+} // namespace cvwt
 

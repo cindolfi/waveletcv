@@ -8,7 +8,7 @@
 #include <wavelet/dwt2d.hpp>
 #include "common.hpp"
 
-using namespace wavelet;
+using namespace cvwt;
 
 const std::string PROGRAM_NAME = "dwt2d";
 

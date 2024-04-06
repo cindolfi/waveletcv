@@ -13,7 +13,7 @@
 #include <wavelet/shrinkage.hpp>
 #include "common.hpp"
 
-using namespace wavelet;
+using namespace cvwt;
 
 const std::string PROGRAM_NAME = "denoise";
 const std::set<std::string> AVAILABLE_SHRINK_METHODS = {
