@@ -1,9 +1,9 @@
-#include "wavelet/wavelet.hpp"
-#include "wavelet/daubechies.hpp"
-#include "wavelet/symlets.hpp"
-#include "wavelet/coiflets.hpp"
-#include "wavelet/biorthogonal.hpp"
-#include "wavelet/utils.hpp"
+#include "cvwt/wavelet.hpp"
+#include "cvwt/daubechies.hpp"
+#include "cvwt/symlets.hpp"
+#include "cvwt/coiflets.hpp"
+#include "cvwt/biorthogonal.hpp"
+#include "cvwt/utils.hpp"
 #include <opencv2/imgproc.hpp>
 #include <ranges>
 #include <functional>

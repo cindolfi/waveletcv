@@ -9,8 +9,8 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-#include <wavelet/dwt2d.hpp>
-#include <wavelet/shrinkage.hpp>
+#include <cvwt/dwt2d.hpp>
+#include <cvwt/shrinkage.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

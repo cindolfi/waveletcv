@@ -2,8 +2,8 @@
 */
 #include <numeric>
 #include <opencv2/imgproc.hpp>
-#include <wavelet/dwt2d.hpp>
-#include <wavelet/utils.hpp>
+#include <cvwt/dwt2d.hpp>
+#include <cvwt/utils.hpp>
 #include "common.hpp"
 
 using namespace testing;

@@ -1,7 +1,7 @@
 #ifndef CVWT_DWT2D_HPP
 #define CVWT_DWT2D_HPP
 
-#include "wavelet/wavelet.hpp"
+#include "cvwt/wavelet.hpp"
 #include <opencv2/core.hpp>
 #include <string>
 #include <vector>

@@ -2,8 +2,8 @@
  * DWT2D Unit Tests
 */
 #include <vector>
-#include <wavelet/dwt2d.hpp>
-#include <wavelet/utils.hpp>
+#include <cvwt/dwt2d.hpp>
+#include <cvwt/utils.hpp>
 #include "common.hpp"
 #include "base_dwt2d.hpp"
 

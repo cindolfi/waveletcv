@@ -2,7 +2,7 @@
 #include <sstream>
 #include <set>
 #include <opencv2/imgcodecs.hpp>
-#include <wavelet/wavelet.hpp>
+#include <cvwt/wavelet.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

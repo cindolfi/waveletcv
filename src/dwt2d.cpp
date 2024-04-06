@@ -1,7 +1,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/logger.hpp>
-#include "wavelet/dwt2d.hpp"
-#include "wavelet/utils.hpp"
+#include "cvwt/dwt2d.hpp"
+#include "cvwt/utils.hpp"
 
 namespace cvwt
 {

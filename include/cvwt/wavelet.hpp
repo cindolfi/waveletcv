@@ -7,7 +7,7 @@
 #include <vector>
 #include <array>
 #include <map>
-#include "wavelet/filterbank.hpp"
+#include "cvwt/filterbank.hpp"
 
 namespace cvwt
 {

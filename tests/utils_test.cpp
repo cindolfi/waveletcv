@@ -2,7 +2,7 @@
  * Utils Unit Test
 */
 #include <numeric>
-#include <wavelet/utils.hpp>
+#include <cvwt/utils.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

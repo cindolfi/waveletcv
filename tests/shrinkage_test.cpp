@@ -1,7 +1,7 @@
 /**
  * Shrinkage Unit Test
 */
-#include <wavelet/shrinkage.hpp>
+#include <cvwt/shrinkage.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

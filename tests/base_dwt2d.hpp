@@ -4,8 +4,8 @@
 #include <vector>
 #include <map>
 #include <nlohmann/json.hpp>
-#include <wavelet/dwt2d.hpp>
-#include <wavelet/utils.hpp>
+#include <cvwt/dwt2d.hpp>
+#include <cvwt/utils.hpp>
 #include "common.hpp"
 
 using json = nlohmann::json;

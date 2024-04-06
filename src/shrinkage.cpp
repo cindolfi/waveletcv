@@ -1,5 +1,5 @@
 
-#include "wavelet/shrinkage.hpp"
+#include "cvwt/shrinkage.hpp"
 
 #include <ranges>
 #include <algorithm>

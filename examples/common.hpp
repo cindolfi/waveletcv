@@ -8,7 +8,7 @@
 #include <experimental/iterator>
 #include <opencv2/core.hpp>
 #include <opencv2/core/utils/logger.hpp>
-#include <wavelet/dwt2d.hpp>
+#include <cvwt/dwt2d.hpp>
 #include <cxxopts.hpp>
 
 std::pair<cv::Mat, std::filesystem::path> open_image(const std::filesystem::path& input_filename, int type = CV_64F);

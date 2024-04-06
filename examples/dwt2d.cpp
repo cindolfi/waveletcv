@@ -5,7 +5,7 @@
 #include <cxxopts.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-#include <wavelet/dwt2d.hpp>
+#include <cvwt/dwt2d.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

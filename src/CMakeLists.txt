@@ -1,16 +1,17 @@
 # Optionally glob, but only for CMake 3.12 or later:
 #file(GLOB HEADER_LIST CONFIGURE_DEPENDS "${Wavelet_SOURCE_DIR}/include/wavelet/*.hpp")
+set(CVWT_INCLUDE_DIR "${Wavelet_SOURCE_DIR}/include/cvwt")
 set(
     HEADER_LIST
-    "${Wavelet_SOURCE_DIR}/include/wavelet/wavelet.hpp"
-    "${Wavelet_SOURCE_DIR}/include/wavelet/filterbank.hpp"
-    "${Wavelet_SOURCE_DIR}/include/wavelet/dwt2d.hpp"
-    "${Wavelet_SOURCE_DIR}/include/wavelet/shrinkage.hpp"
-    "${Wavelet_SOURCE_DIR}/include/wavelet/utils.hpp"
-    "${Wavelet_SOURCE_DIR}/include/wavelet/daubechies.hpp"
-    "${Wavelet_SOURCE_DIR}/include/wavelet/symlets.hpp"
-    "${Wavelet_SOURCE_DIR}/include/wavelet/coiflets.hpp"
-    "${Wavelet_SOURCE_DIR}/include/wavelet/biorthogonal.hpp"
+    "${CVWT_INCLUDE_DIR}/wavelet.hpp"
+    "${CVWT_INCLUDE_DIR}/filterbank.hpp"
+    "${CVWT_INCLUDE_DIR}/dwt2d.hpp"
+    "${CVWT_INCLUDE_DIR}/shrinkage.hpp"
+    "${CVWT_INCLUDE_DIR}/utils.hpp"
+    "${CVWT_INCLUDE_DIR}/daubechies.hpp"
+    "${CVWT_INCLUDE_DIR}/symlets.hpp"
+    "${CVWT_INCLUDE_DIR}/coiflets.hpp"
+    "${CVWT_INCLUDE_DIR}/biorthogonal.hpp"
 )
 
 FetchContent_Declare(
@@ -19,7 +20,6 @@ FetchContent_Declare(
     GIT_TAG        v2.7.1
 )
 FetchContent_MakeAvailable(nlopt)
-
 
 #   ----------------------------------------------------------------------------
 #   Add Library Target
@@ -33,7 +33,6 @@ add_library(
     utils.cpp
     ${HEADER_LIST}
 )
-
 
 #   ----------------------------------------------------------------------------
 #   Target Settings

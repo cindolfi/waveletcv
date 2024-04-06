@@ -1,5 +1,5 @@
-#include "wavelet/filterbank.hpp"
-#include "wavelet/utils.hpp"
+#include "cvwt/filterbank.hpp"
+#include "cvwt/utils.hpp"
 #include <opencv2/imgproc.hpp>
 #include <ranges>
 

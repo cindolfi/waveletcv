@@ -12,8 +12,8 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <opencv2/core.hpp>
-#include <wavelet/wavelet.hpp>
-#include <wavelet/dwt2d.hpp>
+#include <cvwt/wavelet.hpp>
+#include <cvwt/dwt2d.hpp>
 
 namespace cvwt
 {

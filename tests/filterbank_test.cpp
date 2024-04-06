@@ -2,7 +2,7 @@
  * Filter Bank Unit Tests
 */
 #include <vector>
-#include <wavelet/filterbank.hpp>
+#include <cvwt/filterbank.hpp>
 #include "common.hpp"
 #include "base_dwt2d.hpp"
 

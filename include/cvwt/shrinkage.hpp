@@ -7,9 +7,9 @@
 #include <iomanip>
 #include <thread>
 #include <nlopt.hpp>
-#include "wavelet/wavelet.hpp"
-#include "wavelet/dwt2d.hpp"
-#include "wavelet/utils.hpp"
+#include "cvwt/wavelet.hpp"
+#include "cvwt/dwt2d.hpp"
+#include "cvwt/utils.hpp"
 
 namespace cvwt
 {

@@ -3,7 +3,7 @@
 */
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include <wavelet/wavelet.hpp>
+#include <cvwt/wavelet.hpp>
 #include "common.hpp"
 
 using namespace cvwt;
