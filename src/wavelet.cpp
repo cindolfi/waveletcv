@@ -208,7 +208,7 @@ Wavelet create_haar()
 
 Wavelet create_daubechies(int order)
 {
-    auto name = internal::get_orthogonal_name(DAUBECHIES_PREFIX, order);
+    auto name = internal::get_orthogonal_name(DAUBECHIES_NAME, order);
     internal::throw_if_invalid_wavelet_name(name, DAUBECHIES_FAMILY, DAUBECHIES_FILTER_COEFFS);
     cv::Mat reconstruct_lowpass_coeffs(DAUBECHIES_FILTER_COEFFS[name]);
 
@@ -229,7 +229,7 @@ Wavelet create_daubechies(int order)
 
 Wavelet create_symlets(int order)
 {
-    auto name = internal::get_orthogonal_name(SYMLETS_PREFIX, order);
+    auto name = internal::get_orthogonal_name(SYMLETS_NAME, order);
     internal::throw_if_invalid_wavelet_name(name, SYMLETS_FAMILY, SYMLETS_FILTER_COEFFS);
     cv::Mat reconstruct_lowpass_coeffs(SYMLETS_FILTER_COEFFS[name]);
 
@@ -250,7 +250,7 @@ Wavelet create_symlets(int order)
 
 Wavelet create_coiflets(int order)
 {
-    auto name = internal::get_orthogonal_name(COIFLETS_PREFIX, order);
+    auto name = internal::get_orthogonal_name(COIFLETS_NAME, order);
     internal::throw_if_invalid_wavelet_name(name, COIFLETS_FAMILY, COIFLETS_FILTER_COEFFS);
     cv::Mat reconstruct_lowpass_coeffs(COIFLETS_FILTER_COEFFS[name]);
 
@@ -272,7 +272,7 @@ Wavelet create_coiflets(int order)
 Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
 {
     auto name = internal::get_biorthogonal_name(
-        BIORTHOGONAL_PREFIX,
+        BIORTHOGONAL_NAME,
         vanishing_moments_psi,
         vanishing_moments_phi
     );
@@ -304,7 +304,7 @@ Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi
 Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
 {
     auto name = internal::get_biorthogonal_name(
-        BIORTHOGONAL_PREFIX,
+        BIORTHOGONAL_NAME,
         vanishing_moments_psi,
         vanishing_moments_phi
     );

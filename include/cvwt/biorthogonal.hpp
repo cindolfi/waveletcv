@@ -6,7 +6,7 @@
 #include <vector>
 
 const std::string BIORTHOGONAL_FAMILY = "Biorthogonal";
-const std::string BIORTHOGONAL_PREFIX = "bior";
+const std::string BIORTHOGONAL_NAME = "bior";
 
 //  These are (reconstruction lowpass coefficients, decomposition lowpass coefficients)
 std::map<std::string, std::pair<std::vector<double>, std::vector<double>>> BIORTHOGONAL_FILTER_COEFFS = {

@@ -6,7 +6,7 @@
 #include <vector>
 
 const std::string DAUBECHIES_FAMILY = "Daubechies";
-const std::string DAUBECHIES_PREFIX = "db";
+const std::string DAUBECHIES_NAME = "db";
 
 //  These are reconstruction lowpass coefficients
 //  (Or equivalently, reversed decompostion lowpass coefficients)

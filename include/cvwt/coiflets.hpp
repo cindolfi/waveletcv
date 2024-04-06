@@ -6,7 +6,7 @@
 #include <vector>
 
 const std::string COIFLETS_FAMILY = "Coiflets";
-const std::string COIFLETS_PREFIX = "coif";
+const std::string COIFLETS_NAME = "coif";
 
 //  These are reconstruction lowpass coefficients
 //  (Or equivalently, reversed decompostion lowpass coefficients)

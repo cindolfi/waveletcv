@@ -6,7 +6,7 @@
 #include <vector>
 
 const std::string SYMLETS_FAMILY = "Symlets";
-const std::string SYMLETS_PREFIX = "sym";
+const std::string SYMLETS_NAME = "sym";
 
 //  These are reconstruction lowpass coefficients
 //  (Or equivalently, reversed decompostion lowpass coefficients)
