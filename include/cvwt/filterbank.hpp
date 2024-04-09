@@ -9,34 +9,91 @@
 
 namespace cvwt
 {
+/**
+ * @brief
+ *
+ */
 class KernelPair
 {
 public:
+    /**
+     * @brief Construct a new Kernel Pair object
+     *
+     */
     KernelPair() :
         _lowpass(0, 0, CV_64F),
         _highpass(0, 0, CV_64F)
     {}
 
+    /**
+     * @brief Construct a new Kernel Pair object
+     *
+     * @param lowpass
+     * @param highpass
+     */
     KernelPair(const cv::Mat& lowpass, const cv::Mat& highpass) :
         _lowpass(lowpass),
         _highpass(highpass)
     {}
 
+    /**
+     * @brief Construct a new Kernel Pair object
+     *
+     * @tparam T
+     * @param lowpass
+     * @param highpass
+     */
     template <typename T>
     KernelPair(const std::vector<T>& lowpass, const std::vector<T>& highpass) :
         KernelPair(cv::Mat(lowpass, true), cv::Mat(highpass, true))
     {}
 
+    /**
+     * @brief Construct a new Kernel Pair object
+     *
+     * @tparam T
+     * @tparam N
+     * @param lowpass
+     * @param highpass
+     */
     template <typename T, int N>
     KernelPair(const std::array<T, N>& lowpass, const std::array<T, N>& highpass) :
         KernelPair(cv::Mat(lowpass, true), cv::Mat(highpass, true))
     {}
 
+    /**
+     * @brief
+     *
+     * @return cv::Mat
+     */
     cv::Mat lowpass() const { return _lowpass; }
+    /**
+     * @brief
+     *
+     * @return cv::Mat
+     */
     cv::Mat highpass() const { return _highpass; }
+    /**
+     * @brief
+     *
+     * @return int
+     */
     int filter_length() const { return _lowpass.total(); }
+    /**
+     * @brief
+     *
+     * @return true
+     * @return false
+     */
     bool empty() const { return _lowpass.empty(); }
 
+    /**
+     * @brief
+     *
+     * @param other
+     * @return true
+     * @return false
+     */
     bool operator==(const KernelPair& other) const;
 
 protected:
@@ -176,33 +233,114 @@ struct FilterBankImpl
 } // namespace internal
 
 
+/**
+ * @brief
+ *
+ */
 class FilterBank
 {
 public:
+    /**
+     * @brief Construct a new Filter Bank object
+     *
+     */
     FilterBank();
+    /**
+     * @brief Construct a new Filter Bank object
+     *
+     * @param reconstruct_lowpass
+     * @param reconstruct_highpass
+     * @param decompose_lowpass
+     * @param decompose_highpass
+     */
     FilterBank(
         const cv::Mat& reconstruct_lowpass,
         const cv::Mat& reconstruct_highpass,
         const cv::Mat& decompose_lowpass,
         const cv::Mat& decompose_highpass
     );
+    /**
+     * @brief Construct a new Filter Bank object
+     *
+     * @param reconstruct_kernels
+     * @param decompose_kernels
+     */
     FilterBank(
         const KernelPair& reconstruct_kernels,
         const KernelPair& decompose_kernels
     );
+    /**
+     * @brief Construct a new Filter Bank object
+     *
+     * @param other
+     */
     FilterBank(const FilterBank& other) = default;
+    /**
+     * @brief Construct a new Filter Bank object
+     *
+     * @param other
+     */
     FilterBank(FilterBank&& other) = default;
 
+    /**
+     * @brief
+     *
+     * @return true
+     * @return false
+     */
     bool empty() const { return _p->decompose.empty(); }
+    /**
+     * @brief
+     *
+     * @return int
+     */
     int type() const { return _p->decompose.type(); }
+    /**
+     * @brief
+     *
+     * @return int
+     */
     int depth() const { return _p->decompose.depth(); }
+    /**
+     * @brief
+     *
+     * @return int
+     */
     int filter_length() const { return _p->filter_length; }
+    /**
+     * @brief
+     *
+     * @return KernelPair
+     */
     KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
+    /**
+     * @brief
+     *
+     * @return KernelPair
+     */
     KernelPair decompose_kernels() const { return _p->decompose_kernels(); }
 
+    /**
+     * @brief
+     *
+     * @param other
+     * @return true
+     * @return false
+     */
     bool operator==(const FilterBank& other) const;
     friend std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
 
+    /**
+     * @brief
+     *
+     * @param image
+     * @param approx
+     * @param horizontal_detail
+     * @param vertical_detail
+     * @param diagonal_detail
+     * @param border_type
+     * @param border_value
+     */
     void decompose(
         cv::InputArray image,
         cv::OutputArray approx,
@@ -212,14 +350,40 @@ public:
         int border_type=cv::BORDER_DEFAULT,
         const cv::Scalar& border_value=cv::Scalar()
     ) const;
+    /**
+     * @brief
+     *
+     * @param type
+     */
     void prepare_decompose(int type) const;
+    /**
+     * @brief
+     *
+     */
     void finish_decompose() const;
+    /**
+     * @brief
+     *
+     * @param type
+     * @return true
+     * @return false
+     */
     bool is_decompose_prepared(int type) const
     {
         return !_p->promoted_decompose.empty()
             && _p->promoted_decompose.type() == promote_type(type);
     }
 
+    /**
+     * @brief
+     *
+     * @param approx
+     * @param horizontal_detail
+     * @param vertical_detail
+     * @param diagonal_detail
+     * @param output
+     * @param output_size
+     */
     void reconstruct(
         cv::InputArray approx,
         cv::InputArray horizontal_detail,
@@ -228,7 +392,15 @@ public:
         cv::OutputArray output,
         const cv::Size& output_size
     ) const;
-
+    /**
+     * @brief
+     *
+     * @param approx
+     * @param horizontal_detail
+     * @param vertical_detail
+     * @param diagonal_detail
+     * @param output
+     */
     void reconstruct(
         cv::InputArray approx,
         cv::InputArray horizontal_detail,
@@ -246,30 +418,96 @@ public:
             cv::Size(approx.size() * 2)
         );
     }
+    /**
+     * @brief
+     *
+     * @param type
+     */
     void prepare_reconstruct(int type) const;
+    /**
+     * @brief
+     *
+     */
     void finish_reconstruct() const;
+    /**
+     * @brief
+     *
+     * @param type
+     * @return true
+     * @return false
+     */
     bool is_reconstruct_prepared(int type) const
     {
         return !_p->promoted_reconstruct.empty()
             && _p->promoted_reconstruct.type() == promote_type(type);
     }
 
+    /**
+     * @brief
+     *
+     * @param image_size
+     * @return cv::Size
+     */
     cv::Size output_size(const cv::Size& image_size) const;
+    /**
+     * @brief
+     *
+     * @param image_size
+     * @return int
+     */
     int output_size(int image_size) const;
+    /**
+     * @brief
+     *
+     * @param image_size
+     * @return cv::Size
+     */
     cv::Size subband_size(const cv::Size& image_size) const;
+    /**
+     * @brief
+     *
+     * @param image_size
+     * @return int
+     */
     int subband_size(int image_size) const;
 
     //  Kernel Pair Factories
+    /**
+     * @brief Create a orthogonal decompose kernels object
+     *
+     * @param reconstruct_lowpass_coeffs
+     * @return KernelPair
+     */
     static KernelPair create_orthogonal_decompose_kernels(
         cv::InputArray reconstruct_lowpass_coeffs
     );
+    /**
+     * @brief Create a orthogonal reconstruct kernels object
+     *
+     * @param reconstruct_lowpass_coeffs
+     * @return KernelPair
+     */
     static KernelPair create_orthogonal_reconstruct_kernels(
         cv::InputArray reconstruct_lowpass_coeffs
     );
+    /**
+     * @brief Create a biorthogonal decompose kernels object
+     *
+     * @param reconstruct_lowpass_coeffs
+     * @param decompose_lowpass_coeffs
+     * @return KernelPair
+     */
     static KernelPair create_biorthogonal_decompose_kernels(
         cv::InputArray reconstruct_lowpass_coeffs,
         cv::InputArray decompose_lowpass_coeffs
     );
+    /**
+     * @brief Create a biorthogonal reconstruct kernels object
+     *
+     * @param reconstruct_lowpass_coeffs
+     * @param decompose_lowpass_coeffs
+     * @return KernelPair
+     */
     static KernelPair create_biorthogonal_reconstruct_kernels(
         cv::InputArray reconstruct_lowpass_coeffs,
         cv::InputArray decompose_lowpass_coeffs

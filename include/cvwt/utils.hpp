@@ -5,14 +5,66 @@
 
 namespace cvwt
 {
+/**
+ * @brief
+ *
+ * @param input
+ * @param output
+ */
 void flatten(cv::InputArray input, cv::OutputArray output);
+/**
+ * @brief
+ *
+ * @param input
+ * @param output
+ * @param mask
+ */
 void collect_masked(cv::InputArray input, cv::OutputArray output, cv::InputArray mask);
+/**
+ * @brief
+ *
+ * @param a
+ * @param b
+ * @return true
+ * @return false
+ */
 bool equals(const cv::Mat& a, const cv::Mat& b);
+/**
+ * @brief
+ *
+ * @param input
+ * @return cv::Scalar
+ */
 cv::Scalar median(cv::InputArray input);
+/**
+ * @brief
+ *
+ * @param input
+ * @param mask
+ * @return cv::Scalar
+ */
 cv::Scalar median(cv::InputArray input, cv::InputArray mask);
+/**
+ * @brief
+ *
+ * @param input
+ * @param output
+ */
 void negate_evens(cv::InputArray input, cv::OutputArray output);
+/**
+ * @brief
+ *
+ * @param input
+ * @param output
+ */
 void negate_odds(cv::InputArray input, cv::OutputArray output);
 
+/**
+ * @brief
+ *
+ * @param code
+ * @param message_parts
+ */
 void throw_error(cv::Error::Code code, auto... message_parts)
 {
     std::stringstream message;
@@ -20,17 +72,29 @@ void throw_error(cv::Error::Code code, auto... message_parts)
 
     CV_Error(code, message.str());
 }
-
+/**
+ * @brief
+ *
+ * @param message_parts
+ */
 void throw_bad_size(auto... message_parts)
 {
     throw_error(cv::Error::StsBadSize, message_parts...);
 }
-
+/**
+ * @brief
+ *
+ * @param message_parts
+ */
 void throw_bad_arg(auto... message_parts)
 {
     throw_error(cv::Error::StsBadArg, message_parts...);
 }
-
+/**
+ * @brief
+ *
+ * @param message_parts
+ */
 void throw_out_of_range(auto... message_parts)
 {
     throw_error(cv::Error::StsOutOfRange, message_parts...);

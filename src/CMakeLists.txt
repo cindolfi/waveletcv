@@ -20,8 +20,6 @@ FetchContent_MakeAvailable(nlopt)
 #   ----------------------------------------------------------------------------
 #   Build Library
 #   ----------------------------------------------------------------------------
-set(CVWT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
-
 add_library(cvwt_library)
 target_sources (
     cvwt_library

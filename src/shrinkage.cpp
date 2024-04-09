@@ -18,11 +18,10 @@ cv::Scalar estimate_stdev(cv::InputArray x, cv::InputArray mask)
     return median(cv::abs(x.getMat()), mask) / 0.675;
 }
 
-/**
- * -----------------------------------------------------------------------------
- * Thresholding
- * -----------------------------------------------------------------------------
-*/
+
+//  ----------------------------------------------------------------------------
+//  Thresholding
+//  ----------------------------------------------------------------------------
 using ThresholdFunction = void(cv::InputOutputArray, cv::Scalar);
 using MaskedThresholdFunction = void(cv::InputOutputArray, cv::Scalar, cv::InputArray);
 
@@ -117,11 +116,9 @@ void hard_threshold(cv::InputOutputArray array, cv::Scalar threshold, cv::InputA
 }
 
 
-/**
- * -----------------------------------------------------------------------------
- * Shrink Coefficients
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  Shrink Coefficients
+//  ----------------------------------------------------------------------------
 void shrink_details(
     DWT2D::Coeffs& coeffs,
     cv::Scalar threshold,
@@ -219,11 +216,9 @@ void hard_shrink_detail_subbands(DWT2D::Coeffs& coeffs, cv::InputArray threshold
 }
 
 
-/**
- * -----------------------------------------------------------------------------
- * Universal / VisuShrink
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  Universal / VisuShrink
+//  ----------------------------------------------------------------------------
 cv::Scalar universal_threshold(const DWT2D::Coeffs& coeffs, const cv::Scalar& stdev)
 {
     return universal_threshold(coeffs.total() - coeffs.approx().total(), stdev);
@@ -274,11 +269,9 @@ void visu_hard_shrink(DWT2D::Coeffs& coeffs)
 }
 
 
-/**
- * -----------------------------------------------------------------------------
- * SureShrink
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  SureShrink
+//  ----------------------------------------------------------------------------
 cv::Scalar compute_sure_threshold(
     cv::InputArray input,
     const cv::Scalar& stdev,
@@ -498,11 +491,10 @@ void hybrid_sure_shrink_levelwise(DWT2D::Coeffs& coeffs, int levels, nlopt::algo
     soft_shrink_detail_levels(coeffs, thresholds);
 }
 
-/**
- * -----------------------------------------------------------------------------
- * BayesShrink
- * -----------------------------------------------------------------------------
-*/
+
+//  ----------------------------------------------------------------------------
+//  BayesShrink
+//  ----------------------------------------------------------------------------
 cv::Scalar bayes_shrink_threshold(const DWT2D::Coeffs& coeffs)
 {
     return cv::Scalar();

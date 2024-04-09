@@ -80,15 +80,27 @@ cv::Mat DWT2D::Coeffs::invert() const
     return dwt().reconstruct(*this);
 }
 
-void DWT2D::Coeffs::invert(cv::OutputArray output) const
+void DWT2D::Coeffs::invert(cv::OutputArray image) const
 {
-    dwt().reconstruct(*this, output);
+    dwt().reconstruct(*this, image);
 }
 
 DWT2D::Coeffs DWT2D::Coeffs::clone() const
 {
     return DWT2D::Coeffs(
         _p->coeff_matrix.clone(),
+        _p->levels,
+        _p->image_size,
+        _p->diagonal_subband_rects,
+        _p->wavelet,
+        _p->border_type
+    );
+}
+
+DWT2D::Coeffs DWT2D::Coeffs::empty_clone() const
+{
+    return DWT2D::Coeffs(
+        cv::Mat(0, 0, type()),
         _p->levels,
         _p->image_size,
         _p->diagonal_subband_rects,
@@ -651,18 +663,15 @@ DWT2D::Coeffs DWT2D::create_coeffs(
     );
 }
 
-DWT2D::Coeffs DWT2D::create_coeffs_for_image(const cv::Size& image_size, int type, int levels) const
+DWT2D::Coeffs DWT2D::create_coeffs(const cv::Size& image_size, int type, int levels) const
 {
     auto size = coeffs_size_for_image(image_size, levels);
     type = wavelet.filter_bank().promote_type(type);
 
-    return Coeffs(
+    return create_coeffs(
         cv::Mat(size, type, cv::Scalar::all(0.0)),
-        levels,
         image_size,
-        calc_subband_sizes(image_size, levels),
-        wavelet,
-        border_type
+        levels
     );
 }
 
@@ -695,9 +704,9 @@ cv::Size DWT2D::coeffs_size_for_image(const cv::Size& image_size, int levels) co
     return accumulator;
 }
 
-int DWT2D::max_levels_without_border_effects(int rows, int cols) const
+int DWT2D::max_levels_without_border_effects(int image_rows, int image_cols) const
 {
-    double data_length = std::min(rows, cols);
+    double data_length = std::min(image_rows, image_cols);
     if (data_length <= 0)
         return 0;
 

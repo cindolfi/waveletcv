@@ -13,42 +13,118 @@
 
 namespace cvwt
 {
-cv::Scalar estimate_std(cv::InputArray x);
-cv::Scalar estimate_std(cv::InputArray x, cv::InputArray mask);
-
 /**
- * -----------------------------------------------------------------------------
- * Thresholding
- * -----------------------------------------------------------------------------
-*/
+ * @brief
+ *
+ * @param x
+ * @return cv::Scalar
+ */
+cv::Scalar estimate_stdev(cv::InputArray x);
+/**
+ * @brief
+ *
+ * @param x
+ * @param mask
+ * @return cv::Scalar
+ */
+cv::Scalar estimate_stdev(cv::InputArray x, cv::InputArray mask);
+
+
+//  ----------------------------------------------------------------------------
+//  Thresholding
+//  ----------------------------------------------------------------------------
 using ThresholdFunction = void(cv::InputOutputArray, cv::Scalar);
 using MaskedThresholdFunction = void(cv::InputOutputArray, cv::Scalar, cv::InputArray);
 
+/**
+ * @brief
+ *
+ * @param input
+ * @param output
+ * @param threshold
+ */
 void soft_threshold(cv::InputArray input, cv::OutputArray output, cv::Scalar threshold);
+/**
+ * @brief
+ *
+ * @param input
+ * @param output
+ * @param threshold
+ * @param mask
+ */
 void soft_threshold(
     cv::InputArray input,
     cv::OutputArray output,
     cv::Scalar threshold,
     cv::InputArray mask
 );
+/**
+ * @brief
+ *
+ * @param array
+ * @param threshold
+ */
 void soft_threshold(cv::InputOutputArray array, cv::Scalar threshold);
+/**
+ * @brief
+ *
+ * @param array
+ * @param threshold
+ * @param mask
+ */
 void soft_threshold(cv::InputOutputArray array, cv::Scalar threshold, cv::InputArray mask);
 
+/**
+ * @brief
+ *
+ * @param input
+ * @param output
+ * @param threshold
+ */
 void hard_threshold(cv::InputArray input, cv::OutputArray output, cv::Scalar threshold);
+/**
+ * @brief
+ *
+ * @param input
+ * @param output
+ * @param threshold
+ * @param mask
+ */
 void hard_threshold(
     cv::InputArray input,
     cv::OutputArray output,
     cv::Scalar threshold,
     cv::InputArray mask
 );
+/**
+ * @brief
+ *
+ * @param array
+ * @param threshold
+ */
 void hard_threshold(cv::InputOutputArray array, cv::Scalar threshold);
+/**
+ * @brief
+ *
+ * @param array
+ * @param threshold
+ * @param mask
+ */
 void hard_threshold(cv::InputOutputArray array, cv::Scalar threshold, cv::InputArray mask);
 
+
+//  ----------------------------------------------------------------------------
+//  Shrink Coefficients
+//  ----------------------------------------------------------------------------
 /**
- * -----------------------------------------------------------------------------
- * Shrink Coefficients
- * -----------------------------------------------------------------------------
-*/
+ * @brief
+ *
+ * @param coeffs
+ * @param threshold
+ * @param threshold_function
+ * @param lower_level
+ * @param upper_level
+ */
 void shrink_details(
     DWT2D::Coeffs& coeffs,
     cv::Scalar threshold,
@@ -56,12 +132,28 @@ void shrink_details(
     int lower_level=0,
     int upper_level=-1
 );
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param threshold
+ * @param lower_level
+ * @param upper_level
+ */
 void soft_shrink_details(
     DWT2D::Coeffs& coeffs,
     cv::Scalar threshold,
     int lower_level=0,
     int upper_level=-1
 );
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param threshold
+ * @param lower_level
+ * @param upper_level
+ */
 void hard_shrink_details(
     DWT2D::Coeffs& coeffs,
     cv::Scalar threshold,
@@ -70,57 +162,187 @@ void hard_shrink_details(
 );
 
 //  ----------------------------------------------------------------------------
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param level_thresholds
+ * @param threshold_function
+ */
 void shrink_detail_levels(
     DWT2D::Coeffs& coeffs,
     cv::InputArray level_thresholds,
     ThresholdFunction threshold_function
 );
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param thresholds
+ */
 void soft_shrink_detail_levels(DWT2D::Coeffs& coeffs, cv::InputArray thresholds);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param thresholds
+ */
 void hard_shrink_detail_levels(DWT2D::Coeffs& coeffs, cv::InputArray thresholds);
 
 //  ----------------------------------------------------------------------------
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param subband_thresholds
+ * @param threshold_function
+ */
 void shrink_detail_subbands(
     DWT2D::Coeffs& coeffs,
     cv::InputArray subband_thresholds,
     ThresholdFunction threshold_function
 );
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param thresholds
+ */
 void soft_shrink_detail_subbands(DWT2D::Coeffs& coeffs, cv::InputArray thresholds);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param thresholds
+ */
 void hard_shrink_detail_subbands(DWT2D::Coeffs& coeffs, cv::InputArray thresholds);
 
-/**
- * -----------------------------------------------------------------------------
- * Universal / VisuShrink
- * -----------------------------------------------------------------------------
-*/
-cv::Scalar universal_threshold(const DWT2D::Coeffs& coeffs, const cv::Scalar& stdev = cv::Scalar::all(1.0));
-cv::Scalar universal_threshold(cv::InputArray details, const cv::Scalar& stdev = cv::Scalar::all(1.0));
-cv::Scalar universal_threshold(cv::InputArray details, cv::InputArray mask, const cv::Scalar& stdev = cv::Scalar::all(1.0));
-cv::Scalar universal_threshold(int num_elements, const cv::Scalar& stdev = cv::Scalar::all(1.0));
 
+//  ----------------------------------------------------------------------------
+//  Universal / VisuShrink
+//  ----------------------------------------------------------------------------
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param stdev
+ * @return cv::Scalar
+ */
+cv::Scalar universal_threshold(
+    const DWT2D::Coeffs& coeffs,
+    const cv::Scalar& stdev = cv::Scalar::all(1.0)
+);
+/**
+ * @brief
+ *
+ * @param details
+ * @param stdev
+ * @return cv::Scalar
+ */
+cv::Scalar universal_threshold(
+    cv::InputArray details,
+    const cv::Scalar& stdev = cv::Scalar::all(1.0)
+);
+/**
+ * @brief
+ *
+ * @param details
+ * @param mask
+ * @param stdev
+ * @return cv::Scalar
+ */
+cv::Scalar universal_threshold(
+    cv::InputArray details,
+    cv::InputArray mask,
+    const cv::Scalar& stdev = cv::Scalar::all(1.0)
+);
+/**
+ * @brief
+ *
+ * @param num_elements
+ * @param stdev
+ * @return cv::Scalar
+ */
+cv::Scalar universal_threshold(
+    int num_elements,
+    const cv::Scalar& stdev = cv::Scalar::all(1.0)
+);
+
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @return cv::Scalar
+ */
 cv::Scalar visu_shrink_threshold(const DWT2D::Coeffs& coeffs);
+/**
+ * @brief
+ *
+ * @param details
+ * @return cv::Scalar
+ */
 cv::Scalar visu_shrink_threshold(cv::InputArray details);
+/**
+ * @brief
+ *
+ * @param details
+ * @param mask
+ * @return cv::Scalar
+ */
 cv::Scalar visu_shrink_threshold(cv::InputArray details, cv::InputArray mask);
 
+/**
+ * @brief
+ *
+ * @param coeffs
+ */
 void visu_soft_shrink(DWT2D::Coeffs& coeffs);
+/**
+ * @brief
+ *
+ * @param coeffs
+ */
 void visu_hard_shrink(DWT2D::Coeffs& coeffs);
 
+
+//  ----------------------------------------------------------------------------
+//  SureShrink
+//  ----------------------------------------------------------------------------
 /**
- * -----------------------------------------------------------------------------
- * SureShrink
- * -----------------------------------------------------------------------------
-*/
+ * @brief
+ *
+ */
 enum SureShrinkVariant {
     NORMAL_SURE_SHRINK,
     HYBRID_SURE_SHRINK,
 };
 const nlopt::algorithm DEFAULT_SURE_SHRINK_NLOPT_ALGORITHM = nlopt::LN_NELDERMEAD;
 
+/**
+ * @brief
+ *
+ * @param input
+ * @param stdev
+ * @param variant
+ * @param algorithm
+ * @return cv::Scalar
+ */
 cv::Scalar compute_sure_threshold(
     cv::InputArray input,
     const cv::Scalar& stdev = cv::Scalar::all(1.0),
     SureShrinkVariant variant = NORMAL_SURE_SHRINK,
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
+/**
+ * @brief
+ *
+ * @param input
+ * @param mask
+ * @param stdev
+ * @param variant
+ * @param algorithm
+ * @return cv::Scalar
+ */
 cv::Scalar compute_sure_threshold(
     cv::InputArray input,
     cv::InputArray mask,
@@ -129,12 +351,30 @@ cv::Scalar compute_sure_threshold(
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
 
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ * @param variant
+ * @param algorithm
+ * @return cv::Mat4d
+ */
 cv::Mat4d sure_shrink_subband_thresholds(
     const DWT2D::Coeffs& coeffs,
     int levels,
     SureShrinkVariant variant = NORMAL_SURE_SHRINK,
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ * @param variant
+ * @param algorithm
+ * @return cv::Mat4d
+ */
 cv::Mat4d sure_shrink_level_thresholds(
     const DWT2D::Coeffs& coeffs,
     int levels,
@@ -142,34 +382,112 @@ cv::Mat4d sure_shrink_level_thresholds(
     nlopt::algorithm algorithm = nlopt::LN_NELDERMEAD
 );
 
+/**
+ * @brief
+ *
+ * @param coeffs
+ */
 void sure_shrink(DWT2D::Coeffs& coeffs);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ */
 void sure_shrink(DWT2D::Coeffs& coeffs, int levels);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ * @param algorithm
+ */
 void sure_shrink(DWT2D::Coeffs& coeffs, int levels, nlopt::algorithm algorithm);
 
+/**
+ * @brief
+ *
+ * @param coeffs
+ */
 void sure_shrink_levelwise(DWT2D::Coeffs& coeffs);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ */
 void sure_shrink_levelwise(DWT2D::Coeffs& coeffs, int levels);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ * @param algorithm
+ */
 void sure_shrink_levelwise(DWT2D::Coeffs& coeffs, int levels, nlopt::algorithm algorithm);
 
+/**
+ * @brief
+ *
+ * @param coeffs
+ */
 void hybrid_sure_shrink(DWT2D::Coeffs& coeffs);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ */
 void hybrid_sure_shrink(DWT2D::Coeffs& coeffs, int levels);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ * @param algorithm
+ */
 void hybrid_sure_shrink(DWT2D::Coeffs& coeffs, int levels, nlopt::algorithm algorithm);
 
+/**
+ * @brief
+ *
+ * @param coeffs
+ */
 void hybrid_sure_shrink_levelwise(DWT2D::Coeffs& coeffs);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ */
 void hybrid_sure_shrink_levelwise(DWT2D::Coeffs& coeffs, int levels);
+/**
+ * @brief
+ *
+ * @param coeffs
+ * @param levels
+ * @param algorithm
+ */
 void hybrid_sure_shrink_levelwise(DWT2D::Coeffs& coeffs, int levels, nlopt::algorithm algorithm);
 
+//  ----------------------------------------------------------------------------
+//  Bayes Shrink
+//  ----------------------------------------------------------------------------
 /**
- * -----------------------------------------------------------------------------
- * Bayes Shrink
- * -----------------------------------------------------------------------------
-*/
+ * @brief
+ *
+ * @param coeffs
+ * @return cv::Scalar
+ */
 cv::Scalar bayes_shrink_threshold(const DWT2D::Coeffs& coeffs);
+/**
+ * @brief
+ *
+ * @param coeffs
+ */
 void bayes_shrink(DWT2D::Coeffs& coeffs);
 
 
-//  ----------------------------------------------------------------------------
-//  ----------------------------------------------------------------------------
-//  ----------------------------------------------------------------------------
 namespace internal
 {
 template <typename T, int N, typename Thresholder>
