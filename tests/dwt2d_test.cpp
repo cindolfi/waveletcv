@@ -288,7 +288,7 @@ TEST_P(Dwt2dCoeffsTest, TypeIsCorrect)
 TEST_P(Dwt2dCoeffsTest, InitializedToAllZeros)
 {
     auto zero_initialized_coeffs = dwt.create_coeffs(rows, cols, type, expected_levels);
-    auto expected_coeffs = cv::Mat(rows, cols, type, 0.0);
+    auto expected_coeffs = cv::Mat(rows, cols, type, cv::Scalar::all(0.0));
 
     EXPECT_THAT(zero_initialized_coeffs, MatrixEq(expected_coeffs));
 }

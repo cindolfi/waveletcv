@@ -666,7 +666,6 @@ DWT2D::Coeffs DWT2D::create_coeffs(
 DWT2D::Coeffs DWT2D::create_coeffs(const cv::Size& image_size, int type, int levels) const
 {
     auto size = coeffs_size_for_image(image_size, levels);
-    type = wavelet.filter_bank().promote_type(type);
 
     return create_coeffs(
         cv::Mat(size, type, cv::Scalar::all(0.0)),

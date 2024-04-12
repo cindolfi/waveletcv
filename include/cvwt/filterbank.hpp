@@ -232,26 +232,26 @@ public:
     /**
      * @brief Construct a new Filter Bank object.
      *
-     * @param reconstruct_lowpass
-     * @param reconstruct_highpass
      * @param decompose_lowpass
      * @param decompose_highpass
+     * @param reconstruct_lowpass
+     * @param reconstruct_highpass
      */
     FilterBank(
-        const cv::Mat& reconstruct_lowpass,
-        const cv::Mat& reconstruct_highpass,
         const cv::Mat& decompose_lowpass,
-        const cv::Mat& decompose_highpass
+        const cv::Mat& decompose_highpass,
+        const cv::Mat& reconstruct_lowpass,
+        const cv::Mat& reconstruct_highpass
     );
     /**
      * @brief Construct a new Filter Bank object.
      *
-     * @param reconstruct_kernels
      * @param decompose_kernels
+     * @param reconstruct_kernels
      */
     FilterBank(
-        const KernelPair& reconstruct_kernels,
-        const KernelPair& decompose_kernels
+        const KernelPair& decompose_kernels,
+        const KernelPair& reconstruct_kernels
     );
     /**
      * @brief Copy Constructor
@@ -285,17 +285,17 @@ public:
      */
     int filter_length() const { return _p->filter_length; }
     /**
-     * @brief The reconstruction kernels.
-     *
-     * @return KernelPair
-     */
-    KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
-    /**
      * @brief The decomposition kernels.
      *
      * @return KernelPair
      */
     KernelPair decompose_kernels() const { return _p->decompose_kernels(); }
+    /**
+     * @brief The reconstruction kernels.
+     *
+     * @return KernelPair
+     */
+    KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
 
     /**
      * @brief
@@ -313,7 +313,7 @@ public:
      *
      * The size of each output will be equal to subband_size().
      * Because full convolution requires extrapolating the image by
-     * half the filter_length() on all sides, the size of the outputs will
+     * the filter_length() - 1 on all sides, the size of the outputs will
      * generally be larger than half the `image.size()`.
      *
      * Whenever `image.channels() > 1` or `image.depth() > depth()`
@@ -392,11 +392,11 @@ public:
      * and depth equal to `max(approx.depth(), depth())`.
      *
      * The size of the reconstructed image must be provided explicitly via the
-     * `output_size` argument.
-     * This is because the extrapolated strip along the border added by
-     * decompose() must be discarded.
-     * But, the truncation that occurs when odd image sizes are halved during
-     * decomposition prevents computing the size of the reconstructed image.
+     * `output_size` argument so that the extrapolated strip along the border
+     * added by decompose() can be discarded.
+     * The reconstructed image size cannot be computed from the size of the
+     * coefficients because of the unknown integer truncation that occurs when
+     * downsampling in decompose().
      *
      * Whenever `approx.channels() > 1` or `approx.depth() > depth()`
      * the filter kernels must be converted internally to `approx.type()`.
@@ -471,52 +471,39 @@ public:
      */
     cv::Size subband_size(const cv::Size& image_size) const;
 
-    //  Kernel Pair Factories
     /**
-     * @brief Create a orthogonal decompose kernels object
+     * @brief Swaps and flips the decomposition and reconstruction kernels
+     *
+     * @return FilterBank
+     */
+    [[nodiscard]] FilterBank reverse() const;
+
+    //  Filter Bank Factories
+    /**
+     * @brief Create an orthogonal wavelet filter bank.
      *
      * @param reconstruct_lowpass_coeffs
-     * @return KernelPair
+     * @return FilterBank
      */
-    static KernelPair create_orthogonal_decompose_kernels(
+    static FilterBank create_orthogonal_filter_bank(
         cv::InputArray reconstruct_lowpass_coeffs
     );
 
     /**
-     * @brief Create a orthogonal reconstruct kernels object
-     *
-     * @param reconstruct_lowpass_coeffs
-     * @return KernelPair
-     */
-    static KernelPair create_orthogonal_reconstruct_kernels(
-        cv::InputArray reconstruct_lowpass_coeffs
-    );
-    /**
-     * @brief Create a biorthogonal decompose kernels object
+     * @brief Create a biorthogonal wavelet filter bank.
      *
      * @param reconstruct_lowpass_coeffs
      * @param decompose_lowpass_coeffs
-     * @return KernelPair
+     * @return FilterBank
      */
-    static KernelPair create_biorthogonal_decompose_kernels(
-        cv::InputArray reconstruct_lowpass_coeffs,
-        cv::InputArray decompose_lowpass_coeffs
-    );
-    /**
-     * @brief Create a biorthogonal reconstruct kernels object
-     *
-     * @param reconstruct_lowpass_coeffs
-     * @param decompose_lowpass_coeffs
-     * @return KernelPair
-     */
-    static KernelPair create_biorthogonal_reconstruct_kernels(
+    static FilterBank create_biorthogonal_filter_bank(
         cv::InputArray reconstruct_lowpass_coeffs,
         cv::InputArray decompose_lowpass_coeffs
     );
 
     int promote_type(int type) const;
 protected:
-    void promote_image(
+    void promote(
         cv::InputArray image,
         cv::OutputArray promoted_image
     ) const;
@@ -525,7 +512,7 @@ protected:
         cv::OutputArray promoted_kernel,
         int type
     ) const;
-    void pad(
+    void extrapolate_border(
         cv::InputArray image,
         cv::OutputArray output,
         int border_type=cv::BORDER_DEFAULT,

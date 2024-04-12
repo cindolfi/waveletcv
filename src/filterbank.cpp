@@ -443,10 +443,10 @@ void FilterBank::decompose(
         prepare_decompose(image.type());
 
     cv::Mat promoted_image;
-    promote_image(image, promoted_image);
+    promote(image, promoted_image);
 
     cv::Mat padded_image;
-    pad(promoted_image, padded_image, border_type, border_value);
+    extrapolate_border(promoted_image, padded_image, border_type, border_value);
 
     //  Stage 1
     cv::Mat stage1_lowpass_output;
@@ -518,13 +518,13 @@ void FilterBank::reconstruct(
         prepare_reconstruct(approx.type());
 
     cv::Mat promoted_approx;
-    promote_image(approx, promoted_approx);
+    promote(approx, promoted_approx);
     cv::Mat promoted_horizontal_detail;
-    promote_image(horizontal_detail, promoted_horizontal_detail);
+    promote(horizontal_detail, promoted_horizontal_detail);
     cv::Mat promoted_vertical_detail;
-    promote_image(vertical_detail, promoted_vertical_detail);
+    promote(vertical_detail, promoted_vertical_detail);
     cv::Mat promoted_diagonal_detail;
-    promote_image(diagonal_detail, promoted_diagonal_detail);
+    promote(diagonal_detail, promoted_diagonal_detail);
 
     //  Stage 1a
     cv::Mat stage1a_lowpass_output;
@@ -626,48 +626,56 @@ cv::Size FilterBank::subband_size(const cv::Size& image_size) const
     );
 }
 
-KernelPair FilterBank::create_orthogonal_decompose_kernels(cv::InputArray reconstruct_lowpass_coeffs)
+FilterBank FilterBank::reverse() const
 {
-    return create_biorthogonal_decompose_kernels(
-        reconstruct_lowpass_coeffs,
-        reconstruct_lowpass_coeffs
+    auto reconstruct_kernels = this->reconstruct_kernels();
+    cv::Mat decompose_lowpass, decompose_highpass;
+    cv::flip(reconstruct_kernels.lowpass(), decompose_lowpass, -1);
+    cv::flip(reconstruct_kernels.highpass(), decompose_highpass, -1);
+
+    auto decompose_kernels = this->decompose_kernels();
+    cv::Mat reconstruct_lowpass, reconstruct_highpass;
+    cv::flip(decompose_kernels.lowpass(), reconstruct_lowpass, -1);
+    cv::flip(decompose_kernels.highpass(), reconstruct_highpass, -1);
+
+    return FilterBank(
+        decompose_lowpass,
+        decompose_highpass,
+        reconstruct_lowpass,
+        reconstruct_highpass
     );
 }
 
-KernelPair FilterBank::create_orthogonal_reconstruct_kernels(cv::InputArray reconstruct_lowpass_coeffs)
+FilterBank FilterBank::create_orthogonal_filter_bank(cv::InputArray reconstruct_lowpass_coeffs)
 {
-    return create_biorthogonal_reconstruct_kernels(
+    cv::Mat decompose_lowpass_coeffs;
+    cv::flip(reconstruct_lowpass_coeffs, decompose_lowpass_coeffs, -1);
+
+    return create_biorthogonal_filter_bank(
         reconstruct_lowpass_coeffs,
-        reconstruct_lowpass_coeffs
+        decompose_lowpass_coeffs
     );
 }
 
-KernelPair FilterBank::create_biorthogonal_decompose_kernels(
+FilterBank FilterBank::create_biorthogonal_filter_bank(
     cv::InputArray reconstruct_lowpass_coeffs,
     cv::InputArray decompose_lowpass_coeffs
 )
 {
-    cv::Mat lowpass;
-    cv::flip(decompose_lowpass_coeffs, lowpass, -1);
+    cv::Mat decompose_lowpass = decompose_lowpass_coeffs.getMat().clone();
+    cv::Mat reconstruct_lowpass = reconstruct_lowpass_coeffs.getMat().clone();
 
-    cv::Mat highpass;
-    negate_evens(reconstruct_lowpass_coeffs, highpass);
+    cv::Mat decompose_highpass;
+    negate_evens(reconstruct_lowpass, decompose_highpass);
+    cv::Mat reconstruct_highpass;
+    negate_odds(decompose_lowpass, reconstruct_highpass);
 
-    return KernelPair(lowpass, highpass);
-}
-
-KernelPair FilterBank::create_biorthogonal_reconstruct_kernels(
-    cv::InputArray reconstruct_lowpass_coeffs,
-    cv::InputArray decompose_lowpass_coeffs
-)
-{
-    cv::Mat lowpass = reconstruct_lowpass_coeffs.getMat().clone();
-
-    cv::Mat highpass;
-    cv::flip(decompose_lowpass_coeffs, highpass, -1);
-    negate_odds(highpass, highpass);
-
-    return KernelPair(lowpass, highpass);
+    return FilterBank(
+        decompose_lowpass,
+        decompose_highpass,
+        reconstruct_lowpass,
+        reconstruct_highpass
+    );
 }
 
 int FilterBank::promote_type(int type) const
@@ -678,13 +686,13 @@ int FilterBank::promote_type(int type) const
     );
 }
 
-void FilterBank::promote_image(
-    cv::InputArray image,
-    cv::OutputArray promoted_image
+void FilterBank::promote(
+    cv::InputArray array,
+    cv::OutputArray promoted_array
 ) const
 {
-    int type = promote_type(image.type());
-    image.getMat().convertTo(promoted_image, type);
+    int type = promote_type(array.type());
+    array.getMat().convertTo(promoted_array, type);
 }
 
 void FilterBank::promote_kernel(
@@ -708,7 +716,7 @@ void FilterBank::promote_kernel(
     }
 }
 
-void FilterBank::pad(
+void FilterBank::extrapolate_border(
     cv::InputArray image,
     cv::OutputArray output,
     int border_type,

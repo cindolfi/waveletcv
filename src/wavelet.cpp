@@ -189,7 +189,9 @@ std::map<std::string, std::function<Wavelet()>> Wavelet::_wavelet_factories{
 //  ----------------------------------------------------------------------------
 Wavelet create_haar()
 {
-    cv::Mat reconstruct_lowpass_coeffs(DAUBECHIES_FILTER_COEFFS["db1"]);
+    auto filter_bank = FilterBank::create_orthogonal_filter_bank(
+        cv::Mat(internal::DAUBECHIES_FILTER_COEFFS["db1"])
+    );
 
     return Wavelet(
         1, // vanishing_moments_psi
@@ -199,18 +201,24 @@ Wavelet create_haar()
         Symmetry::ASYMMETRIC, // symmetry
         "Haar", // family
         "haar", // name
-        FilterBank(
-            FilterBank::create_orthogonal_decompose_kernels(reconstruct_lowpass_coeffs),
-            FilterBank::create_orthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs)
-        )
+        filter_bank // filter bank
     );
 }
 
 Wavelet create_daubechies(int order)
 {
-    auto name = internal::get_orthogonal_name(DAUBECHIES_NAME, order);
-    internal::throw_if_invalid_wavelet_name(name, DAUBECHIES_FAMILY, DAUBECHIES_FILTER_COEFFS);
-    cv::Mat reconstruct_lowpass_coeffs(DAUBECHIES_FILTER_COEFFS[name]);
+    auto name = internal::get_orthogonal_name(
+        internal::DAUBECHIES_NAME,
+        order
+    );
+    internal::throw_if_invalid_wavelet_name(
+        name,
+        internal::DAUBECHIES_FAMILY,
+        internal::DAUBECHIES_FILTER_COEFFS
+    );
+    auto filter_bank = FilterBank::create_orthogonal_filter_bank(
+        cv::Mat(internal::DAUBECHIES_FILTER_COEFFS[name])
+    );
 
     return Wavelet(
         order, // vanishing_moments_psi
@@ -218,20 +226,23 @@ Wavelet create_daubechies(int order)
         true, // orthogonal
         true, // biorthogonal
         Symmetry::ASYMMETRIC, // symmetry
-        DAUBECHIES_FAMILY, // family
+        internal::DAUBECHIES_FAMILY, // family
         name, // name
-        FilterBank(
-            FilterBank::create_orthogonal_decompose_kernels(reconstruct_lowpass_coeffs),
-            FilterBank::create_orthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs)
-        )
+        filter_bank // filter bank
     );
 }
 
 Wavelet create_symlets(int order)
 {
-    auto name = internal::get_orthogonal_name(SYMLETS_NAME, order);
-    internal::throw_if_invalid_wavelet_name(name, SYMLETS_FAMILY, SYMLETS_FILTER_COEFFS);
-    cv::Mat reconstruct_lowpass_coeffs(SYMLETS_FILTER_COEFFS[name]);
+    auto name = internal::get_orthogonal_name(internal::SYMLETS_NAME, order);
+    internal::throw_if_invalid_wavelet_name(
+        name,
+        internal::SYMLETS_FAMILY,
+        internal::SYMLETS_FILTER_COEFFS
+    );
+    auto filter_bank = FilterBank::create_orthogonal_filter_bank(
+        cv::Mat(internal::SYMLETS_FILTER_COEFFS[name])
+    );
 
     return Wavelet(
         order, // vanishing_moments_psi
@@ -239,20 +250,23 @@ Wavelet create_symlets(int order)
         true, // orthogonal
         true, // biorthogonal
         Symmetry::NEAR_SYMMETRIC, // symmetry
-        SYMLETS_FAMILY, // family
+        internal::SYMLETS_FAMILY, // family
         name, // name
-        FilterBank(
-            FilterBank::create_orthogonal_decompose_kernels(reconstruct_lowpass_coeffs),
-            FilterBank::create_orthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs)
-        )
+        filter_bank // filter bank
     );
 }
 
 Wavelet create_coiflets(int order)
 {
-    auto name = internal::get_orthogonal_name(COIFLETS_NAME, order);
-    internal::throw_if_invalid_wavelet_name(name, COIFLETS_FAMILY, COIFLETS_FILTER_COEFFS);
-    cv::Mat reconstruct_lowpass_coeffs(COIFLETS_FILTER_COEFFS[name]);
+    auto name = internal::get_orthogonal_name(internal::COIFLETS_NAME, order);
+    internal::throw_if_invalid_wavelet_name(
+        name,
+        internal::COIFLETS_FAMILY,
+        internal::COIFLETS_FILTER_COEFFS
+    );
+    auto filter_bank = FilterBank::create_orthogonal_filter_bank(
+        cv::Mat(internal::COIFLETS_FILTER_COEFFS[name])
+    );
 
     return Wavelet(
         2 * order, // vanishing_moments_psi
@@ -260,25 +274,28 @@ Wavelet create_coiflets(int order)
         true, // orthogonal
         true, // biorthogonal
         Symmetry::NEAR_SYMMETRIC, // symmetry
-        COIFLETS_FAMILY, // family
+        internal::COIFLETS_FAMILY, // family
         name, // name
-        FilterBank(
-            FilterBank::create_orthogonal_decompose_kernels(reconstruct_lowpass_coeffs),
-            FilterBank::create_orthogonal_reconstruct_kernels(reconstruct_lowpass_coeffs)
-        )
+        filter_bank // filter bank
     );
 }
 
 Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
 {
     auto name = internal::get_biorthogonal_name(
-        BIORTHOGONAL_NAME,
+        internal::BIORTHOGONAL_NAME,
         vanishing_moments_psi,
         vanishing_moments_phi
     );
-    internal::throw_if_invalid_wavelet_name(name, BIORTHOGONAL_FAMILY, BIORTHOGONAL_FILTER_COEFFS);
-    cv::Mat reconstruct_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).first);
-    cv::Mat decompose_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).second);
+    internal::throw_if_invalid_wavelet_name(
+        name,
+        internal::BIORTHOGONAL_FAMILY,
+        internal::BIORTHOGONAL_FILTER_COEFFS
+    );
+    auto filter_bank = FilterBank::create_biorthogonal_filter_bank(
+        cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).first),
+        cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second)
+    );
 
     return Wavelet(
         vanishing_moments_psi, // vanishing_moments_psi
@@ -286,32 +303,30 @@ Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi
         false, // orthogonal
         true, // biorthogonal
         Symmetry::SYMMETRIC, // symmetry
-        BIORTHOGONAL_FAMILY, // family
+        internal::BIORTHOGONAL_FAMILY, // family
         name, // name
-        FilterBank(
-            FilterBank::create_biorthogonal_decompose_kernels(
-                reconstruct_lowpass_coeffs,
-                decompose_lowpass_coeffs
-            ),
-            FilterBank::create_biorthogonal_reconstruct_kernels(
-                reconstruct_lowpass_coeffs,
-                decompose_lowpass_coeffs
-            )
-        )
+        filter_bank // filter bank
     );
 }
 
 Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
 {
     auto name = internal::get_biorthogonal_name(
-        BIORTHOGONAL_NAME,
+        internal::BIORTHOGONAL_NAME,
         vanishing_moments_psi,
         vanishing_moments_phi
     );
-    auto family = "Reverse " + BIORTHOGONAL_FAMILY;
-    internal::throw_if_invalid_wavelet_name(name, family, BIORTHOGONAL_FILTER_COEFFS, "r");
-    cv::Mat reconstruct_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).first);
-    cv::Mat decompose_lowpass_coeffs(BIORTHOGONAL_FILTER_COEFFS.at(name).second);
+    auto family = "Reverse " + internal::BIORTHOGONAL_FAMILY;
+    internal::throw_if_invalid_wavelet_name(
+        name,
+        family,
+        internal::BIORTHOGONAL_FILTER_COEFFS,
+        "r"
+    );
+    auto biorthogonal_filter_bank = FilterBank::create_biorthogonal_filter_bank(
+        cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).first),
+        cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second)
+    );
 
     return Wavelet(
         vanishing_moments_psi, // vanishing_moments_psi
@@ -321,21 +336,7 @@ Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_mom
         Symmetry::SYMMETRIC, // symmetry
         family, // family
         "r" + name, // name
-        //  Normally, the FilterBank::create_biorthogonal_*_kernels functions
-        //  take reconstruct_lowpass_coeffs as the first argument and
-        //  decompose_lowpass_coeffs as the second.  But here we reverse the
-        //  order per the definition of the reverse biorthogonal wavelet (i.e.
-        //  this is not a mistake).
-        FilterBank(
-            FilterBank::create_biorthogonal_decompose_kernels(
-                decompose_lowpass_coeffs,
-                reconstruct_lowpass_coeffs
-            ),
-            FilterBank::create_biorthogonal_reconstruct_kernels(
-                decompose_lowpass_coeffs,
-                reconstruct_lowpass_coeffs
-            )
-        )
+        biorthogonal_filter_bank.reverse() // filter bank
     );
 }
 
