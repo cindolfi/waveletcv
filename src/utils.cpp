@@ -2,23 +2,23 @@
 
 namespace cvwt
 {
-void flatten(cv::InputArray input, cv::OutputArray output)
+void flatten(cv::InputArray array, cv::OutputArray result)
 {
     cv::Mat matrix;
-    if (input.isSubmatrix())
-        input.copyTo(matrix);
+    if (array.isSubmatrix())
+        array.copyTo(matrix);
     else
-        matrix = input.getMat();
+        matrix = array.getMat();
 
-    matrix.reshape(0, 1).copyTo(output);
+    matrix.reshape(0, 1).copyTo(result);
 }
 
-void collect_masked(cv::InputArray input, cv::OutputArray output, cv::InputArray mask)
+void collect_masked(cv::InputArray array, cv::OutputArray result, cv::InputArray mask)
 {
     internal::dispatch_on_pixel_type<internal::collect_masked>(
-        input.type(),
-        input,
-        output,
+        array.type(),
+        array,
+        result,
         mask
     );
 }
@@ -38,24 +38,24 @@ bool equals(const cv::Mat& a, const cv::Mat& b)
     return true;
 }
 
-cv::Scalar median(cv::InputArray input)
+cv::Scalar median(cv::InputArray array)
 {
     cv::Scalar result;
     internal::dispatch_on_pixel_type<internal::median>(
-        input.type(),
-        input,
+        array.type(),
+        array,
         result
     );
 
     return result;
 }
 
-cv::Scalar median(cv::InputArray input, cv::InputArray mask)
+cv::Scalar median(cv::InputArray array, cv::InputArray mask)
 {
     cv::Scalar result;
     internal::dispatch_on_pixel_type<internal::median>(
-        input.type(),
-        input,
+        array.type(),
+        array,
         mask,
         result
     );
@@ -63,21 +63,21 @@ cv::Scalar median(cv::InputArray input, cv::InputArray mask)
     return result;
 }
 
-void negate_evens(cv::InputArray input, cv::OutputArray output)
+void negate_evens(cv::InputArray vector, cv::OutputArray result)
 {
     internal::dispatch_on_pixel_type<internal::NegateEveryOther, 0>(
-        input.type(),
-        input,
-        output
+        vector.type(),
+        vector,
+        result
     );
 }
 
-void negate_odds(cv::InputArray input, cv::OutputArray output)
+void negate_odds(cv::InputArray vector, cv::OutputArray result)
 {
     internal::dispatch_on_pixel_type<internal::NegateEveryOther, 1>(
-        input.type(),
-        input,
-        output
+        vector.type(),
+        vector,
+        result
     );
 }
 }   // namespace cvwt

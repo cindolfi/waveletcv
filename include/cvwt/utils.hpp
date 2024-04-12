@@ -6,65 +6,60 @@
 namespace cvwt
 {
 /**
- * @brief
+ * @brief Flatten an array.
  *
- * @param input
- * @param output
+ * @param[in] array
+ * @param[out] result
  */
-void flatten(cv::InputArray input, cv::OutputArray output);
+void flatten(cv::InputArray array, cv::OutputArray result);
 /**
- * @brief
+ * @brief Collect values indicated by the given mask.
  *
- * @param input
- * @param output
+ * @param[in] array
+ * @param[out] result
  * @param mask
  */
-void collect_masked(cv::InputArray input, cv::OutputArray output, cv::InputArray mask);
+void collect_masked(cv::InputArray array, cv::OutputArray result, cv::InputArray mask);
 /**
- * @brief
+ * @brief Returns true if all values two matrices are equal.
  *
- * @param a
- * @param b
- * @return true
- * @return false
+ * @param[in] a
+ * @param[in] b
  */
 bool equals(const cv::Mat& a, const cv::Mat& b);
 /**
- * @brief
+ * @brief Computes the multichannel median.
  *
- * @param input
+ * @param[in] array
  * @return cv::Scalar
  */
-cv::Scalar median(cv::InputArray input);
+cv::Scalar median(cv::InputArray array);
 /**
- * @brief
+ * @brief Computes the multichannel median.
  *
- * @param input
- * @param mask
+ * @param[in] array
+ * @param[in] mask
  * @return cv::Scalar
  */
-cv::Scalar median(cv::InputArray input, cv::InputArray mask);
+cv::Scalar median(cv::InputArray array, cv::InputArray mask);
 /**
- * @brief
+ * @brief Negates all even indexed values.
  *
- * @param input
- * @param output
+ * @param[in] vector A row or column vector.
+ * @param[out] result The input vector with the even indexed values negated.
  */
-void negate_evens(cv::InputArray input, cv::OutputArray output);
+void negate_evens(cv::InputArray vector, cv::OutputArray result);
 /**
- * @brief
+ * @brief Negates all odd indexed values.
  *
- * @param input
- * @param output
+ * @param[in] vector A row or column vector.
+ * @param[out] result The input vector with the odd indexed values negated.
  */
-void negate_odds(cv::InputArray input, cv::OutputArray output);
+void negate_odds(cv::InputArray vector, cv::OutputArray result);
 
-/**
- * @brief
- *
- * @param code
- * @param message_parts
- */
+
+namespace internal
+{
 void throw_error(cv::Error::Code code, auto... message_parts)
 {
     std::stringstream message;
@@ -72,36 +67,22 @@ void throw_error(cv::Error::Code code, auto... message_parts)
 
     CV_Error(code, message.str());
 }
-/**
- * @brief
- *
- * @param message_parts
- */
+
 void throw_bad_size(auto... message_parts)
 {
     throw_error(cv::Error::StsBadSize, message_parts...);
 }
-/**
- * @brief
- *
- * @param message_parts
- */
+
 void throw_bad_arg(auto... message_parts)
 {
     throw_error(cv::Error::StsBadArg, message_parts...);
 }
-/**
- * @brief
- *
- * @param message_parts
- */
+
 void throw_out_of_range(auto... message_parts)
 {
     throw_error(cv::Error::StsOutOfRange, message_parts...);
 }
 
-namespace internal
-{
 template <template <typename T, int N, auto ...> class Functor, auto ...TemplateArgs>
 void dispatch_on_pixel_type(int type, auto&&... args)
 {
@@ -176,9 +157,9 @@ struct median
 {
     using Pixel = cv::Vec<T, N>;
 
-    void operator()(cv::InputArray input, cv::Scalar& result) const
+    void operator()(cv::InputArray array, cv::Scalar& result) const
     {
-        auto matrix = input.getMat();
+        auto matrix = array.getMat();
         assert(matrix.channels() == N);
         if (matrix.total() == 1) {
             result = matrix.at<Pixel>(0, 0);
@@ -190,11 +171,11 @@ struct median
         }
     }
 
-    void operator()(cv::InputArray input, cv::InputArray mask, cv::Scalar& result) const
+    void operator()(cv::InputArray array, cv::InputArray mask, cv::Scalar& result) const
     {
-        cv::Mat masked_input;
-        collect_masked<T, N>()(input, masked_input, mask);
-        this->operator()(masked_input, result);
+        cv::Mat masked_array;
+        collect_masked<T, N>()(array, masked_array, mask);
+        this->operator()(masked_array, result);
     }
 
 private:
@@ -219,14 +200,14 @@ template <typename T, int CHANNELS, int EVEN_OR_ODD>
 requires(EVEN_OR_ODD == 0 || EVEN_OR_ODD == 1)
 struct NegateEveryOther
 {
-    void operator()(cv::InputArray input, cv::OutputArray output) const
+    void operator()(cv::InputArray array, cv::OutputArray output) const
     {
-        output.create(input.size(), input.type());
-        if (input.empty())
+        output.create(array.size(), array.type());
+        if (array.empty())
             return;
 
         cv::Mat output_matrix = output.getMat();
-        input.getMat().forEach<T>(
+        array.getMat().forEach<T>(
             [&](const auto& coeff, const auto index) {
                 int i = index[0];
                 output_matrix.at<T>(i) = (i % 2 == EVEN_OR_ODD ? -1 : 1) * coeff;

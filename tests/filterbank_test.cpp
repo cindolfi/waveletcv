@@ -93,13 +93,6 @@ protected:
     cv::Mat expected_output;
 };
 
-TEST_P(FilterBankDecomposeTest, OutputSize)
-{
-    auto output_size = wavelet.filter_bank().output_size(input.size());
-
-    EXPECT_EQ(output_size, expected_output.size());
-}
-
 TEST_P(FilterBankDecomposeTest, SubbandSize)
 {
     auto subband_size = wavelet.filter_bank().subband_size(input.size());

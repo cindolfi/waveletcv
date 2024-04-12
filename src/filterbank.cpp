@@ -335,7 +335,7 @@ void FilterBankImpl::throw_if_wrong_size(
             || reconstruct_lowpass.empty()
             || reconstruct_highpass.empty()
         ) {
-            throw_bad_arg(
+            internal::throw_bad_arg(
                 "FilterBank: Kernels must all be empty or all nonempty, got ",
                 (reconstruct_lowpass.empty() ? "empty" : "nonempty"), " reconstruct_lowpass, ",
                 (reconstruct_highpass.empty() ? "empty" : "nonempty"), " reconstruct_highpass, ",
@@ -347,7 +347,7 @@ void FilterBankImpl::throw_if_wrong_size(
         if (decompose_lowpass.size() != decompose_highpass.size()
             || (decompose_lowpass.rows != 1 && decompose_lowpass.cols != 1)
         ) {
-            throw_bad_size(
+            internal::throw_bad_size(
                 "FilterBank: decompose_lowpass and decompose_highpass must be row or column vectors of the same size, ",
                 "got decompose_lowpass.size() = ", decompose_lowpass.size(), ", ",
                 "decompose_highpass.size() = ", decompose_highpass.size(), "."
@@ -357,7 +357,7 @@ void FilterBankImpl::throw_if_wrong_size(
         if (reconstruct_lowpass.size() != reconstruct_highpass.size()
             || (reconstruct_lowpass.rows != 1 && reconstruct_lowpass.cols != 1)
         ) {
-            throw_bad_size(
+            internal::throw_bad_size(
                 "FilterBank: reconstruct_lowpass and reconstruct_highpass must be row or column vectors of the same size, ",
                 "got reconstruct_lowpass.size() = ", reconstruct_lowpass.size(), ", ",
                 "reconstruct_highpass.size() = ", reconstruct_highpass.size(), "."
@@ -618,24 +618,12 @@ void FilterBank::finish_reconstruct() const
     _p->promoted_reconstruct.release();
 }
 
-cv::Size FilterBank::output_size(const cv::Size& image_size) const
-{
-    return cv::Size(output_size(image_size.width), output_size(image_size.height));
-}
-
-int FilterBank::output_size(int image_size) const
-{
-    return 2 * subband_size(image_size);
-}
-
 cv::Size FilterBank::subband_size(const cv::Size& image_size) const
 {
-    return cv::Size(subband_size(image_size.width), subband_size(image_size.height));
-}
-
-int FilterBank::subband_size(int image_size) const
-{
-    return (image_size + filter_length() - 1) / 2;
+    return cv::Size(
+        (image_size.width + filter_length() - 1) / 2,
+        (image_size.height + filter_length() - 1) / 2
+    );
 }
 
 KernelPair FilterBank::create_orthogonal_decompose_kernels(cv::InputArray reconstruct_lowpass_coeffs)
@@ -819,7 +807,7 @@ bool FilterBank::operator==(const FilterBank& other) const
 void FilterBank::throw_if_decompose_image_is_wrong_size(cv::InputArray image) const
 {
     if (image.rows() <= 1 || image.cols() <= 1) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "FilterBank: Input size must be greater [1 x 1], got ", image.size()
         );
     }
@@ -835,7 +823,7 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
     if (horizontal_detail.size() != approx.size()
         || vertical_detail.size() != approx.size()
         || diagonal_detail.size() != approx.size()) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "FilterBank: Inputs must all be the same size, got ",
             "approx.size() = ", approx.size(), ", ",
             "horizontal_detail.size() = ", horizontal_detail.size(), ", ",
@@ -847,7 +835,7 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
     if (horizontal_detail.channels() != approx.channels()
         || vertical_detail.channels() != approx.channels()
         || diagonal_detail.channels() != approx.channels()) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "FilterBank: Inputs must all be the same number of channels, got ",
             "approx.channels() = ", approx.channels(), ", ",
             "horizontal_detail.channels() = ", horizontal_detail.channels(), ", ",

@@ -371,7 +371,7 @@ void throw_if_invalid_wavelet_name(
 
         available_names.seekp(available_names.tellp() - 2);
 
-        throw_bad_arg(
+        internal::throw_bad_arg(
             "Invalid ", family, " wavelet order. ",
             "Must be one of: ", available_names.str(), ". ",
             "Got ", name_prefix + name, "."

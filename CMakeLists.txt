@@ -12,6 +12,13 @@ project(
 include(FetchContent)
 
 #   ----------------------------------------------------------------------------
+#   Find or Fetch Dependencies
+#   ----------------------------------------------------------------------------
+find_package(OpenCV REQUIRED)
+
+message(STATUS "Found OpenCV ${OpenCV_VERSION}")
+
+#   ----------------------------------------------------------------------------
 #   Options
 #   ----------------------------------------------------------------------------
 option(CVWT_BUILD_TESTS "Build tests" ON)
@@ -21,11 +28,6 @@ option(CVWT_BUILD_DOCS "Build documentation" ON)
 message(STATUS "CVWT_BUILD_TESTS ${CVWT_BUILD_TESTS}")
 message(STATUS "CVWT_BUILD_EXAMPLES ${CVWT_BUILD_EXAMPLES}")
 message(STATUS "CVWT_BUILD_DOCS ${CVWT_BUILD_DOCS}")
-
-#   ----------------------------------------------------------------------------
-#   Find or Fetch Dependencies
-#   ----------------------------------------------------------------------------
-find_package(OpenCV REQUIRED)
 
 #   ----------------------------------------------------------------------------
 #   Define Project File Structure

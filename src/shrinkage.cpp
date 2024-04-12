@@ -8,14 +8,14 @@
 
 namespace cvwt
 {
-cv::Scalar estimate_stdev(cv::InputArray x)
+cv::Scalar estimate_stdev(cv::InputArray data)
 {
-    return median(cv::abs(x.getMat())) / 0.675;
+    return median(cv::abs(data.getMat())) / 0.675;
 }
 
-cv::Scalar estimate_stdev(cv::InputArray x, cv::InputArray mask)
+cv::Scalar estimate_stdev(cv::InputArray data, cv::InputArray mask)
 {
-    return median(cv::abs(x.getMat()), mask) / 0.675;
+    return median(cv::abs(data.getMat()), mask) / 0.675;
 }
 
 
@@ -219,6 +219,11 @@ void hard_shrink_detail_subbands(DWT2D::Coeffs& coeffs, cv::InputArray threshold
 //  ----------------------------------------------------------------------------
 //  Universal / VisuShrink
 //  ----------------------------------------------------------------------------
+cv::Scalar universal_threshold(int num_elements, const cv::Scalar& stdev)
+{
+    return stdev * std::sqrt(2.0 * std::log(num_elements));
+}
+
 cv::Scalar universal_threshold(const DWT2D::Coeffs& coeffs, const cv::Scalar& stdev)
 {
     return universal_threshold(coeffs.total() - coeffs.approx().total(), stdev);
@@ -233,11 +238,6 @@ cv::Scalar universal_threshold(cv::InputArray details, cv::InputArray mask, cons
 {
     assert(details.size() == mask.size());
     return universal_threshold(cv::countNonZero(mask), stdev);
-}
-
-cv::Scalar universal_threshold(int num_elements, const cv::Scalar& stdev)
-{
-    return stdev * std::sqrt(2.0 * std::log(num_elements));
 }
 
 cv::Scalar visu_shrink_threshold(const DWT2D::Coeffs& coeffs)
@@ -273,7 +273,7 @@ void visu_hard_shrink(DWT2D::Coeffs& coeffs)
 //  SureShrink
 //  ----------------------------------------------------------------------------
 cv::Scalar compute_sure_threshold(
-    cv::InputArray input,
+    cv::InputArray detail_coeffs,
     const cv::Scalar& stdev,
     SureShrinkVariant variant,
     nlopt::algorithm algorithm
@@ -281,12 +281,12 @@ cv::Scalar compute_sure_threshold(
 {
     cv::Scalar result;
     internal::dispatch_on_pixel_type<internal::compute_sure_threshold>(
-        input.type(),
-        input,
+        detail_coeffs.type(),
+        detail_coeffs,
         stdev,
         algorithm,
         variant,
-        (variant == HYBRID_SURE_SHRINK) ? universal_threshold(input, stdev) : cv::Scalar(),
+        (variant == HYBRID_SURE_SHRINK) ? universal_threshold(detail_coeffs, stdev) : cv::Scalar(),
         result
     );
 
@@ -294,7 +294,7 @@ cv::Scalar compute_sure_threshold(
 }
 
 cv::Scalar compute_sure_threshold(
-    cv::InputArray input,
+    cv::InputArray detail_coeffs,
     cv::InputArray mask,
     const cv::Scalar& stdev,
     SureShrinkVariant variant,
@@ -303,13 +303,13 @@ cv::Scalar compute_sure_threshold(
 {
     cv::Scalar result;
     internal::dispatch_on_pixel_type<internal::compute_sure_threshold>(
-        input.type(),
-        input,
+        detail_coeffs.type(),
+        detail_coeffs,
         mask,
         stdev,
         algorithm,
         variant,
-        (variant == HYBRID_SURE_SHRINK) ? universal_threshold(input, stdev) : cv::Scalar(),
+        (variant == HYBRID_SURE_SHRINK) ? universal_threshold(detail_coeffs, stdev) : cv::Scalar(),
         result
     );
 

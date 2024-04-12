@@ -405,7 +405,7 @@ void DWT2D::Coeffs::convert_and_copy(const cv::Mat& source, const cv::Mat& desti
 void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(cv::InputArray matrix) const
 {
     if (matrix.size() != size()) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "DWT2D::Coeffs: Cannot assign matrix to this.  ",
             "The size of matrix must be ", size(), "), ",
             "got matrix.size() = ", matrix.size(), "."
@@ -413,7 +413,7 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(cv::InputArray matrix) co
     }
 
     if (matrix.channels() != channels()) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "DWT2D::Coeffs: Cannot assign matrix to this.  ",
             "The number of channels of matrix must be ", channels(), "), ",
             "got matrix.channels() = ", matrix.channels(), "."
@@ -424,7 +424,7 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(cv::InputArray matrix) co
 void DWT2D::Coeffs::throw_if_wrong_size_for_set_level(const cv::Mat& matrix, int level) const
 {
     if (matrix.size() != level_size(level)) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "DWT2D::Coeffs: Cannot set the coeffs at level ", level, ".  "
             "The size of the matrix must be ", level_size(level), ", ",
             "got size = ", matrix.size(), "."
@@ -453,7 +453,7 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_detail(
             default:
                 assert("Unknown subband identifier");
         }
-        throw_bad_size(
+        internal::throw_bad_size(
             "DWT2D::Coeffs: Cannot set the ", subband_name, " detail coefficients at level ", level, ".  ",
             "The size of the matrix must be ", detail_size(level), ", "
             "got size = ", matrix.size(), "."
@@ -464,7 +464,7 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_detail(
 void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const
 {
     if (matrix.size() != detail_size(levels() - 1)) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "DWT2D::Coeffs: Cannot set the approx coefficients.  "
             "The size of the matrix must be ", detail_size(levels() - 1), ", ",
             "got size = ", matrix.size(), "."
@@ -475,7 +475,7 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) co
 void DWT2D::Coeffs::throw_if_level_out_of_range(int level, const std::string& level_name) const
 {
     if (level < -levels() || level >= levels()) {
-        throw_out_of_range(
+        internal::throw_out_of_range(
             "DWT2D::Coeffs: ", level_name, " is out of range. ",
             "Must be ", -levels(), " <= ", level_name, " < ", levels(), ", ",
             "got ", level_name, " = ", level, "."
@@ -486,7 +486,7 @@ void DWT2D::Coeffs::throw_if_level_out_of_range(int level, const std::string& le
 void DWT2D::Coeffs::throw_if_this_is_empty() const
 {
     if (empty()) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "DWT2D::Coeffs: Coefficients are empty."
         );
     }
@@ -500,7 +500,7 @@ void DWT2D::Coeffs::throw_if_invalid_subband(int subband) const
         case DIAGONAL:
             break;
         default:
-            throw_bad_arg(
+            internal::throw_bad_arg(
                 "DWT2D::Coeffs: Invalid subband.  ",
                 "Must be 0 (HORIZONTAL), 1 (VERTICAL), or 2 (DIAGONAL), ",
                 "got ", subband, "."
@@ -718,7 +718,7 @@ int DWT2D::max_levels_without_border_effects(int image_rows, int image_cols) con
 void DWT2D::throw_if_levels_out_of_range(int levels) const
 {
     if (levels < 1) {
-        throw_out_of_range(
+        internal::throw_out_of_range(
             "DWT2D: levels is out of range. ",
             "Must be levels >= 1, ",
             "got levels = ", levels,  "."
@@ -734,7 +734,7 @@ void DWT2D::throw_if_inconsistent_coeffs_and_image_sizes(
 {
     auto required_coeffs_size = coeffs_size_for_image(image_size, levels);
     if (coeffs.size() != required_coeffs_size) {
-        throw_bad_size(
+        internal::throw_bad_size(
             "DWT2D: coefficients size is not consistent with image size. ",
             "Coefficients size must be ", required_coeffs_size, " ",
             "for image size = ", image_size, " and levels = ", levels, ", ",
