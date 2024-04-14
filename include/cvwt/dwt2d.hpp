@@ -9,6 +9,9 @@
 
 namespace cvwt
 {
+/** \addtogroup dwt2d Discrete Wavelet Transform
+ *  @{
+ */
 /**
  * @brief
  *
@@ -105,12 +108,52 @@ public:
 
 
 
-
+/**
+ * @brief A two dimensional discrete wavelet transform
+ *
+ * @image html dwt2d.png "Discrete Wavelet Transform Block Diagram"
+ *
+ * Image decomposition, which is also called analysis or the forward
+ * transformation in the literature, is performed by decompose().
+ * @code{cpp}
+ * cv::Mat image = ...;
+ * DWT2D dwt(Wavelet::create("db2"));
+ * DWT2D::Coeffs coeffs = dwt.decompose(image);
+ * @endcode
+ * Alternatively, instances of this class are callable.
+ * @code{cpp}
+ * DWT2D::Coeffs coeffs = dwt(image);
+ * @endcode
+ * A third option is the functional interface.
+ * @code{cpp}
+ * DWT2D::Coeffs coeffs = dwt2d(image, "db2");
+ * @endcode
+ *
+ * Image reconstruction, which is also called synthesis or the inverse
+ * transformation in the literature, is accomplished with reconstruct().
+ * @code{cpp}
+ * cv::Mat reconstructed_image = dwt.reconstruct(coeffs);
+ * @endcode
+ * Alternatively, the image can be reconstructed using DWT2D::Coeffs::invert().
+ * @code{cpp}
+ * cv::Mat reconstructed_image = coeffs.invert();
+ * @endcode
+ * A third option is the functional interface.
+ * @code{cpp}
+ * cv::Mat reconstructed_image = idwt2d(coeffs, "db2");
+ * @endcode
+ *
+ * @see
+ *  - FilterBank
+ *  - Wavelet
+ *  - dwt2d()
+ *  - idwt2d()
+ */
 class DWT2D
 {
 public:
     /**
-     * @brief The result of a multilevel discrete wavelet transformation.
+     * @brief The result of a multiscale discrete wavelet transformation.
      *
      * This class is a **view** onto a cv::Mat containing the DWT coefficients.
      * The coefficients at each decomposition level are comprised of three submatrices:
@@ -1439,7 +1482,7 @@ public:
     void operator()(cv::InputArray image, Coeffs& output, int levels) const { decompose(image, output, levels); }
 
     /**
-     * @brief Perform a multilevel discrete wavelet transformation.
+     * @brief Perform a multiscale discrete wavelet transformation.
      *
      * @param image The image to be transformed.
      * @param output The result of the discrete wavelet transformation.
@@ -1448,7 +1491,7 @@ public:
     void decompose(cv::InputArray image, Coeffs& output, int levels) const;
 
     /**
-     * @brief Perform a multilevel discrete wavelet transformation.
+     * @brief Perform a multiscale discrete wavelet transformation.
      *
      * This is a overloaded member function, provided for convenience.
      * It is equivalent to:
@@ -1468,7 +1511,7 @@ public:
     }
 
     /**
-     * @brief Perform a multilevel discrete wavelet transformation.
+     * @brief Perform a multiscale discrete wavelet transformation.
      *
      * This is a overloaded member function, provided for convenience.
      * It is equivalent to:
@@ -1485,7 +1528,7 @@ public:
     }
 
     /**
-     * @brief Perform a multilevel discrete wavelet transformation.
+     * @brief Perform a multiscale discrete wavelet transformation.
      *
      * This is a overloaded member function, provided for convenience.
      * It is equivalent to:
@@ -1506,14 +1549,16 @@ public:
     }
 
     /**
-     * @brief Perform an inverse multilevel discrete wavelet transformation.
+     * @brief Reconstruct an image from DWT coefficients.
+     *
+     * This performs an inverse multilevel discrete wavelet transformation.
      *
      * @param coeffs The discrete wavelet transform coefficients.
      * @param output The reconstructed image.
      */
     void reconstruct(const Coeffs& coeffs, cv::OutputArray output) const;
     /**
-     * @brief Perform an inverse multilevel discrete wavelet transformation.
+     * @brief Reconstruct an image from DWT coefficients.
      *
      * This is a overloaded member function, provided for convenience.
      * It is equivalent to:
@@ -1597,7 +1642,7 @@ public:
      * larger than the image itself because the filter bank must extrapolate the
      * image along the border.
      *
-     * The size of the multilevel decomposition coefficients is a function
+     * The size of the multiscale decomposition coefficients is a function
      * of the input size, the number of levels, and the Wavelet::filter_length().
      *
      * @see FilterBank::subband_size()
@@ -1715,14 +1760,11 @@ DWT2D::Coeffs merge(const std::vector<DWT2D::Coeffs>& coeffs);
 std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& wavelet);
 
 
+//  ----------------------------------------------------------------------------
+//  Functional Interface
+//  ----------------------------------------------------------------------------
 /**
- * -----------------------------------------------------------------------------
- * Functional Interface
- * -----------------------------------------------------------------------------
-*/
-
-/**
- * @brief Perform a multilevel discrete wavelet transform.
+ * @brief Perform a multiscale discrete wavelet transform.
  *
  * This convenience wrapper around a DWT2D object.
  * It is equivalent to:
@@ -1745,7 +1787,7 @@ DWT2D::Coeffs dwt2d(
 );
 
 /**
- * @brief Perform a multilevel discrete wavelet transform.
+ * @brief Perform a multiscale discrete wavelet transform.
  *
  * This is a overloaded member function, provided for convenience.
  * It is equivalent to:
@@ -1753,7 +1795,9 @@ DWT2D::Coeffs dwt2d(
  * dwt2d(image, Wavelet::create(wavelet), border_type);
  * @endcode
  *
- * @see idwt2d()
+ * @see
+ *   - DWT2D
+ *   - idwt2d()
  *
  * @param image
  * @param wavelet
@@ -1767,7 +1811,7 @@ DWT2D::Coeffs dwt2d(
 );
 
 /**
- * @brief Perform a multilevel discrete wavelet transform.
+ * @brief Decompose an image using a multiscale discrete wavelet transform.
  *
  * This convenience wrapper around a DWT2D object.
  * It is equivalent to:
@@ -1776,7 +1820,9 @@ DWT2D::Coeffs dwt2d(
  * return dwt.decompose(image, levels);
  * @endcode
  *
- * @see idwt2d()
+ * @see
+ *   - DWT2D
+ *   - idwt2d()
  *
  * @param image
  * @param wavelet
@@ -1792,7 +1838,7 @@ DWT2D::Coeffs dwt2d(
 );
 
 /**
- * @brief Perform a multilevel discrete wavelet transform.
+ * @brief Decompose an image using a multiscale discrete wavelet transform.
  *
  * This is a overloaded function, provided for convenience.
  * It is equivalent to:
@@ -1800,7 +1846,9 @@ DWT2D::Coeffs dwt2d(
  * dwt2d(image, Wavelet::create(wavelet), levels, border_type);
  * @endcode
  *
- * @see idwt2d()
+ * @see
+ *   - DWT2D
+ *   - idwt2d()
  *
  * @param image
  * @param wavelet
@@ -1816,7 +1864,7 @@ DWT2D::Coeffs dwt2d(
 );
 
 /**
- * @brief Perform a multilevel discrete wavelet transform.
+ * @brief Decompose an image using a multiscale discrete wavelet transform.
  *
  * This convenience wrapper around a DWT2D object.
  * It is equivalent to:
@@ -1825,7 +1873,9 @@ DWT2D::Coeffs dwt2d(
  * dwt.decompose(image, output);
  * @endcode
  *
- * @see idwt2d()
+ * @see
+ *   - DWT2D
+ *   - idwt2d()
  *
  * @param image
  * @param output
@@ -1840,7 +1890,7 @@ void dwt2d(
 );
 
 /**
- * @brief Perform a multilevel discrete wavelet transform.
+ * @brief Decompose an image using a multiscale discrete wavelet transform.
  *
  * This is a overloaded function, provided for convenience.
  * It is equivalent to:
@@ -1848,7 +1898,9 @@ void dwt2d(
  * dwt2d(image, output, Wavelet::create(wavelet), border_type);
  * @endcode
  *
- * @see idwt2d()
+ * @see
+ *   - DWT2D
+ *   - idwt2d()
  *
  * @param image
  * @param output
@@ -1862,7 +1914,7 @@ void dwt2d(
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 /**
- * @brief Perform a multilevel discrete wavelet transform.
+ * @brief Decompose an image using a multiscale discrete wavelet transform.
  *
  * This convenience wrapper around a DWT2D object.
  * It is equivalent to:
@@ -1871,7 +1923,9 @@ void dwt2d(
  * dwt.decompose(image, output, levels);
  * @endcode
  *
- * @see idwt2d()
+ * @see
+ *   - DWT2D
+ *   - idwt2d()
  *
  * @param image
  * @param output
@@ -1887,7 +1941,7 @@ void dwt2d(
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
 /**
- * @brief Perform a multilevel discrete wavelet transform.
+ * @brief Decompose an image using a multiscale discrete wavelet transform.
  *
  * This is a overloaded function, provided for convenience.
  * It is equivalent to:
@@ -1895,7 +1949,9 @@ void dwt2d(
  * dwt2d(image, output, Wavelet::create(wavelet), levels, border_type);
  * @endcode
  *
- * @see idwt2d()
+ * @see
+ *   - DWT2D
+ *   - idwt2d()
  *
  * @param image
  * @param output
@@ -1912,7 +1968,7 @@ void dwt2d(
 );
 
 /**
- * @brief Perform an inverse multilevel discrete wavelet transform.
+ * @brief Reconstruct an image from DWT coefficients.
  *
  * This convenience wrapper around a DWT2D object.
  * It is equivalent to:
@@ -1921,7 +1977,9 @@ void dwt2d(
  * dwt.reconstruct(coeffs, output);
  * @endcode
  *
- * @see dwt2d()
+ * @see
+ *   - DWT2D
+ *   - idwt2d()
  *
  * @param coeffs
  * @param output
@@ -1936,7 +1994,7 @@ void idwt2d(
 );
 
 /**
- * @brief Perform an inverse multilevel discrete wavelet transform.
+ * @brief Reconstruct an image from DWT coefficients.
  *
  * This is a overloaded function, provided for convenience.
  * It is equivalent to:
@@ -1944,7 +2002,9 @@ void idwt2d(
  * idwt2d(coeffs, output, Wavelet::create(wavelet), border_type);
  * @endcode
  *
- * @see dwt2d()
+ * @see
+ *   - DWT2D
+ *   - dwt2d()
  *
  * @param coeffs
  * @param output
@@ -1959,7 +2019,7 @@ void idwt2d(
 );
 
 /**
- * @brief Perform an inverse multilevel discrete wavelet transform.
+ * @brief Reconstruct an image from DWT coefficients.
  *
  * This convenience wrapper around a DWT2D object.
  * It is equivalent to:
@@ -1968,7 +2028,9 @@ void idwt2d(
  * return dwt.reconstruct(coeffs);
  * @endcode
  *
- * @see dwt2d()
+ * @see
+ *   - DWT2D
+ *   - dwt2d()
  *
  * @param coeffs
  * @param wavelet
@@ -1982,7 +2044,7 @@ cv::Mat idwt2d(
 );
 
 /**
- * @brief Perform an inverse multilevel discrete wavelet transform.
+ * @brief Reconstruct an image from DWT coefficients.
  *
  * This is a overloaded function, provided for convenience.
  * It is equivalent to:
@@ -1990,7 +2052,9 @@ cv::Mat idwt2d(
  * idwt2d(coeffs, Wavelet::create(wavelet), border_type);
  * @endcode
  *
- * @see dwt2d()
+ * @see
+ *   - DWT2D
+ *   - dwt2d()
  *
  * @param coeffs
  * @param wavelet
@@ -2002,6 +2066,7 @@ cv::Mat idwt2d(
     const std::string& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
+/** @}*/
 
 } // namespace cvwt
 

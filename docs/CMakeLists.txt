@@ -24,7 +24,14 @@ if (DOXYGEN_FOUND)
 
     message(STATUS "Doxygen version ${DOXYGEN_VERSION}")
 
-    set(DOXYGEN_EXCLUDE_SYMBOLS "cvwt::internal")
+    set(
+        DOXYGEN_EXCLUDE_SYMBOLS
+        "cvwt::internal"
+        "cv"
+        "cvv"
+        "cvflann"
+        "simd512"
+    )
     set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
     # set(DOXYGEN_WARNINGS NO)
     set(DOXYGEN_EXTRACT_ALL YES)
