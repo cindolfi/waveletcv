@@ -1,6 +1,10 @@
 #ifndef CVWT_UTILS_HPP
 #define CVWT_UTILS_HPP
 
+#include <span>
+#include <ranges>
+#include <memory>
+#include <string>
 #include <opencv2/core.hpp>
 
 namespace cvwt
@@ -27,6 +31,13 @@ void collect_masked(cv::InputArray array, cv::OutputArray result, cv::InputArray
  * @param[in] b
  */
 bool equals(const cv::Mat& a, const cv::Mat& b);
+/**
+ * @brief Returns true if two matrices refer to the same data.
+ *
+ * @param[in] a
+ * @param[in] b
+ */
+bool identical(const cv::Mat& a, const cv::Mat& b);
 /**
  * @brief Computes the multichannel median.
  *
@@ -56,10 +67,142 @@ void negate_evens(cv::InputArray vector, cv::OutputArray result);
  * @param[out] result The input vector with the odd indexed values negated.
  */
 void negate_odds(cv::InputArray vector, cv::OutputArray result);
+/**
+ * @brief Returns true if array is cv::noArray()
+ */
+bool is_no_array(cv::InputArray array);
 
+/**
+ * @brief Joins a range of items into a deliminated string
+ *
+ * @param items
+ * @param delim
+ */
+std::string join_string(const std::ranges::range auto& items, const std::string& delim = ", ");
+
+
+
+class PlaneIterator
+{
+public:
+    using value_type = std::vector<cv::Mat>;
+    using reference_type = value_type&;
+    using difference_type = int;
+
+private:
+    PlaneIterator(std::shared_ptr<std::vector<cv::Mat>>&& arrays);
+
+public:
+    explicit PlaneIterator(std::initializer_list<cv::Mat> arrays) :
+        PlaneIterator(std::make_shared<std::vector<cv::Mat>>(arrays))
+    {}
+
+    explicit PlaneIterator(const std::vector<cv::Mat>& arrays) :
+        PlaneIterator(std::make_shared<std::vector<cv::Mat>>(arrays))
+    {}
+
+    explicit PlaneIterator(std::vector<cv::Mat>&& arrays) :
+        PlaneIterator(std::make_shared<std::vector<cv::Mat>>(arrays))
+    {}
+
+    explicit PlaneIterator(std::same_as<cv::Mat> auto... arrays) :
+        PlaneIterator({arrays...})
+    {}
+
+    PlaneIterator(const PlaneIterator& other) = default;
+    PlaneIterator(PlaneIterator&& other) = default;
+
+    PlaneIterator& operator=(const PlaneIterator& other) = default;
+    PlaneIterator& operator=(PlaneIterator&& other) = default;
+
+    const reference_type operator*() { return _planes; }
+    const reference_type operator->() { return _planes; }
+
+    PlaneIterator& operator++()
+    {
+        ++_channel;
+        gather_planes();
+        return *this;
+    }
+    PlaneIterator operator++(int) { auto copy = *this; ++*this; return copy; }
+
+    PlaneIterator operator--()
+    {
+        --_channel;
+        gather_planes();
+        return *this;
+    }
+    PlaneIterator operator--(int) { auto copy = *this; --*this; return copy; }
+
+    PlaneIterator operator+(difference_type offset) const
+    {
+        auto copy = *this;
+        copy._channel += offset;
+        return copy;
+    }
+    difference_type operator-(const PlaneIterator& rhs) const { return channel() - rhs.channel(); }
+
+    bool operator==(const PlaneIterator& other) const
+    {
+        return channel() == other.channel() && _arrays == other._arrays;
+    }
+
+    int channels() const { return _arrays->empty() ? 0 : _arrays->front().channels(); }
+    int channel() const { return _channel; }
+    int dims() const { return _arrays->empty() ? 2 : _arrays->front().dims; }
+
+protected:
+    void gather_planes();
+
+private:
+    std::shared_ptr<std::vector<cv::Mat>> _arrays;
+    std::vector<cv::Mat> _planes;
+    int _channel;
+};
+
+
+std::ranges::subrange<PlaneIterator> planes_range(const std::vector<cv::Mat>& arrays);
+// auto planes_range(std::vector<cv::Mat>&& arrays);
+std::ranges::subrange<PlaneIterator> planes_range(std::same_as<cv::Mat> auto... arrays)
+{
+    PlaneIterator planes_begin(arrays...);
+    return std::ranges::subrange(
+        planes_begin,
+        planes_begin + planes_begin.channels()
+    );
+}
+
+// auto planes_range(const std::vector<cv::Mat>& arrays)
+// {
+//     PlaneIterator planes_begin(arrays);
+//     return std::views::counted(
+//         planes_begin,
+//         planes_begin.channels()
+//     );
+// }
+
+// auto planes_range(std::vector<cv::Mat>&& arrays)
+// {
+//     PlaneIterator planes_begin(arrays);
+//     return std::views::counted(
+//         planes_begin,
+//         planes_begin.channels()
+//     );
+// }
+
+// auto planes_range(std::same_as<cv::Mat> auto... arrays)
+// {
+//     PlaneIterator planes_begin(arrays...);
+//     return std::views::counted(
+//         planes_begin,
+//         planes_begin.channels()
+//     );
+// }
 
 namespace internal
 {
+std::string get_type_name(int type);
+
 void throw_error(cv::Error::Code code, auto... message_parts)
 {
     std::stringstream message;
@@ -81,6 +224,26 @@ void throw_bad_arg(auto... message_parts)
 void throw_out_of_range(auto... message_parts)
 {
     throw_error(cv::Error::StsOutOfRange, message_parts...);
+}
+
+void throw_bad_mask(auto... message_parts)
+{
+    throw_error(cv::Error::StsBadMask, message_parts...);
+}
+
+void throw_if_bad_mask_type(cv::InputArray mask, auto... message_parts)
+{
+    if (mask.type() != CV_8UC1 || mask.type() != CV_8SC1)
+        throw_bad_mask(
+            "Mask type must be CV_8UC1 or CV_8SC1, got ",
+            get_type_name(mask.type()), ". ",
+            message_parts...
+        );
+}
+
+void throw_not_implemented(auto... message_parts)
+{
+    throw_error(cv::Error::StsNotImplemented, message_parts...);
 }
 
 template <template <typename T, int N, auto ...> class Functor, auto ...TemplateArgs>
@@ -125,6 +288,96 @@ void dispatch_on_pixel_type(int type, auto&&... args)
     }
 }
 
+template <template <typename T, auto ...> class Functor, auto ...TemplateArgs>
+void dispatch_on_pixel_depth(int type, auto&&... args)
+{
+    switch (CV_MAT_DEPTH(type)) {
+        //  32 bit floating point
+        case CV_32F: Functor<float, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        //  64 bit floating point
+        case CV_64F: Functor<double, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        //  32 bit signed integer
+        case CV_32S: Functor<int, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        //  16 bit signed integer
+        case CV_16S: Functor<short, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        //  16 bit unsigned integer
+        case CV_16U: Functor<ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        //  8 bit signed integer
+        case CV_8S: Functor<char, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        //  8 bit unsigned integer
+        case CV_8U: Functor<uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+    }
+}
+
+template <template <typename T, auto ...> class Functor, auto ...TemplateArgs, typename ...ConstructorArgs>
+void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, int type, auto&&... args)
+{
+    switch (CV_MAT_DEPTH(type)) {
+        //  32 bit floating point
+        case CV_32F:
+            auto create_float_functor = [](auto... cargs) {
+                return Functor<float, TemplateArgs...>(cargs...);
+            };
+            auto float_functor = std::apply(create_float_functor, constructor_args);
+            float_functor(std::forward<decltype(args)>(args)...);
+            return;
+        //  64 bit floating point
+        case CV_64F:
+            // auto functor = std::apply(Functor<double, TemplateArgs...>, constructor_args);
+            auto create_double_functor = [](auto... cargs) {
+                return Functor<double, TemplateArgs...>(cargs...);
+            };
+            auto double_functor = std::apply(create_double_functor, constructor_args);
+            double_functor(std::forward<decltype(args)>(args)...);
+            return;
+        //  32 bit signed integer
+        case CV_32S:
+            // auto functor = std::apply(Functor<int, TemplateArgs...>, constructor_args);
+            auto create_int_functor = [](auto... cargs) {
+                return Functor<int, TemplateArgs...>(cargs...);
+            };
+            auto int_functor = std::apply(create_int_functor, constructor_args);
+            int_functor(std::forward<decltype(args)>(args)...);
+            return;
+        //  16 bit signed integer
+        case CV_16S:
+            // auto functor = std::apply(Functor<short, TemplateArgs...>, constructor_args);
+            auto create_short_functor = [](auto... cargs) {
+                return Functor<short, TemplateArgs...>(cargs...);
+            };
+            auto short_functor = std::apply(create_short_functor, constructor_args);
+            short_functor(std::forward<decltype(args)>(args)...);
+            return;
+        //  16 bit unsigned integer
+        case CV_16U:
+            // auto functor = std::apply(Functor<ushort, TemplateArgs...>, constructor_args);
+            auto create_ushort_functor = [](auto... cargs) {
+                return Functor<ushort, TemplateArgs...>(cargs...);
+            };
+            auto ushort_functor = std::apply(create_ushort_functor, constructor_args);
+            ushort_functor(std::forward<decltype(args)>(args)...);
+            return;
+        //  8 bit signed integer
+        case CV_8S:
+            // auto functor = std::apply(Functor<char, TemplateArgs...>, constructor_args);
+            auto create_char_functor = [](auto... cargs) {
+                return Functor<char, TemplateArgs...>(cargs...);
+            };
+            auto char_functor = std::apply(create_char_functor, constructor_args);
+            char_functor(std::forward<decltype(args)>(args)...);
+            return;
+        //  8 bit unsigned integer
+        case CV_8U:
+            // auto functor = std::apply(Functor<uchar, TemplateArgs...>, constructor_args);
+            auto create_uchar_functor = [](auto... cargs) {
+                return Functor<uchar, TemplateArgs...>(cargs...);
+            };
+            auto uchar_functor = std::apply(create_uchar_functor, constructor_args);
+            uchar_functor(std::forward<decltype(args)>(args)...);
+            return;
+    }
+}
+
 template <typename T, int N>
 struct collect_masked
 {
@@ -133,7 +386,7 @@ struct collect_masked
     void operator()(cv::InputArray input, cv::OutputArray output, cv::InputArray mask) const
     {
         assert(input.channels() == N);
-        assert(mask.type() == CV_8U);
+        throw_if_bad_mask_type(mask);
 
         std::vector<Pixel> result;
         result.reserve(cv::countNonZero(mask));

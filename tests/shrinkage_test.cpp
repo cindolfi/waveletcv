@@ -7,11 +7,14 @@
 using namespace cvwt;
 using namespace testing;
 
-/**
- * -----------------------------------------------------------------------------
- * Soft Threshold Test
- * -----------------------------------------------------------------------------
-*/
+//  ============================================================================
+//  Threshold
+//  ============================================================================
+//  ----------------------------------------------------------------------------
+
+//  ----------------------------------------------------------------------------
+//  Soft Threshold Test
+//  ----------------------------------------------------------------------------
 template<typename T, int CHANNELS>
 struct SoftThresholdTestParam
 {
@@ -122,6 +125,7 @@ public:
 
 TEST_P(SoftThresholdTest, RowVectorThresholdedCorrectly)
 {
+    std::cout << "\n";
     auto param = GetParam();
     auto matrix = param.matrix.reshape(0, 1);
     auto expected = param.expected.reshape(0, 1);
@@ -138,7 +142,7 @@ TEST_P(SoftThresholdTest, RowVectorThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 1);
     auto expected = param.expected.reshape(0, 1);
 
-    soft_threshold(matrix, param.threshold);
+    soft_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -162,7 +166,7 @@ TEST_P(SoftThresholdTest, ColumnVectorThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 16);
     auto expected = param.expected.reshape(0, 16);
 
-    soft_threshold(matrix, param.threshold);
+    soft_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -185,7 +189,7 @@ TEST_P(SoftThresholdTest, SquareMatrixThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 4);
     auto expected = param.expected.reshape(0, 4);
 
-    soft_threshold(matrix, param.threshold);
+    soft_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -208,7 +212,7 @@ TEST_P(SoftThresholdTest, TallMatrixThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 8);
     auto expected = param.expected.reshape(0, 8);
 
-    soft_threshold(matrix, param.threshold);
+    soft_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -231,7 +235,7 @@ TEST_P(SoftThresholdTest, WideMatrixThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 2);
     auto expected = param.expected.reshape(0, 2);
 
-    soft_threshold(matrix, param.threshold);
+    soft_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -472,7 +476,7 @@ TEST_P(MaskedSoftThresholdTest, ColumnVectorThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 16);
     auto mask = param.mask.reshape(0, 16);
 
-    soft_threshold(matrix, param.threshold, mask);
+    soft_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -497,7 +501,7 @@ TEST_P(MaskedSoftThresholdTest, RowVectorThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 1);
     auto mask = param.mask.reshape(0, 1);
 
-    soft_threshold(matrix, param.threshold, mask);
+    soft_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -522,7 +526,7 @@ TEST_P(MaskedSoftThresholdTest, SquareMatrixThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 4);
     auto mask = param.mask.reshape(0, 4);
 
-    soft_threshold(matrix, param.threshold, mask);
+    soft_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -547,7 +551,7 @@ TEST_P(MaskedSoftThresholdTest, TallMatrixThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 8);
     auto mask = param.mask.reshape(0, 8);
 
-    soft_threshold(matrix, param.threshold, mask);
+    soft_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -572,7 +576,7 @@ TEST_P(MaskedSoftThresholdTest, WideMatrixThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 2);
     auto mask = param.mask.reshape(0, 2);
 
-    soft_threshold(matrix, param.threshold, mask);
+    soft_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -585,11 +589,9 @@ INSTANTIATE_TEST_CASE_P(
 );
 
 
-/**
- * -----------------------------------------------------------------------------
- * Hard Threshold Test
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  Hard Threshold Test
+//  ----------------------------------------------------------------------------
 template<typename T, int CHANNELS>
 struct HardThresholdTestParam
 {
@@ -733,7 +735,7 @@ TEST_P(HardThresholdTest, RowVectorThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 1);
     auto expected = param.expected.reshape(0, 1);
 
-    hard_threshold(matrix, param.threshold);
+    hard_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -756,7 +758,7 @@ TEST_P(HardThresholdTest, ColumnVectorThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 16);
     auto expected = param.expected.reshape(0, 16);
 
-    hard_threshold(matrix, param.threshold);
+    hard_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -779,7 +781,7 @@ TEST_P(HardThresholdTest, SquareMatrixThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 4);
     auto expected = param.expected.reshape(0, 4);
 
-    hard_threshold(matrix, param.threshold);
+    hard_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -802,7 +804,7 @@ TEST_P(HardThresholdTest, TallMatrixThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 8);
     auto expected = param.expected.reshape(0, 8);
 
-    hard_threshold(matrix, param.threshold);
+    hard_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -825,7 +827,7 @@ TEST_P(HardThresholdTest, WideMatrixThresholdedCorrectlyInplace)
     auto matrix = param.matrix.reshape(0, 2);
     auto expected = param.expected.reshape(0, 2);
 
-    hard_threshold(matrix, param.threshold);
+    hard_threshold(matrix, matrix, param.threshold);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -1066,7 +1068,7 @@ TEST_P(MaskedHardThresholdTest, ColumnVectorThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 16);
     auto mask = param.mask.reshape(0, 16);
 
-    hard_threshold(matrix, param.threshold, mask);
+    hard_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -1091,7 +1093,7 @@ TEST_P(MaskedHardThresholdTest, RowVectorThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 1);
     auto mask = param.mask.reshape(0, 1);
 
-    hard_threshold(matrix, param.threshold, mask);
+    hard_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -1116,7 +1118,7 @@ TEST_P(MaskedHardThresholdTest, SquareMatrixThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 4);
     auto mask = param.mask.reshape(0, 4);
 
-    hard_threshold(matrix, param.threshold, mask);
+    hard_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -1141,7 +1143,7 @@ TEST_P(MaskedHardThresholdTest, TallMatrixThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 8);
     auto mask = param.mask.reshape(0, 8);
 
-    hard_threshold(matrix, param.threshold, mask);
+    hard_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -1166,7 +1168,7 @@ TEST_P(MaskedHardThresholdTest, WideMatrixThresholdedCorrectlyInplace)
     auto expected = param.expected.reshape(0, 2);
     auto mask = param.mask.reshape(0, 2);
 
-    hard_threshold(matrix, param.threshold, mask);
+    hard_threshold(matrix, matrix, param.threshold, mask);
 
     EXPECT_THAT(matrix, MatrixEq(expected));
 }
@@ -1179,13 +1181,1540 @@ INSTANTIATE_TEST_CASE_P(
 );
 
 
+//  ============================================================================
+//  Shrink
+//  ============================================================================
+template<typename T, int CHANNELS>
+struct ShrinkTestParam
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+    using Matrix = cv::Mat_<Pixel>;
 
+    DWT2D::Coeffs coeffs;
+    cv::Scalar threshold;
+    int lower_level;
+    int upper_level;
+    DWT2D::Coeffs expected;
+};
+
+template<typename T, int CHANNELS>
+void PrintTo(const ShrinkTestParam<T, CHANNELS>& param, std::ostream* stream)
+{
+    *stream << "\n";
+    *stream << "coeffs =";
+    PrintTo(param.coeffs, stream);
+    *stream << "threshold = " << param.threshold << "\n";
+    *stream << "lower_level = " << param.lower_level << "\n";
+    *stream << "upper_level = " << param.upper_level << "\n";
+}
+
+template<typename ParamType>
+class ShrinkTestBase : public testing::TestWithParam<ParamType>
+{
+public:
+    using Matrix = typename ParamType::Matrix;
+    using Pixel = typename ParamType::Pixel;
+    using Mask = cv::Mat_<uchar>;
+    using LevelDetailValues = std::vector<std::vector<typename Pixel::value_type>>;
+    using LevelDetailScalars = std::vector<std::vector<cv::Scalar>>;
+    static const int LEVELS = 4;
+    static const int ROWS = 16;
+    static const int COLS = 16;
+
+    template <typename T>
+    static DWT2D::Coeffs create_level_coeffs(
+        std::initializer_list<T> values,
+        cv::Scalar approx_value = cv::Scalar(-2, -1, 1, 2)
+    )
+    {
+        assert(values.size() == 3 * LEVELS);
+
+        auto type = cv::traits::Type<Pixel>::value;
+        DWT2D dwt(create_haar());
+        auto coeffs = dwt.create_coeffs(ROWS, COLS, type, LEVELS);
+        int i = 0;
+        for (const auto& value : values) {
+            int level = i / 3;
+            int subband = i % 3;
+
+            coeffs.set_detail(level, subband, cv::Scalar::all(value));
+            ++i;
+        }
+
+        coeffs.set_approx(approx_value);
+
+        return coeffs;
+    }
+
+    template<typename T>
+    static DWT2D::Coeffs create_level_coeffs(
+        std::initializer_list<std::initializer_list<T>> values,
+        cv::Scalar approx_value = cv::Scalar(-2, -1, 1, 2)
+    )
+    {
+        assert(values.size() == 3 * LEVELS);
+
+        auto type = cv::traits::Type<Pixel>::value;
+        DWT2D dwt(create_haar());
+        auto coeffs = dwt.create_coeffs(ROWS, COLS, type, LEVELS);
+        int i = 0;
+        for (const auto& value : values) {
+            assert(value.size() == Pixel::channels);
+
+            cv::Scalar scalar_value;
+            auto iter = value.begin();
+            for (int j = 0; j < value.size(); ++j) {
+                scalar_value[j] = *iter++;
+                // ++iter;
+            }
+
+            int level = i / 3;
+            int subband = i % 3;
+            if (level != 3)
+                coeffs.set_detail(level, subband, scalar_value);
+            ++i;
+        }
+
+        coeffs.set_approx(approx_value);
+
+        return coeffs;
+    }
+};
+
+//  ----------------------------------------------------------------------------
+//  Soft Shrink Details
+//  ----------------------------------------------------------------------------
+/**
+ * TODO: negative thresholds
+*/
+class SoftShrinkTest : public ShrinkTestBase<ShrinkTestParam<double, 4>>
+{
+public:
+    static std::vector<ParamType> create_params()
+    {
+        auto coeffs = create_level_coeffs({
+            -5, -4, -3,
+            -2, -1,  0,
+             1,  2,  3,
+             4,  5,  6,
+        });
+        auto constant_coeffs = create_level_coeffs({
+            2, 2, 2,
+            2, 2, 2,
+            2, 2, 2,
+            2, 2, 2,
+        });
+
+        return {
+            //  0
+            {
+                .coeffs = coeffs.clone(),
+                .threshold = cv::Scalar::all(0),
+                .lower_level = 0,
+                .upper_level = -1,
+                .expected = coeffs.clone(),
+            },
+            //  1
+            {
+                .coeffs = coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = -1,
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  2
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = 0,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  3
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 1,
+                .upper_level = 1,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  4
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 2,
+                .upper_level = 2,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    2, 2, 2,
+                    0, 0, 0,
+                    2, 2, 2,
+                }),
+            },
+            //  5
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 3,
+                .upper_level = 3,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    2, 2, 2,
+                    2, 2, 2,
+                    0, 0, 0,
+                }),
+            },
+            //  6
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = 1,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  7
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 1,
+                .upper_level = 2,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                }),
+            },
+            //  8
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 2,
+                .upper_level = 3,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    2, 2, 2,
+                    0, 0, 0,
+                    0, 0, 0,
+                }),
+            },
+            //  9
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = -2,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                }),
+            },
+            //  10
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = -3,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  11
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = -4,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  12
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = -3,
+                .upper_level = -2,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                }),
+            },
+        };
+    }
+};
+
+TEST_P(SoftShrinkTest, DetailsShrunkCorrectly)
+{
+    auto param = GetParam();
+    auto coeffs = param.coeffs.clone();
+
+    shrink_globally(
+        coeffs,
+        param.threshold,
+        soft_threshold,
+        cv::Range(param.lower_level, param.upper_level)
+    );
+    // soft_shrink_details(coeffs, param.threshold, param.lower_level, param.upper_level);
+
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ShrinkDetailsGroup,
+    SoftShrinkTest,
+    testing::ValuesIn(SoftShrinkTest::create_params())
+);
+
+
+//  ----------------------------------------------------------------------------
+//  Hard Shrink Details
+//  ----------------------------------------------------------------------------
+/**
+ * TODO: negative thresholds
+*/
+class HardShrinkTest : public ShrinkTestBase<ShrinkTestParam<double, 4>>
+{
+public:
+    static std::vector<ParamType> create_params()
+    {
+        auto coeffs = create_level_coeffs({
+            -5, -4, -3,
+            -2, -1,  0,
+             1,  2,  3,
+             4,  5,  6
+        });
+        auto constant_coeffs = create_level_coeffs({
+            2, 2, 2,
+            2, 2, 2,
+            2, 2, 2,
+            2, 2, 2,
+        });
+
+        return {
+            //  0
+            {
+                .coeffs = coeffs.clone(),
+                .threshold = cv::Scalar::all(0),
+                .lower_level = 0,
+                .upper_level = -1,
+                .expected = coeffs.clone(),
+            },
+            //  1
+            {
+                .coeffs = coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = -1,
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  2
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = 0,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  3
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 1,
+                .upper_level = 1,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  4
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 2,
+                .upper_level = 2,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    2, 2, 2,
+                    0, 0, 0,
+                    2, 2, 2,
+                }),
+            },
+            //  5
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 3,
+                .upper_level = 3,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    2, 2, 2,
+                    2, 2, 2,
+                    0, 0, 0,
+                }),
+            },
+            //  6
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = 1,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  7
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 1,
+                .upper_level = 2,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                }),
+            },
+            //  8
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 2,
+                .upper_level = 3,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    2, 2, 2,
+                    0, 0, 0,
+                    0, 0, 0,
+                }),
+            },
+            //  9
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = -2,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                }),
+            },
+            //  10
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = -3,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  11
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = 0,
+                .upper_level = -4,
+                .expected = create_level_coeffs({
+                    0, 0, 0,
+                    2, 2, 2,
+                    2, 2, 2,
+                    2, 2, 2,
+                }),
+            },
+            //  12
+            {
+                .coeffs = constant_coeffs.clone(),
+                .threshold = cv::Scalar::all(2),
+                .lower_level = -3,
+                .upper_level = -2,
+                .expected = create_level_coeffs({
+                    2, 2, 2,
+                    0, 0, 0,
+                    0, 0, 0,
+                    2, 2, 2,
+                }),
+            },
+        };
+    }
+};
+
+TEST_P(HardShrinkTest, DetailsShrunkCorrectly)
+{
+    auto param = GetParam();
+    auto coeffs = param.coeffs.clone();
+
+    shrink_globally(
+        coeffs,
+        param.threshold,
+        hard_threshold,
+        cv::Range(param.lower_level, param.upper_level)
+    );
+    // hard_shrink_details(coeffs, param.threshold, param.lower_level, param.upper_level);
+
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ShrinkDetailsGroup,
+    HardShrinkTest,
+    testing::ValuesIn(HardShrinkTest::create_params())
+);
+
+
+//  ----------------------------------------------------------------------------
+//  Soft Shrink Levels
+//  ----------------------------------------------------------------------------
+template<typename T, int CHANNELS>
+struct ShrinkLevelsTestParam
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+    using Matrix = cv::Mat_<Pixel>;
+
+    DWT2D::Coeffs coeffs;
+    std::vector<cv::Scalar> thresholds;
+    DWT2D::Coeffs expected;
+};
+
+template<typename T, int CHANNELS>
+void PrintTo(const ShrinkLevelsTestParam<T, CHANNELS>& param, std::ostream* stream)
+{
+    *stream << "\n";
+    *stream << "coeffs =";
+    PrintTo(param.coeffs, stream);
+    *stream << "thresholds = " << join(param.thresholds, ", ") << "\n";
+}
 
 /**
- * -----------------------------------------------------------------------------
- * Sure Test
- * -----------------------------------------------------------------------------
+ * TODO: negative thresholds
 */
+class SoftShrinkLevelsTest : public ShrinkTestBase<ShrinkLevelsTestParam<double, 4>>
+{
+public:
+    static std::vector<ParamType> create_params()
+    {
+        auto coeffs = create_level_coeffs({
+            -5, -4, -3,
+            -2, -1,  0,
+             1,  2,  3,
+             4,  5,  6
+        });
+        auto indenpendent_channel_coeffs = create_level_coeffs({
+            {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
+            {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
+            { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
+            { 4,  5,  6,  7}, { 5,  6,  7,  8}, { 6,  7,  8,  9}
+        });
+
+        return {
+            //  0
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(0),
+                    cv::Scalar::all(0),
+                    cv::Scalar::all(0),
+                    cv::Scalar::all(0),
+                },
+                .expected = coeffs.clone(),
+            },
+            //  1
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  2
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(4),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -1,  0,  0,
+                     0,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  3
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                    -1,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  4
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  1,  2,
+                     2,  3,  4,
+                }),
+            },
+            //  5
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(4),
+                },
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  0,  1,
+                     0,  1,  2,
+                }),
+            },
+            //  6
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(4),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -1,  0,  0,
+                    -1,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  7
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(3),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                    -1,  0,  0,
+                     0,  0,  0,
+                     2,  3,  4,
+                }),
+            },
+            //  8
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(4),
+                },
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  1,  2,
+                     0,  1,  2,
+                }),
+            },
+            //  9
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(4),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -1,  0,  0,
+                     0,  0,  0,
+                     0,  1,  2,
+                     2,  3,  4,
+                }),
+            },
+            //  10
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(4),
+                },
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                    -1,  0,  0,
+                     0,  0,  1,
+                     0,  1,  2,
+                }),
+            },
+            //  11
+            {
+                .coeffs = indenpendent_channel_coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar(6, 6, 5, 5),
+                    cv::Scalar(4, 2, 1, 0),
+                    cv::Scalar(2, 2, 2, 2),
+                    cv::Scalar(0, 0, 0, 0),
+                },
+                .expected = create_level_coeffs({
+                    {-2, -1, -1,  0}, {-1,  0,  0, 0}, {0, 0, 0, 0},
+                    { 0, -1, -1, -1}, { 0,  0,  0, 0}, {0, 0, 0, 1},
+                    { 0,  0,  0,  1}, { 0,  0,  1, 2}, {0, 1, 2, 3},
+                    { 4,  5,  6,  7}, { 5,  6,  7, 8}, {6, 7, 8, 9},
+                }),
+            },
+        };
+    }
+};
+
+TEST_P(SoftShrinkLevelsTest, DetailsShrunkCorrectly)
+{
+    auto param = GetParam();
+    auto coeffs = param.coeffs.clone();
+
+    shrink_levels(
+        coeffs,
+        param.thresholds,
+        soft_threshold
+        // cv::Range(param.lower_level, param.upper_level)
+    );
+    // soft_shrink_detail_levels(coeffs, param.thresholds);
+
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ShrinkDetailsGroup,
+    SoftShrinkLevelsTest,
+    testing::ValuesIn(SoftShrinkLevelsTest::create_params())
+);
+
+
+//  ----------------------------------------------------------------------------
+//  Hard Shrink Levels
+//  ----------------------------------------------------------------------------
+/**
+ * TODO: negative thresholds
+*/
+class HardShrinkLevelsTest : public ShrinkTestBase<ShrinkLevelsTestParam<double, 4>>
+{
+public:
+    static std::vector<ParamType> create_params()
+    {
+        auto coeffs = create_level_coeffs({
+            -5, -4, -3,
+            -2, -1,  0,
+             1,  2,  3,
+             4,  5,  6
+        });
+        auto indenpendent_channel_coeffs = create_level_coeffs({
+            {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
+            {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
+            { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
+            { 4,  5,  6,  7}, { 5,  6,  7,  8}, { 6,  7,  8,  9}
+        });
+
+        return {
+            //  0
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(0),
+                    cv::Scalar::all(0),
+                    cv::Scalar::all(0),
+                    cv::Scalar::all(0),
+                },
+                .expected = coeffs.clone(),
+            },
+            //  1
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  2
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(4),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -5,  0,  0,
+                     0,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  3
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                    -2,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  4
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  2,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  5
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(4),
+                },
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  0,  3,
+                     0,  5,  6,
+                }),
+            },
+            //  6
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(4),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -5,  0,  0,
+                    -2,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  7
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(3),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                    -2,  0,  0,
+                     0,  0,  0,
+                     4,  5,  6,
+                }),
+            },
+            //  8
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(4),
+                },
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  2,  3,
+                     0,  5,  6,
+                }),
+            },
+            //  9
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(4),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                },
+                .expected = create_level_coeffs({
+                    -5,  0,  0,
+                     0,  0,  0,
+                     0,  2,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  10
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(1),
+                    cv::Scalar::all(2),
+                    cv::Scalar::all(4),
+                },
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                    -2,  0,  0,
+                     0,  0,  3,
+                     0,  5,  6,
+                }),
+            },
+            //  11
+            {
+                .coeffs = indenpendent_channel_coeffs.clone(),
+                .thresholds = {
+                    cv::Scalar(6, 6, 5, 5),
+                    cv::Scalar(4, 2, 1, 0),
+                    cv::Scalar(2, 2, 2, 2),
+                    cv::Scalar(0, 0, 0, 0),
+                },
+                .expected = create_level_coeffs({
+                    {-8, -7, -6,  0}, {-7, 0, 0, 0}, {0, 0, 0, 0},
+                    { 0, -3, -2, -1}, { 0, 0, 0, 0}, {0, 0, 0, 1},
+                    { 0,  0,  0,  3}, { 0, 0, 3, 4}, {0, 3, 4, 5},
+                    { 4,  5,  6,  7}, { 5, 6, 7, 8}, {6, 7, 8, 9},
+                }),
+            },
+        };
+    }
+};
+
+TEST_P(HardShrinkLevelsTest, DetailsShrunkCorrectly)
+{
+    auto param = GetParam();
+    auto coeffs = param.coeffs;
+
+    shrink_levels(
+        coeffs,
+        param.thresholds,
+        hard_threshold
+        // cv::Range(param.lower_level, param.upper_level)
+    );
+    // hard_shrink_detail_levels(coeffs, param.thresholds);
+
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ShrinkDetailsGroup,
+    HardShrinkLevelsTest,
+    testing::ValuesIn(HardShrinkLevelsTest::create_params())
+);
+
+
+//  ----------------------------------------------------------------------------
+//  Soft Shrink Subbands
+//  ----------------------------------------------------------------------------
+template<typename T, int CHANNELS>
+struct ShrinkSubbandsTestParam
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+    using Matrix = cv::Mat_<Pixel>;
+
+    DWT2D::Coeffs coeffs;
+    cv::Mat thresholds;
+    DWT2D::Coeffs expected;
+};
+
+template<typename T, int CHANNELS>
+void PrintTo(const ShrinkSubbandsTestParam<T, CHANNELS>& param, std::ostream* stream)
+{
+    *stream << "\n";
+    *stream << "coeffs =";
+    PrintTo(param.coeffs, stream);
+    *stream << "thresholds =";
+    PrintTo(param.thresholds, stream);
+}
+
+/**
+ * TODO: negative thresholds
+*/
+class SoftShrinkSubbandsTest : public ShrinkTestBase<ShrinkSubbandsTestParam<double, 4>>
+{
+public:
+    static std::vector<ParamType> create_params()
+    {
+        auto coeffs = create_level_coeffs({
+            -5, -4, -3,
+            -2, -1,  0,
+             1,  2,  3,
+             4,  5,  6
+        });
+        auto indenpendent_channel_coeffs = create_level_coeffs({
+            {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
+            {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
+            { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
+            { 4,  5,  6,  7}, { 5,  6,  7,  8}, { 6,  7,  8,  9}
+        });
+
+        return {
+            //  0
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
+                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
+                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
+                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0)
+                ),
+                .expected = coeffs.clone(),
+            },
+            //  1
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  2
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -1,  0,  0,
+                     0,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  3
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                    -1,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  4
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  1,  2,
+                     2,  3,  4,
+                }),
+            },
+            //  5
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
+                ),
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  0,  1,
+                     0,  1,  2,
+                }),
+            },
+            //  6
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -1,  0,  0,
+                    -1,  0,  0,
+                     0,  0,  1,
+                     2,  3,  4,
+                }),
+            },
+            //  7
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(3), cv::Scalar::all(3), cv::Scalar::all(3),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                    -1,  0,  0,
+                     0,  0,  0,
+                     2,  3,  4,
+                }),
+            },
+            //  8
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
+                ),
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                     0,  0,  0,
+                     0,  1,  2,
+                     0,  1,  2,
+                }),
+            },
+            //  9
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -1,  0,  0,
+                     0,  0,  0,
+                     0,  1,  2,
+                     2,  3,  4,
+                }),
+            },
+            //  10
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
+                ),
+                .expected = create_level_coeffs({
+                    -3, -2, -1,
+                    -1,  0,  0,
+                     0,  0,  1,
+                     0,  1,  2,
+                }),
+            },
+            //  11
+            {
+                .coeffs = indenpendent_channel_coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar(6, 6, 5, 5), cv::Scalar(6, 6, 5, 5), cv::Scalar(6, 6, 5, 5),
+                    cv::Scalar(4, 2, 1, 0), cv::Scalar(4, 2, 1, 0), cv::Scalar(4, 2, 1, 0),
+                    cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2),
+                    cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0)
+                ),
+                .expected = create_level_coeffs({
+                    {-2, -1, -1,  0}, {-1,  0,  0, 0}, {0, 0, 0, 0},
+                    { 0, -1, -1, -1}, { 0,  0,  0, 0}, {0, 0, 0, 1},
+                    { 0,  0,  0,  1}, { 0,  0,  1, 2}, {0, 1, 2, 3},
+                    { 4,  5,  6,  7}, { 5,  6,  7, 8}, {6, 7, 8, 9},
+                }),
+            },
+        };
+    }
+};
+
+TEST_P(SoftShrinkSubbandsTest, DetailsShrunkCorrectly)
+{
+    auto param = GetParam();
+    auto coeffs = param.coeffs;
+
+    shrink_subbands(
+        coeffs,
+        param.thresholds,
+        soft_threshold
+        // cv::Range(param.lower_level, param.upper_level)
+    );
+    // soft_shrink_detail_subbands(coeffs, param.thresholds);
+
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ShrinkDetailsGroup,
+    SoftShrinkSubbandsTest,
+    testing::ValuesIn(SoftShrinkSubbandsTest::create_params())
+);
+
+
+//  ----------------------------------------------------------------------------
+//  Hard Shrink Subbands
+//  ----------------------------------------------------------------------------
+/**
+ * TODO: negative thresholds
+*/
+class HardShrinkSubbandsTest : public ShrinkTestBase<ShrinkSubbandsTestParam<double, 4>>
+{
+public:
+    static std::vector<ParamType> create_params()
+    {
+        auto coeffs = create_level_coeffs({
+            -5, -4, -3,
+            -2, -1,  0,
+             1,  2,  3,
+             4,  5,  6
+        });
+        auto indenpendent_channel_coeffs = create_level_coeffs({
+            {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
+            {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
+            { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
+            { 4,  5,  6,  7}, { 5,  6,  7,  8}, { 6,  7,  8,  9}
+        });
+
+        return {
+            //  0
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
+                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
+                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
+                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0)
+                ),
+                .expected = coeffs.clone(),
+            },
+            //  1
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  2
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -5,  0,  0,
+                     0,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  3
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                    -2,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  4
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  2,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  5
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
+                ),
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  0,  3,
+                     0,  5,  6,
+                }),
+            },
+            //  6
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -5,  0,  0,
+                    -2,  0,  0,
+                     0,  0,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  7
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(3), cv::Scalar::all(3), cv::Scalar::all(3),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                    -2,  0,  0,
+                     0,  0,  0,
+                     4,  5,  6,
+                }),
+            },
+            //  8
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
+                ),
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                     0,  0,  0,
+                     0,  2,  3,
+                     0,  5,  6,
+                }),
+            },
+            //  9
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
+                ),
+                .expected = create_level_coeffs({
+                    -5,  0,  0,
+                     0,  0,  0,
+                     0,  2,  3,
+                     4,  5,  6,
+                }),
+            },
+            //  10
+            {
+                .coeffs = coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
+                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
+                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
+                ),
+                .expected = create_level_coeffs({
+                    -5, -4, -3,
+                    -2,  0,  0,
+                     0,  0,  3,
+                     0,  5,  6,
+                }),
+            },
+            //  11
+            {
+                .coeffs = indenpendent_channel_coeffs.clone(),
+                .thresholds = (Matrix(4, 3) <<
+                    cv::Scalar(6, 6, 5, 5), cv::Scalar(6, 6, 5, 5), cv::Scalar(6, 6, 5, 5),
+                    cv::Scalar(4, 2, 1, 0), cv::Scalar(4, 2, 1, 0), cv::Scalar(4, 2, 1, 0),
+                    cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2),
+                    cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0)
+                ),
+                .expected = create_level_coeffs({
+                    {-8, -7, -6,  0}, {-7, 0, 0, 0}, {0, 0, 0, 0},
+                    { 0, -3, -2, -1}, { 0, 0, 0, 0}, {0, 0, 0, 1},
+                    { 0,  0,  0,  3}, { 0, 0, 3, 4}, {0, 3, 4, 5},
+                    { 4,  5,  6,  7}, { 5, 6, 7, 8}, {6, 7, 8, 9},
+                }),
+            },
+        };
+    }
+};
+
+TEST_P(HardShrinkSubbandsTest, DetailsShrunkCorrectly)
+{
+    auto param = GetParam();
+    auto coeffs = param.coeffs;
+
+    shrink_subbands(
+        coeffs,
+        param.thresholds,
+        hard_threshold
+        // cv::Range(param.lower_level, param.upper_level)
+    );
+    // hard_shrink_detail_subbands(coeffs, param.thresholds);
+
+    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    ShrinkDetailsGroup,
+    HardShrinkSubbandsTest,
+    testing::ValuesIn(HardShrinkSubbandsTest::create_params())
+);
+
+
+
+
+//  ============================================================================
+//  Sure Test
+//  ============================================================================
 template<typename T, int CHANNELS>
 struct SureTestBaseParam
 {
@@ -1826,6 +3355,15 @@ void PrintTo(const SureThresholdTestParam<T, CHANNELS>& param, std::ostream* str
 
 class SureThresholdTest : public SureTestBase<SureThresholdTestParam<double, 4>>
 {
+protected:
+    SureThresholdTest() :
+        SureTestBase<SureThresholdTestParam<double, 4>>(),
+        shrinker(NORMAL_SURE_SHRINK)
+    {
+    }
+
+    SureShrink shrinker;
+
 public:
     static std::vector<ParamType> create_params()
     {
@@ -1870,7 +3408,7 @@ TEST_P(SureThresholdTest, CorrectThreshold)
 {
     auto param = GetParam();
 
-    auto actual_threshold = compute_sure_threshold(param.matrix, param.stdev);
+    auto actual_threshold = shrinker.compute_sure_threshold(param.matrix, param.stdev);
 
     EXPECT_THAT(actual_threshold, ScalarEq(param.expected_threshold));
 }
@@ -1881,7 +3419,7 @@ TEST_P(SureThresholdTest, InvariantUnderReversal)
     std::vector<int> permutation = {15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
     auto matrix = permute_matrix(param.matrix, permutation);
 
-    auto actual_threshold = compute_sure_threshold(matrix, param.stdev);
+    auto actual_threshold = shrinker.compute_sure_threshold(matrix, param.stdev);
 
     EXPECT_THAT(
         actual_threshold,
@@ -1895,7 +3433,7 @@ TEST_P(SureThresholdTest, InvariantUnderPermutation1)
     std::vector<int> permutation = {1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14};
     auto matrix = permute_matrix(param.matrix, permutation);
 
-    auto actual_threshold = compute_sure_threshold(matrix, param.stdev);
+    auto actual_threshold = shrinker.compute_sure_threshold(matrix, param.stdev);
 
     EXPECT_THAT(
         actual_threshold,
@@ -1909,7 +3447,7 @@ TEST_P(SureThresholdTest, InvariantUnderPermutation2)
     std::vector<int> permutation = {8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7};
     auto matrix = permute_matrix(param.matrix, permutation);
 
-    auto actual_threshold = compute_sure_threshold(matrix, param.stdev);
+    auto actual_threshold = shrinker.compute_sure_threshold(matrix, param.stdev);
 
     EXPECT_THAT(
         actual_threshold,
@@ -1925,7 +3463,7 @@ TEST_P(SureThresholdTest, ConsistentWithPrescalingByStdDev)
     cv::Scalar expected_threshold;
     cv::divide(param.expected_threshold, param.stdev, expected_threshold);
 
-    auto actual_threshold = compute_sure_threshold(matrix);
+    auto actual_threshold = shrinker.compute_sure_threshold(matrix);
 
     EXPECT_THAT(actual_threshold, ScalarEq(expected_threshold));
 }
@@ -1936,1507 +3474,5 @@ INSTANTIATE_TEST_CASE_P(
     SureThresholdTest,
     testing::ValuesIn(SureThresholdTest::create_params())
 );
-
-
-
-
-/**
- * =============================================================================
- * Shrink
- * =============================================================================
-*/
-template<typename T, int CHANNELS>
-struct ShrinkTestParam
-{
-    using Pixel = cv::Vec<T, CHANNELS>;
-    using Matrix = cv::Mat_<Pixel>;
-
-    DWT2D::Coeffs coeffs;
-    cv::Scalar threshold;
-    int lower_level;
-    int upper_level;
-    DWT2D::Coeffs expected;
-};
-
-template<typename T, int CHANNELS>
-void PrintTo(const ShrinkTestParam<T, CHANNELS>& param, std::ostream* stream)
-{
-    *stream << "\n";
-    *stream << "coeffs =";
-    PrintTo(param.coeffs, stream);
-    *stream << "threshold = " << param.threshold << "\n";
-    *stream << "lower_level = " << param.lower_level << "\n";
-    *stream << "upper_level = " << param.upper_level << "\n";
-}
-
-template<typename ParamType>
-class ShrinkTestBase : public testing::TestWithParam<ParamType>
-{
-public:
-    using Matrix = typename ParamType::Matrix;
-    using Pixel = typename ParamType::Pixel;
-    using Mask = cv::Mat_<uchar>;
-    using LevelDetailValues = std::vector<std::vector<typename Pixel::value_type>>;
-    using LevelDetailScalars = std::vector<std::vector<cv::Scalar>>;
-    static const int LEVELS = 4;
-    static const int ROWS = 16;
-    static const int COLS = 16;
-
-    template <typename T>
-    static DWT2D::Coeffs create_level_coeffs(
-        std::initializer_list<T> values,
-        cv::Scalar approx_value = cv::Scalar(-2, -1, 1, 2)
-    )
-    {
-        assert(values.size() == 3 * LEVELS);
-
-        auto type = cv::traits::Type<Pixel>::value;
-        DWT2D dwt(create_haar());
-        auto coeffs = dwt.create_coeffs(ROWS, COLS, type, LEVELS);
-        int i = 0;
-        for (const auto& value : values) {
-            int level = i / 3;
-            int subband = i % 3;
-
-            coeffs.set_detail(level, subband, cv::Scalar::all(value));
-            ++i;
-        }
-
-        coeffs.set_approx(approx_value);
-
-        return coeffs;
-    }
-
-    template<typename T>
-    static DWT2D::Coeffs create_level_coeffs(
-        std::initializer_list<std::initializer_list<T>> values,
-        cv::Scalar approx_value = cv::Scalar(-2, -1, 1, 2)
-    )
-    {
-        assert(values.size() == 3 * LEVELS);
-
-        auto type = cv::traits::Type<Pixel>::value;
-        DWT2D dwt(create_haar());
-        auto coeffs = dwt.create_coeffs(ROWS, COLS, type, LEVELS);
-        int i = 0;
-        for (const auto& value : values) {
-            assert(value.size() == Pixel::channels);
-
-            cv::Scalar scalar_value;
-            auto iter = value.begin();
-            for (int j = 0; j < value.size(); ++j) {
-                scalar_value[j] = *iter++;
-                // ++iter;
-            }
-
-            int level = i / 3;
-            int subband = i % 3;
-            if (level != 3)
-                coeffs.set_detail(level, subband, scalar_value);
-            ++i;
-        }
-
-        coeffs.set_approx(approx_value);
-
-        return coeffs;
-    }
-};
-
-//  ----------------------------------------------------------------------------
-//  Soft Shrink Details
-//  ----------------------------------------------------------------------------
-/**
- * TODO: negative thresholds
-*/
-class SoftShrinkTest : public ShrinkTestBase<ShrinkTestParam<double, 4>>
-{
-public:
-    static std::vector<ParamType> create_params()
-    {
-        auto coeffs = create_level_coeffs({
-            -5, -4, -3,
-            -2, -1,  0,
-             1,  2,  3,
-             4,  5,  6,
-        });
-        auto constant_coeffs = create_level_coeffs({
-            2, 2, 2,
-            2, 2, 2,
-            2, 2, 2,
-            2, 2, 2,
-        });
-
-        return {
-            //  0
-            {
-                .coeffs = coeffs.clone(),
-                .threshold = cv::Scalar::all(0),
-                .lower_level = 0,
-                .upper_level = -1,
-                .expected = coeffs.clone(),
-            },
-            //  1
-            {
-                .coeffs = coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = -1,
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  2
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = 0,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  3
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 1,
-                .upper_level = 1,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  4
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 2,
-                .upper_level = 2,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    2, 2, 2,
-                    0, 0, 0,
-                    2, 2, 2,
-                }),
-            },
-            //  5
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 3,
-                .upper_level = 3,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    2, 2, 2,
-                    2, 2, 2,
-                    0, 0, 0,
-                }),
-            },
-            //  6
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = 1,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  7
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 1,
-                .upper_level = 2,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                }),
-            },
-            //  8
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 2,
-                .upper_level = 3,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    2, 2, 2,
-                    0, 0, 0,
-                    0, 0, 0,
-                }),
-            },
-            //  9
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = -2,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                }),
-            },
-            //  10
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = -3,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  11
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = -4,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  12
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = -3,
-                .upper_level = -2,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                }),
-            },
-        };
-    }
-};
-
-TEST_P(SoftShrinkTest, DetailsShrunkCorrectly)
-{
-    auto param = GetParam();
-    auto coeffs = param.coeffs.clone();
-
-    soft_shrink_details(coeffs, param.threshold, param.lower_level, param.upper_level);
-
-    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
-}
-
-INSTANTIATE_TEST_CASE_P(
-    ShrinkDetailsGroup,
-    SoftShrinkTest,
-    testing::ValuesIn(SoftShrinkTest::create_params())
-);
-
-
-//  ----------------------------------------------------------------------------
-//  Hard Shrink Details
-//  ----------------------------------------------------------------------------
-/**
- * TODO: negative thresholds
-*/
-class HardShrinkTest : public ShrinkTestBase<ShrinkTestParam<double, 4>>
-{
-public:
-    static std::vector<ParamType> create_params()
-    {
-        auto coeffs = create_level_coeffs({
-            -5, -4, -3,
-            -2, -1,  0,
-             1,  2,  3,
-             4,  5,  6
-        });
-        auto constant_coeffs = create_level_coeffs({
-            2, 2, 2,
-            2, 2, 2,
-            2, 2, 2,
-            2, 2, 2,
-        });
-
-        return {
-            //  0
-            {
-                .coeffs = coeffs.clone(),
-                .threshold = cv::Scalar::all(0),
-                .lower_level = 0,
-                .upper_level = -1,
-                .expected = coeffs.clone(),
-            },
-            //  1
-            {
-                .coeffs = coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = -1,
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  2
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = 0,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  3
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 1,
-                .upper_level = 1,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  4
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 2,
-                .upper_level = 2,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    2, 2, 2,
-                    0, 0, 0,
-                    2, 2, 2,
-                }),
-            },
-            //  5
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 3,
-                .upper_level = 3,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    2, 2, 2,
-                    2, 2, 2,
-                    0, 0, 0,
-                }),
-            },
-            //  6
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = 1,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  7
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 1,
-                .upper_level = 2,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                }),
-            },
-            //  8
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 2,
-                .upper_level = 3,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    2, 2, 2,
-                    0, 0, 0,
-                    0, 0, 0,
-                }),
-            },
-            //  9
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = -2,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                }),
-            },
-            //  10
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = -3,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  11
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = 0,
-                .upper_level = -4,
-                .expected = create_level_coeffs({
-                    0, 0, 0,
-                    2, 2, 2,
-                    2, 2, 2,
-                    2, 2, 2,
-                }),
-            },
-            //  12
-            {
-                .coeffs = constant_coeffs.clone(),
-                .threshold = cv::Scalar::all(2),
-                .lower_level = -3,
-                .upper_level = -2,
-                .expected = create_level_coeffs({
-                    2, 2, 2,
-                    0, 0, 0,
-                    0, 0, 0,
-                    2, 2, 2,
-                }),
-            },
-        };
-    }
-};
-
-TEST_P(HardShrinkTest, DetailsShrunkCorrectly)
-{
-    auto param = GetParam();
-    auto coeffs = param.coeffs.clone();
-
-    hard_shrink_details(coeffs, param.threshold, param.lower_level, param.upper_level);
-
-    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
-}
-
-INSTANTIATE_TEST_CASE_P(
-    ShrinkDetailsGroup,
-    HardShrinkTest,
-    testing::ValuesIn(HardShrinkTest::create_params())
-);
-
-
-//  ----------------------------------------------------------------------------
-//  Soft Shrink Levels
-//  ----------------------------------------------------------------------------
-template<typename T, int CHANNELS>
-struct ShrinkLevelsTestParam
-{
-    using Pixel = cv::Vec<T, CHANNELS>;
-    using Matrix = cv::Mat_<Pixel>;
-
-    DWT2D::Coeffs coeffs;
-    std::vector<cv::Scalar> thresholds;
-    DWT2D::Coeffs expected;
-};
-
-template<typename T, int CHANNELS>
-void PrintTo(const ShrinkLevelsTestParam<T, CHANNELS>& param, std::ostream* stream)
-{
-    *stream << "\n";
-    *stream << "coeffs =";
-    PrintTo(param.coeffs, stream);
-    *stream << "thresholds = " << join(param.thresholds, ", ") << "\n";
-}
-
-/**
- * TODO: negative thresholds
-*/
-class SoftShrinkLevelsTest : public ShrinkTestBase<ShrinkLevelsTestParam<double, 4>>
-{
-public:
-    static std::vector<ParamType> create_params()
-    {
-        auto coeffs = create_level_coeffs({
-            -5, -4, -3,
-            -2, -1,  0,
-             1,  2,  3,
-             4,  5,  6
-        });
-        auto indenpendent_channel_coeffs = create_level_coeffs({
-            {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
-            {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
-            { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
-            { 4,  5,  6,  7}, { 5,  6,  7,  8}, { 6,  7,  8,  9}
-        });
-
-        return {
-            //  0
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(0),
-                    cv::Scalar::all(0),
-                    cv::Scalar::all(0),
-                    cv::Scalar::all(0),
-                },
-                .expected = coeffs.clone(),
-            },
-            //  1
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  2
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(4),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -1,  0,  0,
-                     0,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  3
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                    -1,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  4
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  1,  2,
-                     2,  3,  4,
-                }),
-            },
-            //  5
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(4),
-                },
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  0,  1,
-                     0,  1,  2,
-                }),
-            },
-            //  6
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(4),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -1,  0,  0,
-                    -1,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  7
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(3),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                    -1,  0,  0,
-                     0,  0,  0,
-                     2,  3,  4,
-                }),
-            },
-            //  8
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(4),
-                },
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  1,  2,
-                     0,  1,  2,
-                }),
-            },
-            //  9
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(4),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -1,  0,  0,
-                     0,  0,  0,
-                     0,  1,  2,
-                     2,  3,  4,
-                }),
-            },
-            //  10
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(4),
-                },
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                    -1,  0,  0,
-                     0,  0,  1,
-                     0,  1,  2,
-                }),
-            },
-            //  11
-            {
-                .coeffs = indenpendent_channel_coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar(6, 6, 5, 5),
-                    cv::Scalar(4, 2, 1, 0),
-                    cv::Scalar(2, 2, 2, 2),
-                    cv::Scalar(0, 0, 0, 0),
-                },
-                .expected = create_level_coeffs({
-                    {-2, -1, -1,  0}, {-1,  0,  0, 0}, {0, 0, 0, 0},
-                    { 0, -1, -1, -1}, { 0,  0,  0, 0}, {0, 0, 0, 1},
-                    { 0,  0,  0,  1}, { 0,  0,  1, 2}, {0, 1, 2, 3},
-                    { 4,  5,  6,  7}, { 5,  6,  7, 8}, {6, 7, 8, 9},
-                }),
-            },
-        };
-    }
-};
-
-TEST_P(SoftShrinkLevelsTest, DetailsShrunkCorrectly)
-{
-    auto param = GetParam();
-    auto coeffs = param.coeffs.clone();
-
-    soft_shrink_detail_levels(coeffs, param.thresholds);
-
-    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
-}
-
-INSTANTIATE_TEST_CASE_P(
-    ShrinkDetailsGroup,
-    SoftShrinkLevelsTest,
-    testing::ValuesIn(SoftShrinkLevelsTest::create_params())
-);
-
-
-
-//  ----------------------------------------------------------------------------
-//  Hard Shrink Levels
-//  ----------------------------------------------------------------------------
-/**
- * TODO: negative thresholds
-*/
-class HardShrinkLevelsTest : public ShrinkTestBase<ShrinkLevelsTestParam<double, 4>>
-{
-public:
-    static std::vector<ParamType> create_params()
-    {
-        auto coeffs = create_level_coeffs({
-            -5, -4, -3,
-            -2, -1,  0,
-             1,  2,  3,
-             4,  5,  6
-        });
-        auto indenpendent_channel_coeffs = create_level_coeffs({
-            {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
-            {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
-            { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
-            { 4,  5,  6,  7}, { 5,  6,  7,  8}, { 6,  7,  8,  9}
-        });
-
-        return {
-            //  0
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(0),
-                    cv::Scalar::all(0),
-                    cv::Scalar::all(0),
-                    cv::Scalar::all(0),
-                },
-                .expected = coeffs.clone(),
-            },
-            //  1
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  2
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(4),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -5,  0,  0,
-                     0,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  3
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                    -2,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  4
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  2,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  5
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(4),
-                },
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  0,  3,
-                     0,  5,  6,
-                }),
-            },
-            //  6
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(4),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -5,  0,  0,
-                    -2,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  7
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(3),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                    -2,  0,  0,
-                     0,  0,  0,
-                     4,  5,  6,
-                }),
-            },
-            //  8
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(4),
-                },
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  2,  3,
-                     0,  5,  6,
-                }),
-            },
-            //  9
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(4),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                },
-                .expected = create_level_coeffs({
-                    -5,  0,  0,
-                     0,  0,  0,
-                     0,  2,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  10
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(1),
-                    cv::Scalar::all(2),
-                    cv::Scalar::all(4),
-                },
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                    -2,  0,  0,
-                     0,  0,  3,
-                     0,  5,  6,
-                }),
-            },
-            //  11
-            {
-                .coeffs = indenpendent_channel_coeffs.clone(),
-                .thresholds = {
-                    cv::Scalar(6, 6, 5, 5),
-                    cv::Scalar(4, 2, 1, 0),
-                    cv::Scalar(2, 2, 2, 2),
-                    cv::Scalar(0, 0, 0, 0),
-                },
-                .expected = create_level_coeffs({
-                    {-8, -7, -6,  0}, {-7, 0, 0, 0}, {0, 0, 0, 0},
-                    { 0, -3, -2, -1}, { 0, 0, 0, 0}, {0, 0, 0, 1},
-                    { 0,  0,  0,  3}, { 0, 0, 3, 4}, {0, 3, 4, 5},
-                    { 4,  5,  6,  7}, { 5, 6, 7, 8}, {6, 7, 8, 9},
-                }),
-            },
-        };
-    }
-};
-
-TEST_P(HardShrinkLevelsTest, DetailsShrunkCorrectly)
-{
-    auto param = GetParam();
-    auto coeffs = param.coeffs;
-
-    hard_shrink_detail_levels(coeffs, param.thresholds);
-
-    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
-}
-
-INSTANTIATE_TEST_CASE_P(
-    ShrinkDetailsGroup,
-    HardShrinkLevelsTest,
-    testing::ValuesIn(HardShrinkLevelsTest::create_params())
-);
-
-
-//  ----------------------------------------------------------------------------
-//  Soft Shrink Subbands
-//  ----------------------------------------------------------------------------
-template<typename T, int CHANNELS>
-struct ShrinkSubbandsTestParam
-{
-    using Pixel = cv::Vec<T, CHANNELS>;
-    using Matrix = cv::Mat_<Pixel>;
-
-    DWT2D::Coeffs coeffs;
-    cv::Mat thresholds;
-    DWT2D::Coeffs expected;
-};
-
-template<typename T, int CHANNELS>
-void PrintTo(const ShrinkSubbandsTestParam<T, CHANNELS>& param, std::ostream* stream)
-{
-    *stream << "\n";
-    *stream << "coeffs =";
-    PrintTo(param.coeffs, stream);
-    *stream << "thresholds =";
-    PrintTo(param.thresholds, stream);
-}
-
-/**
- * TODO: negative thresholds
-*/
-class SoftShrinkSubbandsTest : public ShrinkTestBase<ShrinkSubbandsTestParam<double, 4>>
-{
-public:
-    static std::vector<ParamType> create_params()
-    {
-        auto coeffs = create_level_coeffs({
-            -5, -4, -3,
-            -2, -1,  0,
-             1,  2,  3,
-             4,  5,  6
-        });
-        auto indenpendent_channel_coeffs = create_level_coeffs({
-            {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
-            {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
-            { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
-            { 4,  5,  6,  7}, { 5,  6,  7,  8}, { 6,  7,  8,  9}
-        });
-
-        return {
-            //  0
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
-                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
-                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
-                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0)
-                ),
-                .expected = coeffs.clone(),
-            },
-            //  1
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  2
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -1,  0,  0,
-                     0,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  3
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                    -1,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  4
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  1,  2,
-                     2,  3,  4,
-                }),
-            },
-            //  5
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
-                ),
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  0,  1,
-                     0,  1,  2,
-                }),
-            },
-            //  6
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -1,  0,  0,
-                    -1,  0,  0,
-                     0,  0,  1,
-                     2,  3,  4,
-                }),
-            },
-            //  7
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(3), cv::Scalar::all(3), cv::Scalar::all(3),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                    -1,  0,  0,
-                     0,  0,  0,
-                     2,  3,  4,
-                }),
-            },
-            //  8
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
-                ),
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                     0,  0,  0,
-                     0,  1,  2,
-                     0,  1,  2,
-                }),
-            },
-            //  9
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -1,  0,  0,
-                     0,  0,  0,
-                     0,  1,  2,
-                     2,  3,  4,
-                }),
-            },
-            //  10
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
-                ),
-                .expected = create_level_coeffs({
-                    -3, -2, -1,
-                    -1,  0,  0,
-                     0,  0,  1,
-                     0,  1,  2,
-                }),
-            },
-            //  11
-            {
-                .coeffs = indenpendent_channel_coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar(6, 6, 5, 5), cv::Scalar(6, 6, 5, 5), cv::Scalar(6, 6, 5, 5),
-                    cv::Scalar(4, 2, 1, 0), cv::Scalar(4, 2, 1, 0), cv::Scalar(4, 2, 1, 0),
-                    cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2),
-                    cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0)
-                ),
-                .expected = create_level_coeffs({
-                    {-2, -1, -1,  0}, {-1,  0,  0, 0}, {0, 0, 0, 0},
-                    { 0, -1, -1, -1}, { 0,  0,  0, 0}, {0, 0, 0, 1},
-                    { 0,  0,  0,  1}, { 0,  0,  1, 2}, {0, 1, 2, 3},
-                    { 4,  5,  6,  7}, { 5,  6,  7, 8}, {6, 7, 8, 9},
-                }),
-            },
-        };
-    }
-};
-
-TEST_P(SoftShrinkSubbandsTest, DetailsShrunkCorrectly)
-{
-    auto param = GetParam();
-    auto coeffs = param.coeffs;
-
-    soft_shrink_detail_subbands(coeffs, param.thresholds);
-
-    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
-}
-
-INSTANTIATE_TEST_CASE_P(
-    ShrinkDetailsGroup,
-    SoftShrinkSubbandsTest,
-    testing::ValuesIn(SoftShrinkSubbandsTest::create_params())
-);
-
-
-//  ----------------------------------------------------------------------------
-//  Hard Shrink Subbands
-//  ----------------------------------------------------------------------------
-/**
- * TODO: negative thresholds
-*/
-class HardShrinkSubbandsTest : public ShrinkTestBase<ShrinkSubbandsTestParam<double, 4>>
-{
-public:
-    static std::vector<ParamType> create_params()
-    {
-        auto coeffs = create_level_coeffs({
-            -5, -4, -3,
-            -2, -1,  0,
-             1,  2,  3,
-             4,  5,  6
-        });
-        auto indenpendent_channel_coeffs = create_level_coeffs({
-            {-8, -7, -6, -5}, {-7, -6, -5, -4}, {-6, -5, -4, -3},
-            {-4, -3, -2, -1}, {-3, -2, -1,  0}, {-2, -1,  0,  1},
-            { 0,  1,  2,  3}, { 1,  2,  3,  4}, { 2,  3,  4,  5},
-            { 4,  5,  6,  7}, { 5,  6,  7,  8}, { 6,  7,  8,  9}
-        });
-
-        return {
-            //  0
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
-                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
-                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0),
-                    cv::Scalar::all(0), cv::Scalar::all(0), cv::Scalar::all(0)
-                ),
-                .expected = coeffs.clone(),
-            },
-            //  1
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  2
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -5,  0,  0,
-                     0,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  3
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                    -2,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  4
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  2,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  5
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
-                ),
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  0,  3,
-                     0,  5,  6,
-                }),
-            },
-            //  6
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -5,  0,  0,
-                    -2,  0,  0,
-                     0,  0,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  7
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(3), cv::Scalar::all(3), cv::Scalar::all(3),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                    -2,  0,  0,
-                     0,  0,  0,
-                     4,  5,  6,
-                }),
-            },
-            //  8
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
-                ),
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                     0,  0,  0,
-                     0,  2,  3,
-                     0,  5,  6,
-                }),
-            },
-            //  9
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2)
-                ),
-                .expected = create_level_coeffs({
-                    -5,  0,  0,
-                     0,  0,  0,
-                     0,  2,  3,
-                     4,  5,  6,
-                }),
-            },
-            //  10
-            {
-                .coeffs = coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(1), cv::Scalar::all(1), cv::Scalar::all(1),
-                    cv::Scalar::all(2), cv::Scalar::all(2), cv::Scalar::all(2),
-                    cv::Scalar::all(4), cv::Scalar::all(4), cv::Scalar::all(4)
-                ),
-                .expected = create_level_coeffs({
-                    -5, -4, -3,
-                    -2,  0,  0,
-                     0,  0,  3,
-                     0,  5,  6,
-                }),
-            },
-            //  11
-            {
-                .coeffs = indenpendent_channel_coeffs.clone(),
-                .thresholds = (Matrix(4, 3) <<
-                    cv::Scalar(6, 6, 5, 5), cv::Scalar(6, 6, 5, 5), cv::Scalar(6, 6, 5, 5),
-                    cv::Scalar(4, 2, 1, 0), cv::Scalar(4, 2, 1, 0), cv::Scalar(4, 2, 1, 0),
-                    cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2), cv::Scalar(2, 2, 2, 2),
-                    cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 0, 0)
-                ),
-                .expected = create_level_coeffs({
-                    {-8, -7, -6,  0}, {-7, 0, 0, 0}, {0, 0, 0, 0},
-                    { 0, -3, -2, -1}, { 0, 0, 0, 0}, {0, 0, 0, 1},
-                    { 0,  0,  0,  3}, { 0, 0, 3, 4}, {0, 3, 4, 5},
-                    { 4,  5,  6,  7}, { 5, 6, 7, 8}, {6, 7, 8, 9},
-                }),
-            },
-        };
-    }
-};
-
-TEST_P(HardShrinkSubbandsTest, DetailsShrunkCorrectly)
-{
-    auto param = GetParam();
-    auto coeffs = param.coeffs;
-
-    hard_shrink_detail_subbands(coeffs, param.thresholds);
-
-    EXPECT_THAT(coeffs, MatrixFloatEq(param.expected));
-}
-
-INSTANTIATE_TEST_CASE_P(
-    ShrinkDetailsGroup,
-    HardShrinkSubbandsTest,
-    testing::ValuesIn(HardShrinkSubbandsTest::create_params())
-);
-
-
-
-
 
 

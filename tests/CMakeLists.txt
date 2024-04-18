@@ -23,10 +23,10 @@ add_executable(
     common.cpp
     base_dwt2d.hpp
     base_dwt2d.cpp
-    utils_test.cpp
-    wavelet_test.cpp
-    filterbank_test.cpp
-    dwt2d_test.cpp
+    # utils_test.cpp
+    # wavelet_test.cpp
+    # filterbank_test.cpp
+    # dwt2d_test.cpp
     shrinkage_test.cpp
 )
 

@@ -106,20 +106,20 @@ void main_program(const cxxopts::ParseResult& args)
     auto coeffs = dwt2d(noisy_image, wavelet, depth);
     auto shrunk_coeffs = coeffs.clone();
     auto shrink_method = args["method"].as<std::string>();
-    if (shrink_method == "visu-hard")
-        visu_hard_shrink(shrunk_coeffs);
-    else if (shrink_method == "visu-soft")
-        visu_soft_shrink(shrunk_coeffs);
-    else if (shrink_method == "sure")
-        sure_shrink(shrunk_coeffs);
-    else if (shrink_method == "sure-levelwise")
-        sure_shrink_levelwise(shrunk_coeffs);
-    else if (shrink_method == "hybrid-sure")
-        hybrid_sure_shrink(shrunk_coeffs);
-    else if (shrink_method == "hybrid-sure-levelwise")
-        hybrid_sure_shrink_levelwise(shrunk_coeffs);
-    else if (shrink_method == "bayes")
-        bayes_shrink(shrunk_coeffs);
+    // if (shrink_method == "visu-hard")
+    //     visu_hard_shrink(shrunk_coeffs);
+    // else if (shrink_method == "visu-soft")
+    //     visu_soft_shrink(shrunk_coeffs);
+    // else if (shrink_method == "sure")
+    //     sure_shrink(shrunk_coeffs);
+    // else if (shrink_method == "sure-levelwise")
+    //     sure_shrink_levelwise(shrunk_coeffs);
+    // else if (shrink_method == "hybrid-sure")
+    //     hybrid_sure_shrink(shrunk_coeffs);
+    // else if (shrink_method == "hybrid-sure-levelwise")
+    //     hybrid_sure_shrink_levelwise(shrunk_coeffs);
+    // else if (shrink_method == "bayes")
+    //     bayes_shrink(shrunk_coeffs);
 
     auto denoised_image = idwt2d(shrunk_coeffs, wavelet);
 
