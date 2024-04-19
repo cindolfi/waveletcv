@@ -199,11 +199,13 @@ std::ranges::subrange<PlaneIterator> planes_range(std::same_as<cv::Mat> auto... 
 //     );
 // }
 
+
 namespace internal
 {
 std::string get_type_name(int type);
 
-void throw_error(cv::Error::Code code, auto... message_parts)
+[[noreturn]]
+void throw_error(cv::Error::Code code, auto... message_parts) noexcept(false)
 {
     std::stringstream message;
     (message << ... << message_parts);
@@ -211,106 +213,133 @@ void throw_error(cv::Error::Code code, auto... message_parts)
     CV_Error(code, message.str());
 }
 
-void throw_bad_size(auto... message_parts)
+[[noreturn]]
+void throw_bad_size(auto... message_parts) noexcept(false)
 {
     throw_error(cv::Error::StsBadSize, message_parts...);
 }
 
-void throw_bad_arg(auto... message_parts)
+[[noreturn]]
+void throw_bad_arg(auto... message_parts) noexcept(false)
 {
     throw_error(cv::Error::StsBadArg, message_parts...);
 }
 
-void throw_out_of_range(auto... message_parts)
+[[noreturn]]
+void throw_out_of_range(auto... message_parts) noexcept(false)
 {
     throw_error(cv::Error::StsOutOfRange, message_parts...);
 }
 
-void throw_bad_mask(auto... message_parts)
+[[noreturn]]
+void throw_bad_mask(auto... message_parts) noexcept(false)
 {
     throw_error(cv::Error::StsBadMask, message_parts...);
 }
 
 void throw_if_bad_mask_type(cv::InputArray mask, auto... message_parts)
 {
-    if (mask.type() != CV_8UC1 || mask.type() != CV_8SC1)
+    if (mask.type() != CV_8UC1 || mask.type() != CV_8SC1) {
         throw_bad_mask(
             "Mask type must be CV_8UC1 or CV_8SC1, got ",
             get_type_name(mask.type()), ". ",
             message_parts...
         );
+    }
 }
 
-void throw_not_implemented(auto... message_parts)
+[[noreturn]]
+void throw_not_implemented(auto... message_parts) noexcept(false)
 {
     throw_error(cv::Error::StsNotImplemented, message_parts...);
 }
 
+[[noreturn]]
+void throw_member_not_implemented(
+    const std::string& class_name,
+    const std::string& function_name,
+    auto... message_parts
+)  noexcept(false)
+{
+    throw_not_implemented(
+        class_name, "::", function_name, " is not implemented. ",
+        message_parts...
+    );
+}
+
 template <template <typename T, int N, auto ...> class Functor, auto ...TemplateArgs>
-void dispatch_on_pixel_type(int type, auto&&... args)
+auto dispatch_on_pixel_type(int type, auto&&... args)
 {
     switch (type) {
         //  32 bit floating point
-        case CV_32FC1: Functor<float, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32FC2: Functor<float, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32FC3: Functor<float, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32FC4: Functor<float, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_32FC1: return Functor<float, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_32FC2: return Functor<float, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_32FC3: return Functor<float, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_32FC4: return Functor<float, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  64 bit floating point
-        case CV_64FC1: Functor<double, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_64FC2: Functor<double, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_64FC3: Functor<double, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_64FC4: Functor<double, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_64FC1: return Functor<double, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_64FC2: return Functor<double, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_64FC3: return Functor<double, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_64FC4: return Functor<double, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  32 bit signed integer
-        case CV_32SC1: Functor<int, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32SC2: Functor<int, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32SC3: Functor<int, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_32SC4: Functor<int, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_32SC1: return Functor<int, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_32SC2: return Functor<int, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_32SC3: return Functor<int, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_32SC4: return Functor<int, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  16 bit signed integer
-        case CV_16SC1: Functor<short, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16SC2: Functor<short, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16SC3: Functor<short, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16SC4: Functor<short, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_16SC1: return Functor<short, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_16SC2: return Functor<short, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_16SC3: return Functor<short, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_16SC4: return Functor<short, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  16 bit unsigned integer
-        case CV_16UC1: Functor<ushort, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16UC2: Functor<ushort, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16UC3: Functor<ushort, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_16UC4: Functor<ushort, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_16UC1: return Functor<ushort, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_16UC2: return Functor<ushort, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_16UC3: return Functor<ushort, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_16UC4: return Functor<ushort, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  8 bit signed integer
-        case CV_8SC1: Functor<char, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8SC2: Functor<char, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8SC3: Functor<char, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8SC4: Functor<char, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_8SC1: return Functor<char, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_8SC2: return Functor<char, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_8SC3: return Functor<char, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_8SC4: return Functor<char, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  8 bit unsigned integer
-        case CV_8UC1: Functor<uchar, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8UC2: Functor<uchar, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8UC3: Functor<uchar, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
-        case CV_8UC4: Functor<uchar, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_8UC1: return Functor<uchar, 1, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_8UC2: return Functor<uchar, 2, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_8UC3: return Functor<uchar, 3, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        case CV_8UC4: return Functor<uchar, 4, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
     }
+
+    throw_not_implemented(
+        "Dispatch for pixel type = ", get_type_name(type), " is not implemented."
+    );
 }
 
 template <template <typename T, auto ...> class Functor, auto ...TemplateArgs>
-void dispatch_on_pixel_depth(int type, auto&&... args)
+auto dispatch_on_pixel_depth(int type, auto&&... args)
 {
     switch (CV_MAT_DEPTH(type)) {
         //  32 bit floating point
-        case CV_32F: Functor<float, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_32F: return Functor<float, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  64 bit floating point
-        case CV_64F: Functor<double, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_64F: return Functor<double, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  32 bit signed integer
-        case CV_32S: Functor<int, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_32S: return Functor<int, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  16 bit signed integer
-        case CV_16S: Functor<short, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_16S: return Functor<short, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  16 bit unsigned integer
-        case CV_16U: Functor<ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_16U: return Functor<ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  8 bit signed integer
-        case CV_8S: Functor<char, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_8S: return Functor<char, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  8 bit unsigned integer
-        case CV_8U: Functor<uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...); return;
+        case CV_8U: return Functor<uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
     }
+
+    throw_not_implemented(
+        "Dispatch for pixel depth = ", get_type_name(CV_MAT_DEPTH(type)), " is not implemented."
+    );
 }
 
 template <template <typename T, auto ...> class Functor, auto ...TemplateArgs, typename ...ConstructorArgs>
-void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, int type, auto&&... args)
+auto dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, int type, auto&&... args)
 {
     switch (CV_MAT_DEPTH(type)) {
         //  32 bit floating point
@@ -319,8 +348,7 @@ void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, in
                 return Functor<float, TemplateArgs...>(cargs...);
             };
             auto float_functor = std::apply(create_float_functor, constructor_args);
-            float_functor(std::forward<decltype(args)>(args)...);
-            return;
+            return float_functor(std::forward<decltype(args)>(args)...);
         //  64 bit floating point
         case CV_64F:
             // auto functor = std::apply(Functor<double, TemplateArgs...>, constructor_args);
@@ -328,8 +356,7 @@ void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, in
                 return Functor<double, TemplateArgs...>(cargs...);
             };
             auto double_functor = std::apply(create_double_functor, constructor_args);
-            double_functor(std::forward<decltype(args)>(args)...);
-            return;
+            return double_functor(std::forward<decltype(args)>(args)...);
         //  32 bit signed integer
         case CV_32S:
             // auto functor = std::apply(Functor<int, TemplateArgs...>, constructor_args);
@@ -337,8 +364,7 @@ void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, in
                 return Functor<int, TemplateArgs...>(cargs...);
             };
             auto int_functor = std::apply(create_int_functor, constructor_args);
-            int_functor(std::forward<decltype(args)>(args)...);
-            return;
+            return int_functor(std::forward<decltype(args)>(args)...);
         //  16 bit signed integer
         case CV_16S:
             // auto functor = std::apply(Functor<short, TemplateArgs...>, constructor_args);
@@ -346,8 +372,7 @@ void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, in
                 return Functor<short, TemplateArgs...>(cargs...);
             };
             auto short_functor = std::apply(create_short_functor, constructor_args);
-            short_functor(std::forward<decltype(args)>(args)...);
-            return;
+            return short_functor(std::forward<decltype(args)>(args)...);
         //  16 bit unsigned integer
         case CV_16U:
             // auto functor = std::apply(Functor<ushort, TemplateArgs...>, constructor_args);
@@ -355,8 +380,7 @@ void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, in
                 return Functor<ushort, TemplateArgs...>(cargs...);
             };
             auto ushort_functor = std::apply(create_ushort_functor, constructor_args);
-            ushort_functor(std::forward<decltype(args)>(args)...);
-            return;
+            return ushort_functor(std::forward<decltype(args)>(args)...);
         //  8 bit signed integer
         case CV_8S:
             // auto functor = std::apply(Functor<char, TemplateArgs...>, constructor_args);
@@ -364,8 +388,7 @@ void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, in
                 return Functor<char, TemplateArgs...>(cargs...);
             };
             auto char_functor = std::apply(create_char_functor, constructor_args);
-            char_functor(std::forward<decltype(args)>(args)...);
-            return;
+            return char_functor(std::forward<decltype(args)>(args)...);
         //  8 bit unsigned integer
         case CV_8U:
             // auto functor = std::apply(Functor<uchar, TemplateArgs...>, constructor_args);
@@ -373,9 +396,12 @@ void dispatch_on_pixel_depth(std::tuple<ConstructorArgs...> constructor_args, in
                 return Functor<uchar, TemplateArgs...>(cargs...);
             };
             auto uchar_functor = std::apply(create_uchar_functor, constructor_args);
-            uchar_functor(std::forward<decltype(args)>(args)...);
-            return;
+            return uchar_functor(std::forward<decltype(args)>(args)...);
     }
+
+    throw_not_implemented(
+        "Dispatch for pixel depth = ", get_type_name(CV_MAT_DEPTH(type)), " is not implemented."
+    );
 }
 
 template <typename T, int N>

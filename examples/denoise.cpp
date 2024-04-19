@@ -19,8 +19,8 @@ const std::string PROGRAM_NAME = "dwt2d-denoise";
 const std::set<std::string> AVAILABLE_SHRINK_METHODS = {
     "sure",
     "sure-levelwise",
-    "hybrid-sure",
-    "hybrid-sure-levelwise",
+    "strict-sure",
+    "strict-sure-levelwise",
     "bayes",
     "visu-soft",
     "visu-hard",
@@ -49,7 +49,7 @@ void show_coeffs(
 )
 {
     auto normalized_coeffs = coeffs.clone();
-    normalized_coeffs.normalize();
+    // normalized_coeffs.normalize();
     cv::imshow(
         make_title("DWT Coefficients(", wavelet.name(), ", ",
                    coeffs.levels(), " levels)"),
@@ -57,7 +57,7 @@ void show_coeffs(
     );
 
     auto normalized_denoised_coeffs = denoised_coeffs.clone();
-    normalized_denoised_coeffs.normalize();
+    // normalized_denoised_coeffs.normalize();
     cv::imshow(
         make_title("Shrunk DWT Coefficients(", wavelet.name(), ", ",
                    coeffs.levels(), " levels, ", method, ")"),
@@ -94,7 +94,7 @@ void main_program(const cxxopts::ParseResult& args)
     verify_args(args);
     auto [image, filepath] = open_image(args["image_file"].as<std::string>());
     auto wavelet = Wavelet::create(args["wavelet"].as<std::string>());
-    auto depth = args["levels"].as<int>();
+    auto levels = args["levels"].as<int>();
     double stdev = args["add-noise"].as<double>();
 
     cv::Mat noisy_image;
@@ -103,9 +103,27 @@ void main_program(const cxxopts::ParseResult& args)
     else
         noisy_image = image;
 
-    auto coeffs = dwt2d(noisy_image, wavelet, depth);
-    auto shrunk_coeffs = coeffs.clone();
+    auto coeffs = dwt2d(noisy_image, wavelet, levels);
+    // auto shrunk_coeffs = coeffs.clone();
+    DWT2D::Coeffs shrunk_coeffs;
     auto shrink_method = args["method"].as<std::string>();
+    if (shrink_method == "visu")
+        visu_shrink(shrunk_coeffs);
+    // else if (shrink_method == "visu-soft")
+    //     visu_soft_shrink(shrunk_coeffs);
+    else if (shrink_method == "sure")
+        shrunk_coeffs = sure_shrink(coeffs);
+    else if (shrink_method == "sure-global")
+        shrunk_coeffs = SureShrink(Shrink::GLOBALLY)(coeffs);
+    else if (shrink_method == "sure-levelwise")
+        shrunk_coeffs = sure_shrink_levelwise(coeffs);
+    else if (shrink_method == "strict-sure")
+        shrunk_coeffs = SureShrink(SureShrink::STRICT)(coeffs);
+    else if (shrink_method == "strict-sure-levelwise")
+        shrunk_coeffs = SureShrink(SureShrink::LEVELS, SureShrink::STRICT)(coeffs);
+    // else if (shrink_method == "bayes")
+    //     bayes_shrink(shrunk_coeffs);
+
     // if (shrink_method == "visu-hard")
     //     visu_hard_shrink(shrunk_coeffs);
     // else if (shrink_method == "visu-soft")
@@ -121,7 +139,8 @@ void main_program(const cxxopts::ParseResult& args)
     // else if (shrink_method == "bayes")
     //     bayes_shrink(shrunk_coeffs);
 
-    auto denoised_image = idwt2d(shrunk_coeffs, wavelet);
+    // auto denoised_image = idwt2d(shrunk_coeffs, wavelet);
+    auto denoised_image = shrunk_coeffs.invert();
 
     if (args.count("out"))
         save_image(denoised_image, args["out"].as<std::string>());

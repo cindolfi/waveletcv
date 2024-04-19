@@ -2899,7 +2899,7 @@ public:
 
     auto compute_sure_risk(const cv::Mat& matrix, const cv::Scalar& threshold, const cv::Scalar& stdev)
     {
-        cvwt::internal::compute_sure_threshold<
+        cvwt::internal::ComputeSureThreshold<
             SureRiskTest::Pixel::value_type,
             SureRiskTest::Pixel::channels
         > compute;
@@ -3341,6 +3341,7 @@ struct SureThresholdTestParam
     using Matrix = cv::Mat_<Pixel>;
     cv::Mat matrix;
     cv::Scalar stdev;
+    SureShrink::Optimizer optimizer;
     cv::Scalar expected_threshold;
 };
 
@@ -3350,6 +3351,7 @@ void PrintTo(const SureThresholdTestParam<T, CHANNELS>& param, std::ostream* str
     *stream << "\n";
     *stream << "matrix =";
     PrintTo(param.matrix, stream);
+    *stream << "optimizer =" << param.optimizer << "\n";
     *stream << "stdev = " << param.stdev << "\n";
 }
 
@@ -3358,7 +3360,7 @@ class SureThresholdTest : public SureTestBase<SureThresholdTestParam<double, 4>>
 protected:
     SureThresholdTest() :
         SureTestBase<SureThresholdTestParam<double, 4>>(),
-        shrinker(NORMAL_SURE_SHRINK)
+        shrinker(SureShrink::STRICT)
     {
     }
 
@@ -3368,38 +3370,56 @@ public:
     static std::vector<ParamType> create_params()
     {
         auto base_params = create_base_params();
-        return {
-            //  0
+        std::vector<ParamType> brute_force_params = {
+            //  0, 1
             {
                 .matrix = base_params["zero_constant"].matrix,
                 .stdev = base_params["zero_constant"].stdev,
+                .optimizer = SureShrink::BRUTE_FORCE,
                 .expected_threshold = cv::Scalar::all(0.0),
             },
-            //  1
+            //  2, 3
             {
                 .matrix = base_params["nonzero_constant"].matrix,
                 .stdev = base_params["nonzero_constant"].stdev,
+                .optimizer = SureShrink::BRUTE_FORCE,
                 .expected_threshold = cv::Scalar::all(1.0),
             },
-            //  2
+            //  4, 5
             {
                 .matrix = base_params["not_zero_crossing_increasing"].matrix,
                 .stdev = base_params["not_zero_crossing_increasing"].stdev,
+                .optimizer = SureShrink::BRUTE_FORCE,
                 .expected_threshold = cv::Scalar::all(1.0),
             },
-            //  3
+            //  6, 7
             {
                 .matrix = base_params["zero_crossing_increasing"].matrix,
                 .stdev = base_params["zero_crossing_increasing"].stdev,
+                .optimizer = SureShrink::BRUTE_FORCE,
                 .expected_threshold = cv::Scalar::all(8.0),
             },
-            //  4
+            //  8, 9
             {
                 .matrix = base_params["independent_channels"].matrix,
                 .stdev = base_params["independent_channels"].stdev,
+                .optimizer = SureShrink::BRUTE_FORCE,
                 .expected_threshold = cv::Scalar(8.0, 1.0, 0.0, 1.0),
             },
         };
+
+        auto replace_optimizer = [](ParamType param, SureShrink::Optimizer optimizer) {
+            param.optimizer = optimizer;
+            return param;
+        };
+
+        std::vector<ParamType> params;
+        for (auto& param : brute_force_params) {
+            params.push_back(param);
+            params.push_back(replace_optimizer(param, SureShrink::NELDER_MEAD));
+        }
+
+        return params;
     }
 };
 
@@ -3410,7 +3430,7 @@ TEST_P(SureThresholdTest, CorrectThreshold)
 
     auto actual_threshold = shrinker.compute_sure_threshold(param.matrix, param.stdev);
 
-    EXPECT_THAT(actual_threshold, ScalarEq(param.expected_threshold));
+    EXPECT_THAT(actual_threshold, ScalarDoubleEq(param.expected_threshold));
 }
 
 TEST_P(SureThresholdTest, InvariantUnderReversal)
@@ -3423,7 +3443,7 @@ TEST_P(SureThresholdTest, InvariantUnderReversal)
 
     EXPECT_THAT(
         actual_threshold,
-        ScalarEq(param.expected_threshold)
+        ScalarDoubleEq(param.expected_threshold)
     ) << "where permuation = [" << join(permutation, ", ") << "]";
 }
 
@@ -3437,7 +3457,7 @@ TEST_P(SureThresholdTest, InvariantUnderPermutation1)
 
     EXPECT_THAT(
         actual_threshold,
-        ScalarEq(param.expected_threshold)
+        ScalarDoubleEq(param.expected_threshold)
     ) << "where permuation = [" << join(permutation, ", ") << "]";
 }
 
@@ -3451,7 +3471,7 @@ TEST_P(SureThresholdTest, InvariantUnderPermutation2)
 
     EXPECT_THAT(
         actual_threshold,
-        ScalarEq(param.expected_threshold)
+        ScalarDoubleEq(param.expected_threshold)
     ) << "where permuation = [" << join(permutation, ", ") << "]";
 }
 
@@ -3463,9 +3483,9 @@ TEST_P(SureThresholdTest, ConsistentWithPrescalingByStdDev)
     cv::Scalar expected_threshold;
     cv::divide(param.expected_threshold, param.stdev, expected_threshold);
 
-    auto actual_threshold = shrinker.compute_sure_threshold(matrix);
+    auto actual_threshold = shrinker.compute_sure_threshold(matrix, cv::Scalar::all(1.0));
 
-    EXPECT_THAT(actual_threshold, ScalarEq(expected_threshold));
+    EXPECT_THAT(actual_threshold, ScalarDoubleEq(expected_threshold));
 }
 
 
@@ -3474,5 +3494,6 @@ INSTANTIATE_TEST_CASE_P(
     SureThresholdTest,
     testing::ValuesIn(SureThresholdTest::create_params())
 );
+
 
 

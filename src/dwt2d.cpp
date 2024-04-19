@@ -352,22 +352,36 @@ void DWT2D::Coeffs::normalize(NormalizationMode approx_mode, NormalizationMode d
 
 double DWT2D::Coeffs::maximum_abs_value() const
 {
-    double min = std::numeric_limits<double>::max();
-    double max = std::numeric_limits<double>::min();
+    if (empty())
+        return 0;
 
-    const cv::Mat* arrays[] = {&_p->coeff_matrix};
-    std::vector<cv::Mat> planes(channels());
-    cv::NAryMatIterator it(arrays, planes.data(), planes.size());
-    for (int p = 0; p < it.nplanes; ++p, ++it) {
-        double plane_min = 0;
-        double plane_max = 0;
-        cv::minMaxIdx(it.planes[0], &plane_min, &plane_max);
-        min = std::min(min, plane_min);
-        max = std::max(max, plane_max);
-    }
+    // double min = std::numeric_limits<double>::max();
+    // double max = std::numeric_limits<double>::min();
+
+    double min, max;
+    cv::minMaxIdx(_p->coeff_matrix.reshape(1), &min, &max);
 
     return std::max(std::abs(min), std::abs(max));
 }
+
+// double DWT2D::Coeffs::maximum_abs_value() const
+// {
+//     double min = std::numeric_limits<double>::max();
+//     double max = std::numeric_limits<double>::min();
+
+//     const cv::Mat* arrays[] = {&_p->coeff_matrix};
+//     std::vector<cv::Mat> planes(channels());
+//     cv::NAryMatIterator it(arrays, planes.data(), planes.size());
+//     for (int p = 0; p < it.nplanes; ++p, ++it) {
+//         double plane_min = 0;
+//         double plane_max = 0;
+//         cv::minMaxIdx(it.planes[0], &plane_min, &plane_max);
+//         min = std::min(min, plane_min);
+//         max = std::max(max, plane_max);
+//     }
+
+//     return std::max(std::abs(min), std::abs(max));
+// }
 
 std::pair<double, double> DWT2D::Coeffs::normalization_constants(
     NormalizationMode normalization_mode,
