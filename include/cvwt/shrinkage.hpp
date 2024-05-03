@@ -22,6 +22,103 @@ using PrimitiveThresholdFunction = std::function<Value(Value, Threshold)>;
 
 namespace internal
 {
+template <typename T1, typename T2, int N, cv::CmpTypes compare_type>
+struct Compare
+{
+    using Pixel1 = cv::Vec<T1, N>;
+    using Pixel2 = cv::Vec<T2, N>;
+    using OutputPixel = cv::Vec<uchar, N>;
+
+    constexpr bool compare(T1 x, T2 y) const
+    {
+        if constexpr (compare_type == cv::CMP_LT)
+            return x < y;
+        else if constexpr (compare_type == cv::CMP_LE)
+            return x <= y;
+        else if constexpr (compare_type == cv::CMP_GT)
+            return x > y;
+        else if constexpr (compare_type == cv::CMP_GE)
+            return x >= y;
+    }
+
+    void operator()(
+        cv::InputArray input_a,
+        cv::InputArray input_b,
+        cv::OutputArray output
+    ) const
+    {
+        assert(input_a.channels() == N);
+        assert(input_b.channels() == N);
+        throw_if_comparing_different_sizes(input_a, input_b);
+
+        output.create(input_a.size(), CV_8UC(N));
+        auto a = input_a.getMat();
+        auto b = input_b.getMat();
+        auto result = output.getMat();
+        a.forEach<Pixel1>(
+            [&](const auto& x, const auto position) {
+                auto y = b.at<Pixel2>(position);
+                auto& z = result.at<OutputPixel>(position);
+                for (int i = 0; i < N; ++i)
+                    z[i] = 255 * compare(x[i], y[i]);
+            }
+        );
+    }
+
+    void operator()(
+        cv::InputArray input_a,
+        cv::InputArray input_b,
+        cv::OutputArray output,
+        cv::InputArray mask
+    ) const
+    {
+        assert(input_a.channels() == N);
+        assert(input_b.channels() == N);
+        throw_if_comparing_different_sizes(input_a, input_b);
+        throw_if_bad_mask_type(mask);
+        if (mask.size() != input_a.size())
+            throw_bad_size(
+                "Wrong size mask. Got ", mask.size(), ", must be ", input_a.size(), "."
+            );
+
+        output.create(input_a.size(), CV_8UC(N));
+        auto a = input_a.getMat();
+        auto b = input_b.getMat();
+        auto mask_matrix = mask.getMat();
+        auto result = output.getMat();
+        a.forEach<Pixel1>(
+            [&](const auto& x, const auto position) {
+                auto y = b.at<Pixel2>(position);
+                if (mask_matrix.at<uchar>(position)) {
+                    auto& z = result.at<OutputPixel>(position);
+                    for (int i = 0; i < N; ++i)
+                        z[i] = 255 * compare(x[i], y[i]);
+                } else {
+                    result.at<OutputPixel>(position) = 0;
+                }
+            }
+        );
+    }
+
+    void throw_if_comparing_different_sizes(cv::InputArray a, cv::InputArray b) const
+    {
+        // if (a.channels() != b.channels())
+        //     throw_bad_size(
+        //         "Cannot compare matrices with different number of channels. ",
+        //         "Got a.channels() = ", get_type_name(a.channels()),
+        //         " and b.channels() = ", get_type_name(b.channels()), "."
+        //     );
+
+        if (a.size() != b.size())
+            throw_bad_size(
+                "Cannot compare matrices of different sizes. ",
+                "Got a.size() = ", a.size(),
+                " and b.size() = ", b.size(), "."
+            );
+    }
+};
+
+
 template <typename T, int N, typename ThresholdFunctor>
 struct Threshold
 {
@@ -36,7 +133,7 @@ struct Threshold
         output.create(input.size(), input.type());
         auto result = output.getMat();
         input.getMat().forEach<Pixel>(
-            [&](const auto& pixel, auto position) {
+            [&](const auto& pixel, const auto position) {
                 auto& result_pixel = result.at<Pixel>(position);
                 for (int i = 0; i < N; ++i)
                     result_pixel[i] = threshold_function(pixel[i], threshold[i]);
@@ -47,17 +144,13 @@ struct Threshold
     void operator()(cv::InputArray input, cv::OutputArray output, cv::Scalar threshold, cv::InputArray mask) const
     {
         assert(input.channels() == N);
-
-        cv::Mat mask_matrix;
-        if (mask.type() == CV_8U)
-            mask_matrix = mask.getMat();
-        else
-            mask.getMat().convertTo(mask_matrix, CV_8U);
+        throw_if_bad_mask_type(mask);
 
         output.create(input.size(), input.type());
+        auto mask_matrix = mask.getMat();
         auto result = output.getMat();
         input.getMat().forEach<Pixel>(
-            [&](const auto& pixel, auto position) {
+            [&](const auto& pixel, const auto position) {
                 if (mask_matrix.at<uchar>(position)) {
                     auto& result_pixel = result.at<Pixel>(position);
                     for (int i = 0; i < N; ++i)
@@ -323,6 +416,42 @@ ThresholdFunction make_threshold_function(
     };
 }
 
+void less_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask = cv::noArray()
+);
+
+void less_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask = cv::noArray()
+);
+
+void greater_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask = cv::noArray()
+);
+
+void greater_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask = cv::noArray()
+);
+
+void compare(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::CmpTypes compare_type,
+    cv::InputArray mask = cv::noArray()
+);
+
 //  ----------------------------------------------------------------------------
 //  Shrink
 //  ----------------------------------------------------------------------------
@@ -497,90 +626,104 @@ public:
     //  ------------------------------------------------------------------------
     //  Shrink
     //  all levels
-    DWT2D::Coeffs shrink(const DWT2D::Coeffs& coeffs) const
+    // DWT2D::Coeffs shrink(const DWT2D::Coeffs& coeffs) const
+    // {
+    //     return shrink(coeffs, cv::Range::all(), compute_stdev(coeffs));
+    // }
+
+    DWT2D::Coeffs shrink(const DWT2D::Coeffs& coeffs, cv::OutputArray thresholds = cv::noArray()) const
     {
-        return shrink(coeffs, cv::Range::all(), compute_stdev(coeffs));
+        return shrink(coeffs, cv::Range::all(), compute_stdev(coeffs), thresholds);
     }
 
     DWT2D::Coeffs shrink(
         const DWT2D::Coeffs& coeffs,
-        const cv::Scalar& stdev
+        const cv::Scalar& stdev,
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
-        return shrink(coeffs, cv::Range::all(), stdev);
-    }
-
-    void shrink(
-        const DWT2D::Coeffs& coeffs,
-        DWT2D::Coeffs& shrunk_coeffs
-    ) const
-    {
-        shrink(coeffs, shrunk_coeffs, cv::Range::all(), compute_stdev(coeffs));
+        return shrink(coeffs, cv::Range::all(), stdev, thresholds);
     }
 
     void shrink(
         const DWT2D::Coeffs& coeffs,
         DWT2D::Coeffs& shrunk_coeffs,
-        const cv::Scalar& stdev
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
-        shrink(coeffs, shrunk_coeffs, cv::Range::all(), stdev);
+        shrink(coeffs, shrunk_coeffs, cv::Range::all(), compute_stdev(coeffs), thresholds);
+    }
+
+    void shrink(
+        const DWT2D::Coeffs& coeffs,
+        DWT2D::Coeffs& shrunk_coeffs,
+        const cv::Scalar& stdev,
+        cv::OutputArray thresholds = cv::noArray()
+    ) const
+    {
+        shrink(coeffs, shrunk_coeffs, cv::Range::all(), stdev, thresholds);
     }
 
     //  int levels
     DWT2D::Coeffs shrink(
         const DWT2D::Coeffs& coeffs,
-        int levels
+        int levels,
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
-        return shrink(coeffs, cv::Range(0, levels));
+        return shrink(coeffs, cv::Range(0, levels), thresholds);
     }
 
     DWT2D::Coeffs shrink(
         const DWT2D::Coeffs& coeffs,
         const cv::Scalar& stdev,
-        int levels
+        int levels,
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
-        return shrink(coeffs, cv::Range(0, levels), stdev);
+        return shrink(coeffs, cv::Range(0, levels), stdev, thresholds);
     }
 
     void shrink(
         const DWT2D::Coeffs& coeffs,
         DWT2D::Coeffs& shrunk_coeffs,
-        int levels
+        int levels,
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
-        shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), compute_stdev(coeffs));
+        shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), compute_stdev(coeffs), thresholds);
     }
 
     void shrink(
         const DWT2D::Coeffs& coeffs,
         DWT2D::Coeffs& shrunk_coeffs,
         const cv::Scalar& stdev,
-        int levels
+        int levels,
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
-        shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), stdev);
+        shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), stdev, thresholds);
     }
 
     //  cv::Range levels
     DWT2D::Coeffs shrink(
         const DWT2D::Coeffs& coeffs,
-        const cv::Range& levels
+        const cv::Range& levels,
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
-        return shrink(coeffs, levels, compute_stdev(coeffs));
+        return shrink(coeffs, levels, compute_stdev(coeffs), thresholds);
     }
 
     DWT2D::Coeffs shrink(
         const DWT2D::Coeffs& coeffs,
         const cv::Range& levels,
-        const cv::Scalar& stdev
+        const cv::Scalar& stdev,
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
         DWT2D::Coeffs shrunk_coeffs;
-        shrink(coeffs, shrunk_coeffs, levels, stdev);
+        shrink(coeffs, shrunk_coeffs, levels, stdev, thresholds);
 
         return shrunk_coeffs;
     }
@@ -588,17 +731,19 @@ public:
     void shrink(
         const DWT2D::Coeffs& coeffs,
         DWT2D::Coeffs& shrunk_coeffs,
-        const cv::Range& levels
+        const cv::Range& levels,
+        cv::OutputArray thresholds = cv::noArray()
     ) const
     {
-        shrink(coeffs, shrunk_coeffs, levels, compute_stdev(coeffs));
+        shrink(coeffs, shrunk_coeffs, levels, compute_stdev(coeffs), thresholds);
     }
 
     void shrink(
         const DWT2D::Coeffs& coeffs,
         DWT2D::Coeffs& shrunk_coeffs,
         const cv::Range& levels,
-        const cv::Scalar& stdev
+        const cv::Scalar& stdev,
+        cv::OutputArray thresholds = cv::noArray()
     ) const;
 
     //  ------------------------------------------------------------------------
@@ -639,6 +784,31 @@ public:
         const DWT2D::Coeffs& coeffs,
         const cv::Range& levels,
         const cv::Scalar& stdev
+    ) const;
+
+    //  ------------------------------------------------------------------------
+    //  Expand Thresholds
+    cv::Mat expand_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        const cv::Mat4d& thresholds
+    ) const
+    {
+        return expand_thresholds(coeffs, thresholds, cv::Range::all());
+    }
+
+    cv::Mat expand_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        const cv::Mat4d& thresholds,
+        int levels
+    ) const
+    {
+        return expand_thresholds(coeffs, thresholds, cv::Range(0, levels));
+    }
+
+    cv::Mat expand_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        const cv::Mat4d& thresholds,
+        const cv::Range& levels
     ) const;
 
     //  ------------------------------------------------------------------------
@@ -801,6 +971,13 @@ protected:
         const DWT2D::Coeffs& coeffs,
         const cv::Range& levels,
         const cv::Scalar& stdev
+    ) const;
+
+    virtual void expand_subset_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        const cv::Mat4d& thresholds,
+        const cv::Range& levels,
+        cv::Mat& expanded_thresholds
     ) const;
 
     void threshold(
@@ -1220,11 +1397,6 @@ private:
     OptimizerStopConditions _optimizer_stop_conditions;
 };
 
-
-
-
-
-
 namespace internal
 {
 template <typename T>
@@ -1480,7 +1652,7 @@ struct ComputeSureThreshold
     {
         assert(input.channels() == N);
         cv::Mat masked_input;
-        collect_masked<T, N>()(input, masked_input, mask);
+        CollectMasked<T, N>()(input, masked_input, mask);
         return this->operator()(masked_input, stdev, optimizer, variant, stop_conditions);
     }
 
@@ -1587,27 +1759,157 @@ void sure_shrink_levelwise(
 //  ----------------------------------------------------------------------------
 //  Bayes Shrink
 //  ----------------------------------------------------------------------------
+/**
+ * @brief
+ *
+ * The threshold for subband \f$s\f$ is
+ * \f{equation}{
+ *     \lambda_s = \frac{\hat\sigma^2}{\hat\sigma^2_X}
+ * \f}
+ * where \f$\hat\sigma^2\f$ is the estimated noise variance and
+ * \f$\hat\sigma_X\f$ is the estimated signal variance on subband \f$s\f$.
+ *
+ * The estimated signal variance is
+ * \f{equation}{
+ *     \hat\sigma^2_X = \max(\hat\sigma^2_Y - \hat\sigma^2, 0)
+ * \f}
+ * where
+ * \f{equation}{
+ *     \hat\sigma^2_Y = \frac{1}{N_s} \sum_{n = 1}^{N_s} w^2_n
+ * \f}
+ * is the estimate of the variance of the observations.
+ *
+ * When \f$\hat\sigma^2 \gt \hat\sigma_Y^2\f$, the threshold becomes
+ * \f$\lambda_s = \max(|w_n|)\f$ and all subband coefficients are shrunk to zero.
+ */
 class BayesShrink : public Shrink
 {
+public:
+    BayesShrink() :
+        BayesShrink(Shrink::SUBBANDS)
+    {}
+
+    BayesShrink(Shrink::Partition partition) :
+        BayesShrink(partition, soft_threshold)
+    {}
+
+    template <typename T, typename W>
+    BayesShrink(
+        Shrink::Partition partition,
+        PrimitiveThresholdFunction<T, W> threshold_function
+    ) :
+        BayesShrink(partition, make_threshold_function(threshold_function))
+    {}
+
+    BayesShrink(
+        Shrink::Partition partition,
+        ThresholdFunction threshold_function
+    ) :
+        Shrink(
+            partition,
+            threshold_function,
+            mad_stdev
+        )
+    {}
+
+    cv::Scalar compute_bayes_threshold(
+        cv::InputArray detail_coeffs,
+        const cv::Scalar& stdev
+    ) const;
+
+    cv::Scalar compute_bayes_threshold(
+        cv::InputArray detail_coeffs,
+        cv::InputArray mask,
+        const cv::Scalar& stdev
+    ) const;
+
+protected:
+    cv::Scalar compute_global_threshold(
+        const DWT2D::Coeffs& coeffs,
+        const cv::Range& levels,
+        const cv::Scalar& stdev
+    ) const override
+    {
+        cv::Range d = (levels == cv::Range::all()) ? levels : cv::Range(levels.start, levels.end - 1);
+        return compute_bayes_threshold(coeffs, coeffs.detail_mask(d), stdev);
+        // return compute_bayes_threshold(coeffs, coeffs.detail_mask(levels), stdev);
+    }
+
+    cv::Scalar compute_subband_threshold(
+        const cv::Mat& detail_coeffs,
+        int level,
+        int subband,
+        const cv::Scalar& stdev
+    ) const override
+    {
+        return compute_bayes_threshold(detail_coeffs, stdev);
+    }
+
+    cv::Scalar compute_level_threshold(
+        const cv::Mat& detail_coeffs,
+        int level,
+        const cv::Scalar& stdev
+    ) const override
+    {
+        return compute_bayes_threshold(detail_coeffs, stdev);
+    }
 };
 
-/**
- * @brief Shrink detail coeffcients inplace using BayesShrink algorithm.
- *
- * @param coeffs The discrete wavelet transform coefficients.
- * @return cv::Scalar
- */
-cv::Scalar bayes_shrink_threshold(const DWT2D::Coeffs& coeffs);
+namespace internal
+{
+template <typename T, int CHANNELS>
+struct ComputeBayesThreshold
+{
+    cv::Scalar operator()(cv::InputArray input, const cv::Scalar& stdev) const
+    {
+        throw_if_empty(input);
+        assert(input.channels() == CHANNELS);
+        if constexpr (CHANNELS == 1) {
+            return compute_single_channel_threshold(input.getMat(), stdev[0]);
+        } else {
+            cv::Mat channels[CHANNELS];
+            cv::split(input.getMat(), channels);
+            cv::Scalar result;
+            for (int i = 0; i < CHANNELS; ++i)
+                result[i] = compute_single_channel_threshold(channels[i], stdev[i]);
 
-/**
- * @brief Shrink detail coeffcients inplace using BayesShrink algorithm.
- *
- * @param coeffs The discrete wavelet transform coefficients.
- */
-void bayes_shrink(DWT2D::Coeffs& coeffs);
+            return result;
+        }
+    }
 
+    cv::Scalar operator()(
+        cv::InputArray input,
+        cv::InputArray mask,
+        const cv::Scalar& stdev
+    ) const
+    {
+        cv::Mat masked_input;
+        CollectMasked<T, CHANNELS>()(input, masked_input, mask);
+        return this->operator()(masked_input, stdev);
+    }
 
+private:
+    double compute_single_channel_threshold(const cv::Mat& array, double stdev) const
+    {
+        assert(array.channels() == 1);
+        double noise_variance = stdev * stdev;
+        double observation_variance = cv::sum(array.mul(array))[0] / array.total();
 
+        if (noise_variance >= observation_variance) {
+            return maximum_abs_value(array);
+        } else {
+            auto signal_stdev = std::sqrt(observation_variance - noise_variance);
+            return noise_variance / signal_stdev;
+        }
+    }
+};
+}   // namespace internal
+
+//  ----------------------------------------------------------------------------
+//  BayesShrink Functional API
+//  ----------------------------------------------------------------------------
+DWT2D::Coeffs bayes_shrink(const DWT2D::Coeffs& coeffs);
+void bayes_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
 
 } // namespace cvwt
 

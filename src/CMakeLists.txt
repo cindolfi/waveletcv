@@ -20,9 +20,9 @@ FetchContent_MakeAvailable(nlopt)
 #   ----------------------------------------------------------------------------
 #   Build Library
 #   ----------------------------------------------------------------------------
-add_library(cvwt_library)
+add_library(cvwt)
 target_sources (
-    cvwt_library
+    cvwt
     PUBLIC
         ${CVWT_INCLUDE_DIR}/cvwt/wavelet.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/filterbank.hpp
@@ -41,30 +41,30 @@ target_sources (
         utils.cpp
 )
 target_include_directories(
-    cvwt_library
+    cvwt
     PUBLIC
     ${CVWT_INCLUDE_DIR}
 )
 target_link_libraries(
-    cvwt_library
+    cvwt
     ${OpenCV_LIBS}
     nlopt
 )
 target_compile_features(
-    cvwt_library
+    cvwt
     PRIVATE
     cxx_std_20
 )
 
 if(CVWT_ARGUMENT_CHECKING)
     target_compile_definitions(
-        cvwt_library
+        cvwt
         PRIVATE
         CVWT_ARGUMENT_CHECKING_ENABLED=true
     )
 else()
     target_compile_definitions(
-        cvwt_library
+        cvwt
         PRIVATE
         CVWT_ARGUMENT_CHECKING_ENABLED=false
     )
@@ -72,13 +72,13 @@ endif()
 
 if(CVWT_DWT_WARNINGS)
     target_compile_definitions(
-        cvwt_library
+        cvwt
         PRIVATE
         CVWT_DISABLE_DWT_WARNINGS_ENABLED=true
     )
 else()
     target_compile_definitions(
-        cvwt_library
+        cvwt
         PRIVATE
         CVWT_DISABLE_DWT_WARNINGS_ENABLED=false
     )

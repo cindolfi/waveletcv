@@ -8,6 +8,7 @@
 #include <cxxopts.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <cvwt/dwt2d.hpp>
 #include <cvwt/shrinkage.hpp>
@@ -17,13 +18,16 @@ using namespace cvwt;
 
 const std::string PROGRAM_NAME = "dwt2d-denoise";
 const std::set<std::string> AVAILABLE_SHRINK_METHODS = {
+    "visu",
     "sure",
     "sure-levelwise",
-    "strict-sure",
-    "strict-sure-levelwise",
+    "sure-global",
+    "sure-strict",
+    "sure-strict-levelwise",
+    "sure-strict-global",
     "bayes",
-    "visu-soft",
-    "visu-hard",
+    "bayes-levelwise",
+    "bayes-global",
 };
 
 void show_images(
@@ -31,38 +35,19 @@ void show_images(
     const cv::Mat& noisy_image,
     const cv::Mat& denoised_image,
     const std::filesystem::path& filepath,
-    double stdev
+    double stdev,
+    bool split_channels
 )
 {
-    cv::imshow(make_title("Image (", filepath.filename(), ")"), image);
-
+    show_image(image, split_channels, "Image", filepath.filename());
+    show_image(denoised_image, split_channels, "Denoised Image");
     if (stdev > 0)
-        cv::imshow(make_title("Image With Extra Noise (stdev =", stdev, ")"), noisy_image);
-    cv::imshow(make_title("Denoised Image"), denoised_image);
-}
-
-void show_coeffs(
-    const DWT2D::Coeffs& coeffs,
-    const DWT2D::Coeffs& denoised_coeffs,
-    const std::string& method,
-    const Wavelet& wavelet
-)
-{
-    auto normalized_coeffs = coeffs.clone();
-    // normalized_coeffs.normalize();
-    cv::imshow(
-        make_title("DWT Coefficients(", wavelet.name(), ", ",
-                   coeffs.levels(), " levels)"),
-        normalized_coeffs
-    );
-
-    auto normalized_denoised_coeffs = denoised_coeffs.clone();
-    // normalized_denoised_coeffs.normalize();
-    cv::imshow(
-        make_title("Shrunk DWT Coefficients(", wavelet.name(), ", ",
-                   coeffs.levels(), " levels, ", method, ")"),
-        normalized_denoised_coeffs
-    );
+        show_image(
+            noisy_image,
+            split_channels,
+            "Image With Extra Noise",
+            make_title("stdev = ", stdev)
+        );
 }
 
 void add_noise(cv::InputArray input, cv::OutputArray output, double stdev)
@@ -76,17 +61,21 @@ void add_noise(cv::InputArray input, cv::OutputArray output, double stdev)
 void verify_args(const cxxopts::ParseResult& args)
 {
     if (!args.count("method"))
-        throw InvalidOptions("missing method");
+        throw InvalidOptions("Missing --method.");
 
-    if(!AVAILABLE_SHRINK_METHODS.contains(args["method"].as<std::string>())) {
+    auto method = args["method"].as<std::string>();
+    if(!AVAILABLE_SHRINK_METHODS.contains(method)) {
         throw InvalidOptions(
-            "invalid method - must be one of: "
+            "Invalid --method: \""
+            + method
+            + "\". Must be one of: "
             + join(AVAILABLE_SHRINK_METHODS, ", ")
+            + "."
         );
     }
 
-    if (args["add-noise"].as<double>() < 0)
-        throw InvalidOptions("add-noise must be a positive number");
+    if (args.count("add-noise") && args["add-noise"].as<double>() < 0)
+        throw InvalidOptions("Invalid --add-noise. Must be a positive number.");
 }
 
 void main_program(const cxxopts::ParseResult& args)
@@ -94,8 +83,9 @@ void main_program(const cxxopts::ParseResult& args)
     verify_args(args);
     auto [image, filepath] = open_image(args["image_file"].as<std::string>());
     auto wavelet = Wavelet::create(args["wavelet"].as<std::string>());
-    auto levels = args["levels"].as<int>();
-    double stdev = args["add-noise"].as<double>();
+
+    int levels = args.count("levels") ? args["levels"].as<int>() : 0;
+    double stdev = args.count("add-noise") ? args["add-noise"].as<double>() : 0.0;
 
     cv::Mat noisy_image;
     if (stdev > 0)
@@ -103,55 +93,88 @@ void main_program(const cxxopts::ParseResult& args)
     else
         noisy_image = image;
 
-    auto coeffs = dwt2d(noisy_image, wavelet, levels);
-    // auto shrunk_coeffs = coeffs.clone();
-    DWT2D::Coeffs shrunk_coeffs;
+    auto coeffs = levels > 0 ? dwt2d(noisy_image, wavelet, levels)
+                             : dwt2d(noisy_image, wavelet);
+
     auto shrink_method = args["method"].as<std::string>();
+    std::unique_ptr<Shrink> shrinker;
     if (shrink_method == "visu")
-        visu_shrink(shrunk_coeffs);
-    // else if (shrink_method == "visu-soft")
-    //     visu_soft_shrink(shrunk_coeffs);
+        shrinker = std::make_unique<VisuShrink>();
     else if (shrink_method == "sure")
-        shrunk_coeffs = sure_shrink(coeffs);
-    else if (shrink_method == "sure-global")
-        shrunk_coeffs = SureShrink(Shrink::GLOBALLY)(coeffs);
+        shrinker = std::make_unique<SureShrink>();
     else if (shrink_method == "sure-levelwise")
-        shrunk_coeffs = sure_shrink_levelwise(coeffs);
-    else if (shrink_method == "strict-sure")
-        shrunk_coeffs = SureShrink(SureShrink::STRICT)(coeffs);
-    else if (shrink_method == "strict-sure-levelwise")
-        shrunk_coeffs = SureShrink(SureShrink::LEVELS, SureShrink::STRICT)(coeffs);
-    // else if (shrink_method == "bayes")
-    //     bayes_shrink(shrunk_coeffs);
+        shrinker = std::make_unique<SureShrink>(Shrink::LEVELS);
+    else if (shrink_method == "sure-global")
+        shrinker = std::make_unique<SureShrink>(Shrink::GLOBALLY);
+    else if (shrink_method == "sure-strict")
+        shrinker = std::make_unique<SureShrink>(SureShrink::STRICT);
+    else if (shrink_method == "sure-strict-levelwise")
+        shrinker = std::make_unique<SureShrink>(Shrink::LEVELS, SureShrink::STRICT);
+    else if (shrink_method == "sure-strict-global")
+        shrinker = std::make_unique<SureShrink>(Shrink::GLOBALLY, SureShrink::STRICT);
+    else if (shrink_method == "bayes")
+        shrinker = std::make_unique<BayesShrink>();
+    else if (shrink_method == "bayes-levelwise")
+        shrinker = std::make_unique<BayesShrink>(Shrink::LEVELS);
+    else if (shrink_method == "bayes-global")
+        shrinker = std::make_unique<BayesShrink>(Shrink::GLOBALLY);
 
-    // if (shrink_method == "visu-hard")
-    //     visu_hard_shrink(shrunk_coeffs);
-    // else if (shrink_method == "visu-soft")
-    //     visu_soft_shrink(shrunk_coeffs);
-    // else if (shrink_method == "sure")
-    //     sure_shrink(shrunk_coeffs);
-    // else if (shrink_method == "sure-levelwise")
-    //     sure_shrink_levelwise(shrunk_coeffs);
-    // else if (shrink_method == "hybrid-sure")
-    //     hybrid_sure_shrink(shrunk_coeffs);
-    // else if (shrink_method == "hybrid-sure-levelwise")
-    //     hybrid_sure_shrink_levelwise(shrunk_coeffs);
-    // else if (shrink_method == "bayes")
-    //     bayes_shrink(shrunk_coeffs);
+    cv::Mat thresholds;
+    auto shrunk_coeffs = shrinker->shrink(coeffs, thresholds);
+    CV_LOG_INFO(NULL, "thresholds = " << thresholds);
 
-    // auto denoised_image = idwt2d(shrunk_coeffs, wavelet);
     auto denoised_image = shrunk_coeffs.invert();
+
+    bool wait_for_key_press = false;
+    auto split_channels = args["split-channels"].as<bool>();
 
     if (args.count("out"))
         save_image(denoised_image, args["out"].as<std::string>());
 
-    if (args.count("show"))
-        show_images(image, noisy_image, denoised_image, filepath, stdev);
+    if (args.count("show")) {
+        show_images(
+            image,
+            noisy_image,
+            denoised_image,
+            filepath,
+            stdev,
+            split_channels
+        );
+        wait_for_key_press = true;
+    }
 
-    if (args.count("show-coeffs"))
-        show_coeffs(coeffs, shrunk_coeffs, shrink_method, wavelet);
+    if (args.count("show-coeffs")) {
+        auto normalization_method = args["show-coeffs"].as<std::string>();
+        show_coeffs(
+            coeffs,
+            wavelet,
+            normalization_method,
+            split_channels,
+            "DWT Coefficients",
+            shrink_method
+        );
+        show_coeffs(
+            shrunk_coeffs,
+            wavelet,
+            normalization_method,
+            split_channels,
+            "Shrunk DWT Coefficients",
+            shrink_method
+        );
 
-    if (args.count("show") || args.count("show-coeffs"))
+        wait_for_key_press = true;
+    }
+
+    if (args.count("show-threshold-mask")) {
+        cv::Mat thresholded_mask;
+        cv::Mat g = shrinker->expand_thresholds(coeffs, thresholds);
+        less_than_or_equal(coeffs, g, thresholded_mask);
+        show_image(thresholded_mask, split_channels, "DWT Coefficient < Threshold Mask");
+
+        wait_for_key_press = true;
+    }
+
+    if (wait_for_key_press)
         cv::waitKey(0);
 }
 
@@ -162,28 +185,41 @@ int main(int argc, char* argv[])
     options.add_options()
         (
             "m, method",
-            "The shrinkage algorithm [" + join(AVAILABLE_SHRINK_METHODS, ", ") + "]",
-            cxxopts::value<std::string>()->default_value("sure")
+            "The shrinkage algorithm.",
+            cxxopts::value<std::string>()->default_value("bayes"),
+            "[" + join(AVAILABLE_SHRINK_METHODS, "|") + "]"
         )
         (
             "s, show",
-            "Show original and denoised images"
+            "Show original and denoised images."
         )
         (
-            "show-coeffs",
-            "Show original and shrunk DWT coefficients"
+            "show-threshold-mask",
+            "Show the mask indicating which coefficients are less than the shrink threshold.",
+            cxxopts::value<bool>()->default_value("false")
         )
         (
             "add-noise",
-            "Add extra gaussian noise with given standard deviation",
-            cxxopts::value<double>()->default_value("0.0")
+            "Add extra gaussian noise to the image.",
+            cxxopts::value<double>()->no_implicit_value(),
+            "STDEV"
+        )
+        (
+            "noise-stdev",
+            "The known noise level corrupting the image. "
+            "When not given, the noise is estimated from the image. "
+            "Note: this does not add noise to the image (see --add-noise). "
+            "The value passed to --add-noise is NOT added to this value automatically - "
+            "users should typically add it manually.",
+            cxxopts::value<double>()->no_implicit_value(),
+            "STDEV"
         )
         (
             "o, out",
-            "Output file path"
+            "Save the denoised image.",
+            cxxopts::value<double>()->no_implicit_value(),
+            "FILE"
         );
 
     return execute(argc, argv, options, main_program);
 }
-
-

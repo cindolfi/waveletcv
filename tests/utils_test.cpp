@@ -15,13 +15,14 @@ using namespace testing;
 */
 struct MedianTestParam
 {
-    std::vector<double> values;
+    // std::vector<double> values;
+    cv::Mat matrix;
     double expected_median;
 };
 
 void PrintTo(const MedianTestParam& param, std::ostream* stream)
 {
-    *stream << "{" << join(param.values, ", ") << "} => " << param.expected_median;
+    *stream << "{" << join(std::vector<double>(param.matrix), ", ") << "} => " << param.expected_median;
 }
 
 class MedianTest : public testing::TestWithParam<MedianTestParam>
@@ -62,36 +63,36 @@ public:
         std::vector<MedianTestParam> params = {
             //  zeros
             {
-                .values = {0},
+                .matrix = cv::Mat(1, 1, CV_64F, cv::Scalar::all(0.0)),
                 .expected_median = 0,
             },
             {
-                .values = {0, 0},
+                .matrix = cv::Mat(2, 1, CV_64F, cv::Scalar::all(0.0)),
                 .expected_median = 0,
             },
             {
-                .values = {0, 0, 0},
+                .matrix = cv::Mat(3, 1, CV_64F, cv::Scalar::all(0.0)),
                 .expected_median = 0,
             },
             {
-                .values = {0, 0, 0, 0},
+                .matrix = cv::Mat(4, 1, CV_64F, cv::Scalar::all(0.0)),
                 .expected_median = 0,
             },
             //  nonzero constants
             {
-                .values = {1},
+                .matrix = cv::Mat(1, 1, CV_64F, cv::Scalar::all(1.0)),
                 .expected_median = 1,
             },
             {
-                .values = {1, 1},
+                .matrix = cv::Mat(2, 1, CV_64F, cv::Scalar::all(1.0)),
                 .expected_median = 1,
             },
             {
-                .values = {1, 1, 1},
+                .matrix = cv::Mat(3, 1, CV_64F, cv::Scalar::all(1.0)),
                 .expected_median = 1,
             },
             {
-                .values = {1, 1, 1, 1},
+                .matrix = cv::Mat(4, 1, CV_64F, cv::Scalar::all(1.0)),
                 .expected_median = 1,
             },
         };
@@ -103,7 +104,7 @@ public:
                 std::vector<double> x;
                 std::ranges::copy(values, std::back_inserter(x));
                 params.push_back({
-                    .values = x,
+                    .matrix = cv::Mat(x),
                     .expected_median = 0.5 * (n - 1),
                 });
             } while (std::next_permutation(values.begin(), values.end()));
@@ -116,10 +117,18 @@ public:
 TEST_P(MedianTest, MedianIsCorrect)
 {
     auto param = GetParam();
-    cv::Mat matrix(param.values);
-    auto actual_median = median(matrix)[0];
+    auto actual_median = median(param.matrix)[0];
 
     EXPECT_DOUBLE_EQ(actual_median, param.expected_median);
+}
+
+TEST_P(MedianTest, CovariantUnderNegation)
+{
+    auto param = GetParam();
+    cv::Mat matrix = -param.matrix;
+    auto actual_median = median(matrix)[0];
+
+    EXPECT_DOUBLE_EQ(actual_median, -param.expected_median);
 }
 
 auto median_test_labels = MedianTest::create_labels();
@@ -389,6 +398,7 @@ public:
 
 TEST_P(MultiChannelMedianTest, MedianIsCorrect)
 {
+    std::cout << "\n";
     auto param = GetParam();
     auto actual_median = median(param.values);
 
@@ -814,4 +824,22 @@ INSTANTIATE_TEST_CASE_P(
     NegateEveryOtherTest,
     testing::ValuesIn(NegateEveryOtherTest::create_test_params())
 );
+
+
+
+
+/**
+ * -----------------------------------------------------------------------------
+ * Is No Array
+ * -----------------------------------------------------------------------------
+*/
+TEST(IsNoArrayTest, IsArray)
+{
+    EXPECT_FALSE(is_no_array(cv::Mat()));
+}
+
+TEST(IsNoArrayTest, IsNotArray)
+{
+    EXPECT_TRUE(is_no_array(cv::noArray()));
+}
 

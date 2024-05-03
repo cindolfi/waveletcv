@@ -313,5 +313,25 @@ bool float_equals(T a, T b, int num_ulps, T zero_tolerance=0.0)
     return result;
 }
 
+template <typename T, int N>
+struct PermuteMatrix
+{
+    using Pixel = cv::Vec<T, N>;
+    cv::Mat operator()(const cv::Mat& matrix, const std::vector<int>& permutation) const
+    {
+        cv::Mat permuted_matrix(matrix.total(), 1, matrix.type());
+        matrix.reshape(0, 1).forEach<Pixel>(
+            [&](const auto& pixel, const auto position) {
+                int i = permutation[position[1]];
+                permuted_matrix.at<Pixel>(i) = pixel;
+            }
+        );
+
+        return permuted_matrix.reshape(0, matrix.rows);
+    }
+};
+
+cv::Mat permute_matrix(const cv::Mat& matrix, const std::vector<int>& permutation);
+
 #endif  // CVWT_TEST_COMMON_HPP
 

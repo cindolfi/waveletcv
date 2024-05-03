@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/logger.hpp>
 #include "cvwt/dwt2d.hpp"
 #include "cvwt/utils.hpp"
+#include <iostream>
 
 namespace cvwt
 {
@@ -255,10 +257,33 @@ cv::Rect DWT2D::Coeffs::diagonal_detail_rect(int level) const
 
 cv::Mat DWT2D::Coeffs::approx_mask() const
 {
-    auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
+    auto mask = cv::Mat(size(), CV_8UC1, cv::Scalar(0));
     mask(approx_rect()) = 255;
 
     return mask;
+}
+
+cv::Mat DWT2D::Coeffs::invalid_detail_mask() const
+{
+    cv::Mat mask(size(), CV_8UC1, cv::Scalar(255));
+    for (int level = 0; level < levels(); ++level) {
+        mask(horizontal_detail_rect(level)) = 0;
+        mask(vertical_detail_rect(level)) = 0;
+        mask(diagonal_detail_rect(level)) = 0;
+    }
+    mask(approx_rect()) = 0;
+
+    return mask;
+}
+
+cv::Mat DWT2D::Coeffs::detail_mask() const
+{
+    return detail_mask(0, -1);
+}
+
+cv::Mat DWT2D::Coeffs::detail_mask(int level) const
+{
+    return detail_mask(level, level);
 }
 
 cv::Mat DWT2D::Coeffs::detail_mask(int lower_level, int upper_level) const
@@ -269,17 +294,11 @@ cv::Mat DWT2D::Coeffs::detail_mask(int lower_level, int upper_level) const
     throw_if_level_out_of_range(upper_level, "upper_level");
     upper_level = resolve_level(upper_level);
 
-    cv::Mat mask;
-    if (lower_level == 0 && upper_level == levels() - 1) {
-        mask = cv::Mat(size(), CV_8U, cv::Scalar(255));
-        mask(approx_rect()) = 0;
-    } else {
-        mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
-        for (int level = lower_level; level <= upper_level; ++level) {
-            mask(horizontal_detail_rect(level)) = 255;
-            mask(vertical_detail_rect(level)) = 255;
-            mask(diagonal_detail_rect(level)) = 255;
-        }
+    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
+    for (int level = lower_level; level <= upper_level; ++level) {
+        mask(horizontal_detail_rect(level)) = 255;
+        mask(vertical_detail_rect(level)) = 255;
+        mask(diagonal_detail_rect(level)) = 255;
     }
 
     return mask;
@@ -287,21 +306,65 @@ cv::Mat DWT2D::Coeffs::detail_mask(int lower_level, int upper_level) const
 
 cv::Mat DWT2D::Coeffs::detail_mask(const cv::Range& levels) const
 {
-    return levels == cv::Range::all() ? detail_mask() : detail_mask(levels.start, levels.end);
+    return levels == cv::Range::all() ? detail_mask()
+                                      : detail_mask(levels.start, levels.end);
 }
 
 cv::Mat DWT2D::Coeffs::horizontal_detail_mask(int level) const
 {
-    auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
+    auto mask = cv::Mat(size(), CV_8UC1, cv::Scalar(0));
     mask(horizontal_detail_rect(level)) = 255;
 
     return mask;
 }
 
+cv::Mat DWT2D::Coeffs::horizontal_detail_mask(const cv::Range& levels) const
+{
+    return levels == cv::Range::all() ? horizontal_detail_mask(0, this->levels())
+                                      : horizontal_detail_mask(levels.start, levels.end);
+}
+
+cv::Mat DWT2D::Coeffs::horizontal_detail_mask(int lower_level, int upper_level) const
+{
+    throw_if_level_out_of_range(lower_level, "lower_level");
+    lower_level = resolve_level(lower_level);
+
+    throw_if_level_out_of_range(upper_level, "upper_level");
+    upper_level = resolve_level(upper_level);
+
+    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
+    for (int level = lower_level; level <= upper_level; ++level)
+        mask(horizontal_detail_rect(level)) = 255;
+
+    return mask;
+}
+
+
 cv::Mat DWT2D::Coeffs::vertical_detail_mask(int level) const
 {
-    auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
+    auto mask = cv::Mat(size(), CV_8UC1, cv::Scalar(0));
     mask(vertical_detail_rect(level)) = 255;
+
+    return mask;
+}
+
+cv::Mat DWT2D::Coeffs::vertical_detail_mask(const cv::Range& levels) const
+{
+    return levels == cv::Range::all() ? vertical_detail_mask(0, this->levels())
+                                      : vertical_detail_mask(levels.start, levels.end);
+}
+
+cv::Mat DWT2D::Coeffs::vertical_detail_mask(int lower_level, int upper_level) const
+{
+    throw_if_level_out_of_range(lower_level, "lower_level");
+    lower_level = resolve_level(lower_level);
+
+    throw_if_level_out_of_range(upper_level, "upper_level");
+    upper_level = resolve_level(upper_level);
+
+    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
+    for (int level = lower_level; level <= upper_level; ++level)
+        mask(vertical_detail_rect(level)) = 255;
 
     return mask;
 }
@@ -310,6 +373,27 @@ cv::Mat DWT2D::Coeffs::diagonal_detail_mask(int level) const
 {
     auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
     mask(diagonal_detail_rect(level)) = 255;
+
+    return mask;
+}
+
+cv::Mat DWT2D::Coeffs::diagonal_detail_mask(const cv::Range& levels) const
+{
+    return levels == cv::Range::all() ? diagonal_detail_mask(0, this->levels())
+                                      : diagonal_detail_mask(levels.start, levels.end);
+}
+
+cv::Mat DWT2D::Coeffs::diagonal_detail_mask(int lower_level, int upper_level) const
+{
+    throw_if_level_out_of_range(lower_level, "lower_level");
+    lower_level = resolve_level(lower_level);
+
+    throw_if_level_out_of_range(upper_level, "upper_level");
+    upper_level = resolve_level(upper_level);
+
+    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
+    for (int level = lower_level; level <= upper_level; ++level)
+        mask(diagonal_detail_rect(level)) = 255;
 
     return mask;
 }
@@ -324,64 +408,137 @@ bool DWT2D::Coeffs::shares_data(const cv::Mat& matrix) const
     return _p->coeff_matrix.datastart == matrix.datastart;
 }
 
-void DWT2D::Coeffs::normalize(NormalizationMode approx_mode, NormalizationMode detail_mode)
+
+
+DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
+    cv::InputArray read_mask,
+    cv::InputArray write_mask
+) const
 {
-    if (approx_mode == DWT_NO_NORMALIZE && detail_mode == DWT_NO_NORMALIZE)
-        return;
+    DWT2D::Coeffs normalized_coeffs;
+    map_details_to_unit_interval(normalized_coeffs, read_mask, write_mask);
+    return normalized_coeffs;
+}
 
-    auto max_abs_value = maximum_abs_value();
-    if (approx_mode == detail_mode) {
-        auto [alpha, beta] = normalization_constants(detail_mode, max_abs_value);
-        _p->coeff_matrix = alpha * _p->coeff_matrix + beta;
+double DWT2D::Coeffs::map_details_to_unit_interval(
+    DWT2D::Coeffs& normalized_coeffs,
+    cv::InputArray read_mask,
+    cv::InputArray write_mask
+) const
+{
+    internal::throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
+    throw_if_bad_mask_for_normalize(write_mask, "write");
+
+    double alpha = map_detail_to_unit_interval_scale(read_mask);
+    cv::Mat normalized_coeffs_matrix = alpha * _p->coeff_matrix + 0.5;
+    if (is_no_array(write_mask)) {
+        normalized_coeffs = empty_clone();
+        normalized_coeffs._p->coeff_matrix = normalized_coeffs_matrix;
+        normalized_coeffs.set_approx(approx());
     } else {
-        auto original_approx = approx().clone();
+        //  Make sure to include any unused half rows/columns resulting from
+        //  odd image size or kernel lengths.
+        auto write_mask_matrix = write_mask.getMat() | invalid_detail_mask();
 
-        if (detail_mode != DWT_NO_NORMALIZE) {
-            auto [alpha, beta] = normalization_constants(detail_mode, max_abs_value);
-            _p->coeff_matrix = alpha * _p->coeff_matrix + beta;
-        }
+        normalized_coeffs = clone();
+        normalized_coeffs_matrix.copyTo(normalized_coeffs, write_mask_matrix);
+        normalized_coeffs.set_approx(approx());
+    }
 
-        if (approx_mode != DWT_NO_NORMALIZE) {
-            auto [alpha, beta] = normalization_constants(approx_mode, max_abs_value);
-            set_approx(alpha * original_approx + beta);
-        } else {
-            set_approx(original_approx);
-        }
+    return alpha;
+}
+
+DWT2D::Coeffs DWT2D::Coeffs::map_details_from_unit_interval(
+    double scale,
+    cv::InputArray write_mask
+) const
+{
+    internal::throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
+    throw_if_bad_mask_for_normalize(write_mask, "write");
+
+    cv::Mat unnormalized_coeffs_matrix = (_p->coeff_matrix - 0.5) / scale;
+
+    if (is_no_array(write_mask)) {
+        auto unnormalized_coeffs = empty_clone();
+        unnormalized_coeffs._p->coeff_matrix = unnormalized_coeffs_matrix;
+        unnormalized_coeffs.set_approx(approx());
+
+        return unnormalized_coeffs;
+    } else {
+        //  Make sure to include any unused half rows/columns resulting from
+        //  odd image size or kernel lengths.
+        auto write_mask_matrix = write_mask.getMat() | invalid_detail_mask();
+
+        auto unnormalized_coeffs = clone();
+        unnormalized_coeffs_matrix.copyTo(unnormalized_coeffs, write_mask_matrix);
+        unnormalized_coeffs.set_approx(approx());
+
+        return unnormalized_coeffs;
     }
 }
 
-double DWT2D::Coeffs::maximum_abs_value() const
+double DWT2D::Coeffs::map_detail_to_unit_interval_scale(cv::InputArray read_mask) const
 {
-    if (empty())
-        return 0;
+    internal::throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
+    throw_if_bad_mask_for_normalize(read_mask, "read");
+    double max_value = maximum_abs_value(
+        _p->coeff_matrix,
+        is_no_array(read_mask) ? read_mask : detail_mask()
+    );
 
-    // double min = std::numeric_limits<double>::max();
-    // double max = std::numeric_limits<double>::min();
-
-    double min, max;
-    cv::minMaxIdx(_p->coeff_matrix.reshape(1), &min, &max);
-
-    return std::max(std::abs(min), std::abs(max));
+    return 0.5 / max_value;
 }
 
-// double DWT2D::Coeffs::maximum_abs_value() const
+// double DWT2D::Coeffs::maximum_abs_value(cv::InputArray mask) const
 // {
-//     double min = std::numeric_limits<double>::max();
-//     double max = std::numeric_limits<double>::min();
+//     if (empty())
+//         return 0;
 
-//     const cv::Mat* arrays[] = {&_p->coeff_matrix};
-//     std::vector<cv::Mat> planes(channels());
-//     cv::NAryMatIterator it(arrays, planes.data(), planes.size());
-//     for (int p = 0; p < it.nplanes; ++p, ++it) {
-//         double plane_min = 0;
-//         double plane_max = 0;
-//         cv::minMaxIdx(it.planes[0], &plane_min, &plane_max);
-//         min = std::min(min, plane_min);
-//         max = std::max(max, plane_max);
+//     auto get_abs_max = [](const cv::Mat& channel_coeffs, cv::InputArray channel_mask) {
+//         double min, max;
+//         cv::minMaxIdx(channel_coeffs, &min, &max, nullptr, nullptr, channel_mask);
+
+//         return std::max(std::abs(min), std::abs(max));
+//     };
+
+//     double result = 0;
+//     if (is_no_array(mask)) {
+//         auto coeff_matrix = (isContinuous() || channels() == 1)
+//                             ? _p->coeff_matrix.reshape(1)
+//                             : _p->coeff_matrix.clone().reshape(1);
+
+//         result = get_abs_max(coeff_matrix, cv::noArray());
+//     } else {
+//         assert(mask.size() == size());
+//         if (channels() == 1) {
+//             assert(mask.channels() == channels());
+//             result = get_abs_max(_p->coeff_matrix, mask);
+//         } else {
+//             auto split = [this](const cv::Mat& matrix, std::vector<cv::Mat>& matrices) {
+//                 if (matrix.channels() == 1)
+//                     matrices = std::vector<cv::Mat>(channels(), matrix);
+//                 else
+//                     cv::split(matrix, matrices);
+//             };
+
+//             std::vector<cv::Mat> coeff_matrices;
+//             split(_p->coeff_matrix, coeff_matrices);
+
+//             std::vector<cv::Mat> masks;
+//             split(mask.getMat(), masks);
+
+//             for (int i = 0; i < coeff_matrices.size(); ++i) {
+//                 result = std::max(
+//                     result,
+//                     get_abs_max(coeff_matrices.at(i), masks.at(i))
+//                 );
+//             }
+//         }
 //     }
 
-//     return std::max(std::abs(min), std::abs(max));
+//     return result;
 // }
+
 
 std::pair<double, double> DWT2D::Coeffs::normalization_constants(
     NormalizationMode normalization_mode,
@@ -406,6 +563,10 @@ std::pair<double, double> DWT2D::Coeffs::normalization_constants(
 
 void DWT2D::Coeffs::convert_and_copy(const cv::Mat& source, const cv::Mat& destination)
 {
+    assert(source.channels() == destination.channels());
+    assert(source.size() == destination.size());
+    assert(destination.type() == type());
+
     if (source.type() != destination.type()) {
         cv::Mat converted;
         source.convertTo(converted, type());
@@ -416,17 +577,38 @@ void DWT2D::Coeffs::convert_and_copy(const cv::Mat& source, const cv::Mat& desti
 }
 
 #if CVWT_ARGUMENT_CHECKING_ENABLED
+void DWT2D::Coeffs::throw_if_bad_mask_for_normalize(cv::InputArray mask, const std::string mask_name) const
+{
+    if (is_no_array(mask))
+        return;
+
+    internal::throw_if_bad_mask_type(
+        mask,
+        "The ", mask_name, " mask has the wrong data type."
+    );
+    internal::throw_if_empty(
+        mask,
+        "The ", mask_name, " mask is empty. Use cv::noArray() to indicate no mask."
+    );
+    if (mask.size() != size())
+        internal::throw_bad_size(
+            "The ", mask_name, " mask size must be ", size(),
+            ", got ", mask.size(), "."
+        );
+}
+
 void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(cv::InputArray matrix) const
 {
-    if (matrix.size() != size()) {
+    auto required_size = empty() ? level_size(0) : size();
+    if (matrix.size() != required_size) {
         internal::throw_bad_size(
             "DWT2D::Coeffs: Cannot assign matrix to this.  ",
-            "The size of matrix must be ", size(), "), ",
+            "The size of matrix must be ", required_size, "), ",
             "got matrix.size() = ", matrix.size(), "."
         );
     }
 
-    if (matrix.channels() != channels()) {
+    if (!empty() && matrix.channels() != channels()) {
         internal::throw_bad_size(
             "DWT2D::Coeffs: Cannot assign matrix to this.  ",
             "The number of channels of matrix must be ", channels(), "), ",
@@ -452,7 +634,7 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_detail(
     int subband
 ) const
 {
-    if (matrix.size() != detail_size(level)) {
+    if (matrix.size() != detail_size(level) || matrix.channels() != channels()) {
         std::string subband_name;
         switch (subband) {
             case HORIZONTAL:
@@ -467,10 +649,43 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_detail(
             default:
                 assert("Unknown subband identifier");
         }
+
+        if (matrix.size() != detail_size(level)) {
+            internal::throw_bad_size(
+                "DWT2D::Coeffs: Cannot set the ", subband_name, " detail coefficients at level ", level, ".  ",
+                "The size of the matrix must be ", detail_size(level), ", "
+                "got size = ", matrix.size(), "."
+            );
+        }
+
+        if (matrix.channels() != channels()) {
+            internal::throw_bad_size(
+                "DWT2D::Coeffs: Cannot set the ", subband_name, " detail coefficients at level ", level, ".  ",
+                "The number of channels must be ", channels(), ", "
+                "got channels = ", matrix.channels(), "."
+            );
+        }
+    }
+}
+
+void DWT2D::Coeffs::throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const
+{
+    if (matrix.size() != size()) {
+        std::string subband_name;
+
         internal::throw_bad_size(
-            "DWT2D::Coeffs: Cannot set the ", subband_name, " detail coefficients at level ", level, ".  ",
-            "The size of the matrix must be ", detail_size(level), ", "
+            "DWT2D::Coeffs: Cannot set all the detail coefficients. ",
+            "The size of the matrix must be ", size(), ", "
             "got size = ", matrix.size(), "."
+        );
+    }
+
+    if (matrix.channels() != channels()) {
+        std::string subband_name;
+        internal::throw_bad_size(
+            "DWT2D::Coeffs: Cannot set all the detail coefficients. ",
+            "The number of channels must be ", channels(), ", "
+            "got channels = ", matrix.channels(), "."
         );
     }
 }

@@ -23,7 +23,7 @@ add_executable(
     common.cpp
     base_dwt2d.hpp
     base_dwt2d.cpp
-    # utils_test.cpp
+    utils_test.cpp
     # wavelet_test.cpp
     # filterbank_test.cpp
     # dwt2d_test.cpp
@@ -33,7 +33,7 @@ add_executable(
 target_link_libraries (
     cvwt_test
     PRIVATE
-    cvwt_library
+    cvwt
     gtest_main
     gmock_main
     nlohmann_json::nlohmann_json

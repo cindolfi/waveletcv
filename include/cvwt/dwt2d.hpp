@@ -575,6 +575,12 @@ public:
          */
         cv::Mat detail(int subband) const { return detail(0, subband); }
 
+        void set_all_detail_levels(cv::InputArray coeffs)
+        {
+            throw_if_wrong_size_for_set_all_detail_levels(coeffs);
+            setTo(coeffs, detail_mask());
+        }
+
         /**
          * @brief Set the detail coefficients at a given level and subband
          *
@@ -1054,11 +1060,40 @@ public:
         //  Masks
         ///@{
         /**
+         * @brief The mask indicating the invalid detail coefficients.
+         *
+         * Invalid detail coefficients are half rows or columns of zeros that
+         * result from odd sized detail rects.  These are simply internal padding
+         * and are not the result of an image decomposition and are not used
+         * during reconstruction.
+         *
+         * Users should typically use detail_mask() when operating on
+         * coefficients over one or more levels or subbands.
+         * @return cv::Mat
+         */
+        cv::Mat invalid_detail_mask() const;
+
+        /**
          * @brief The mask indicating the approximation coefficients.
          *
          * @return cv::Mat
          */
         cv::Mat approx_mask() const;
+
+        /**
+         * @brief The mask indicating the detail coefficients.
+         *
+         * @return cv::Mat
+         */
+        cv::Mat detail_mask() const;
+
+        /**
+         * @brief The mask indicating the detail coefficients at a level.
+         *
+         * @param level
+         * @return cv::Mat
+         */
+        cv::Mat detail_mask(int level) const;
 
         /**
          * @brief The mask indicating the detail coefficients over a range of levels.
@@ -1067,7 +1102,7 @@ public:
          * @param upper_level
          * @return cv::Mat
          */
-        cv::Mat detail_mask(int lower_level=0, int upper_level=-1) const;
+        cv::Mat detail_mask(int lower_level, int upper_level) const;
 
         /**
          * @brief The mask indicating the detail coefficients over a range of levels.
@@ -1083,7 +1118,10 @@ public:
          * @param level
          * @return cv::Mat
          */
-        cv::Mat horizontal_detail_mask(int level=0) const;
+        cv::Mat horizontal_detail_mask(int level) const;
+        cv::Mat horizontal_detail_mask(const cv::Range& levels) const;
+        cv::Mat horizontal_detail_mask(int lower_level, int upper_level) const;
+        cv::Mat horizontal_detail_mask() const { return horizontal_detail_mask(0); }
 
         /**
          * @brief The mask indicating the vertical subband coefficients at the given level.
@@ -1091,7 +1129,10 @@ public:
          * @param level
          * @return cv::Mat
          */
-        cv::Mat vertical_detail_mask(int level=0) const;
+        cv::Mat vertical_detail_mask(int level) const;
+        cv::Mat vertical_detail_mask(const cv::Range& levels) const;
+        cv::Mat vertical_detail_mask(int lower_level, int upper_level) const;
+        cv::Mat vertical_detail_mask() const { return vertical_detail_mask(0); }
 
         /**
          * @brief The mask indicating the diagonal subband coefficients at the given level.
@@ -1099,7 +1140,10 @@ public:
          * @param level
          * @return cv::Mat
          */
-        cv::Mat diagonal_detail_mask(int level=0) const;
+        cv::Mat diagonal_detail_mask(int level) const;
+        cv::Mat diagonal_detail_mask(const cv::Range& levels) const;
+        cv::Mat diagonal_detail_mask(int lower_level, int upper_level) const;
+        cv::Mat diagonal_detail_mask() const { return diagonal_detail_mask(0); }
         ///@}
 
         //  --------------------------------------------------------------------
@@ -1208,6 +1252,8 @@ public:
          * @param mask
          */
         void copyTo(cv::OutputArray other, cv::InputArray mask) const { _p->coeff_matrix.copyTo(other, mask); }
+
+        void setTo(cv::InputArray other, cv::InputArray mask = cv::noArray()) const { _p->coeff_matrix.setTo(other, mask); }
 
         /**
          * @brief Converts the coefficients to another data type with optional scaling.
@@ -1373,15 +1419,145 @@ public:
         //  Other
         ///@{
         /**
-         * @brief Normalizes the coeffcients.
+         * @brief Scales and shifts detail coefficients to [0, 1].
          *
-         * @param approx_mode
-         * @param detail_mode
+         * This function maps detail coefficients centered at 0.5 to detail
+         * coefficients centered at 0.
+         *
+         * The normalized coefficients \f$\tilde\w\f$ are
+         * \f{equation}{
+         *     \tilde\w = \alpha w + \frac{1}{2}
+         * \f}
+         * where
+         * \f{equation}{
+         *     \alpha = \frac{1}{2 \max(|w|)}
+         * \f}
+         *
+         * @note This function is useful for displaying and saving coefficients
+         *       as a normal image.  Only the detail coefficients are transformed.
+         *       The approximation coefficients are left unchanged, thereby
+         *       changing the relative scale between the approximation and
+         *       detail coefficients. Reconstruction from the normalized
+         *       coefficients will result in distortion.
+         *
+         * @see
+         *  - map_details_from_unit_interval()
+         *  - map_detail_to_unit_interval_scale()
+         *
+         * @param read_mask Indicates which coefficients are used to compute the
+         *                  map parameters. This can be a single channel or
+         *                  multichannel matrix with depth CV_8U.
+         * @param write_mask Indicates which coefficients are mapped.
+         *                   This can be a single channel or multichannel matrix
+         *                   with depth CV_8U.
          */
-        void normalize(
-            NormalizationMode approx_mode=DWT_MAX_NORMALIZE,
-            NormalizationMode detail_mode=DWT_ZERO_TO_HALF_NORMALIZE
-        );
+        [[nodiscard]]
+        DWT2D::Coeffs map_details_to_unit_interval(
+            cv::InputArray read_mask = cv::noArray(),
+            cv::InputArray write_mask = cv::noArray()
+        ) const;
+
+        /**
+         * @brief Scales and shifts detail coefficients to [0, 1].
+         *
+         * This function maps detail coefficients centered at 0.5 to detail
+         * coefficients centered at 0.
+         *
+         * The normalized coefficients \f$\tilde\w\f$ are
+         * \f{equation}{
+         *     \tilde\w = \alpha w + \frac{1}{2}
+         * \f}
+         * where
+         * \f{equation}{
+         *     \alpha = \frac{1}{2 \max(|w|)}
+         * \f}
+         *
+         * @note This function is useful for displaying and saving coefficients
+         *       as a normal image.  Only the detail coefficients are transformed.
+         *       The approximation coefficients are left unchanged, thereby
+         *       changing the relative scale between the approximation and
+         *       detail coefficients. Reconstruction from the normalized
+         *       coefficients will result in distortion.
+         *
+         * @see
+         *  - map_details_from_unit_interval()
+         *  - map_detail_to_unit_interval_scale()
+         *
+         * @param[out] normalized_coeffs
+         * @param[in] read_mask Indicates which coefficients are used to compute the
+         *                      map parameters. This can be a single channel or
+         *                      multichannel matrix with depth CV_8U.
+         * @param[in] write_mask Indicates which coefficients are mapped.
+         *                       This can be a single channel or multichannel matrix
+         *                       with depth CV_8U.
+         * @return Scale
+         */
+        double map_details_to_unit_interval(
+            Coeffs& normalized_coeffs,
+            cv::InputArray read_mask = cv::noArray(),
+            cv::InputArray write_mask = cv::noArray()
+        ) const;
+
+        /**
+         * @brief Scales and shifts detail coefficients from [0, 1].
+         *
+         * This function maps detail coefficients centered at 0.5 to detail
+         * coefficients centered at 0.
+         *
+         * Given the scale parameter \f$\alpha\f$ and the normalized coefficients
+         * \f$\tilde\w\f$, this function computes the coefficents \f$w\f$ by
+         * \f{equation}{
+         *     w = \frac{\tilde\w - \frac{1}{2}}{\alpha}
+         * \f}
+         *
+         * For a particular \f$\max(|w|\f$, the scale parameter \f$\alpha\f$ must be
+         * \f{equation}{
+         *     \alpha = \frac{1}{2 \max(|w|)}
+         * \f}
+         *
+         * This is the inverse to map_details_to_unit_interval().  It must be
+         * called with the scale returned by map_details_to_unit_interval() and
+         * the same write mask that was passed to map_details_to_unit_interval().
+         *
+         * @code{cpp}
+         * DWT2D::Coeffs coeffs = ...;
+         *
+         * // Map the details to [0, 1] such that 0 gets mapped to 0.5
+         * DWT2D::Coeffs unit_interval_detail_coeffs;
+         * double scale = coeffs.map_details_to_unit_interval(unit_interval_detail_coeffs);
+         *
+         * // Invert the mapping, i.e. coeffs2 == coeffs element-wise
+         * auto coeffs2 = unit_interval_detail_coeffs.map_details_from_unit_interval(scale);
+         * @endcode
+         *
+         * @see
+         *  - map_details_to_unit_interval()
+         *  - map_detail_to_unit_interval_scale()
+         *
+         * @param write_mask Indicates which coefficients are mapped.
+         *                   This can be a single channel or multichannel matrix
+         *                   with depth CV_8U.
+         */
+        [[nodiscard]]
+        DWT2D::Coeffs map_details_from_unit_interval(
+            double scale,
+            cv::InputArray write_mask = cv::noArray()
+        ) const;
+
+        /**
+         * @brief Returns the scaling coefficient used to map the detail
+         *        coefficients into the interval [0, 1].
+         *
+         * \f{equation}{
+         *     \alpha = \frac{1}{2 \max(|w|)}
+         * \f}
+         *
+         * @param read_mask Indicates which coefficients are used to compute the
+         *                  scale. This can be a single channel or multichannel
+         *                  matrix with depth CV_8U.
+         */
+        double map_detail_to_unit_interval_scale(cv::InputArray read_mask = cv::noArray()) const;
+
 
         /**
          * @brief Returns true if this and other refer to the same underlying data
@@ -1402,17 +1578,21 @@ public:
         //  Argument Checkers - these can be disabled by building with cmake
         //  option CVWT_ARGUMENT_CHECKING = OFF
         #if CVWT_ARGUMENT_CHECKING_ENABLED
+        void throw_if_bad_mask_for_normalize(cv::InputArray mask, const std::string mask_name) const;
         void throw_if_wrong_size_for_assignment(cv::InputArray matrix) const;
         void throw_if_wrong_size_for_set_level(const cv::Mat& matrix, int level) const;
         void throw_if_wrong_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const;
+        void throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const;
         void throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const;
         void throw_if_level_out_of_range(int level, const std::string& level_name = "level") const;
         void throw_if_this_is_empty() const;
         void throw_if_invalid_subband(int subband) const;
         #else
+        void throw_if_bad_mask_for_normalize(cv::InputArray mask, const std::string mask_name) const noexcept {}
         void throw_if_wrong_size_for_assignment(cv::InputArray matrix) const noexcept {}
         void throw_if_wrong_size_for_set_level(const cv::Mat& matrix, int level) const noexcept {}
         void throw_if_wrong_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const noexcept {}
+        void throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const noexcept {};
         void throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const noexcept {}
         void throw_if_level_out_of_range(int level, const std::string& level_name = "level") const noexcept {}
         void throw_if_this_is_empty() const noexcept {}
@@ -1420,7 +1600,7 @@ public:
         #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
         //  Helpers
-        double maximum_abs_value() const;
+        // double maximum_abs_value(cv::InputArray mask = cv::noArray()) const;
         std::pair<double, double> normalization_constants(
             NormalizationMode normalization_mode,
             double max_abs_value

@@ -19,14 +19,14 @@ void show(
     const Wavelet& wavelet
 )
 {
-    cv::imshow(make_title("Image (", filepath.filename(), ")"), image);
-
-    auto normalized_coeffs = coeffs.clone();
-    normalized_coeffs.normalize();
+    cv::imshow(
+        make_title("Image (", filepath.filename(), ")"),
+        image
+    );
     cv::imshow(
         make_title("DWT Coefficients(", wavelet.name(), ", ",
                    coeffs.levels(), " levels)"),
-        normalized_coeffs
+        coeffs.map_details_to_unit_interval()
     );
 }
 
@@ -35,7 +35,8 @@ void main_program(const cxxopts::ParseResult& args)
     auto [image, filepath] = open_image(args["image_file"].as<std::string>());
     auto wavelet = Wavelet::create(args["wavelet"].as<std::string>());
     auto levels = args["levels"].as<int>();
-    auto coeffs = dwt2d(image, wavelet, args["levels"].as<int>());
+    auto coeffs = levels > 0 ? dwt2d(image, wavelet, levels)
+                             : dwt2d(image, wavelet);
 
     if (args.count("out"))
         save_coeffs(coeffs, args["out"].as<std::string>());
@@ -53,11 +54,13 @@ int main(int argc, char* argv[])
     options.add_options()
         (
             "s, show",
-            "Show image and DWT"
+            "Show image and DWT coefficients."
         )
         (
             "o, out",
-            "Output file path"
+            "Save the denoised image.",
+            cxxopts::value<double>()->no_implicit_value(),
+            "FILE"
         );
 
     return execute(argc, argv, options, main_program);

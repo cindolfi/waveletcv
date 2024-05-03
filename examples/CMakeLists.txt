@@ -20,7 +20,7 @@ add_executable(
 target_link_libraries (
     dwt2d
     PRIVATE
-    cvwt_library
+    cvwt
     cxxopts
 )
 target_compile_features(dwt2d PRIVATE cxx_std_20)
@@ -37,7 +37,7 @@ add_executable(
 target_link_libraries (
     dwt2d-denoise
     PRIVATE
-    cvwt_library
+    cvwt
     cxxopts
 )
 target_compile_features(dwt2d-denoise PRIVATE cxx_std_20)

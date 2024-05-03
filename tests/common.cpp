@@ -444,3 +444,11 @@ int ulps_between(double a, double b)
     return abs(*(long*)&a - *(long*)&b);
 }
 
+cv::Mat permute_matrix(const cv::Mat& matrix, const std::vector<int>& permutation)
+{
+    return cvwt::internal::dispatch_on_pixel_type<PermuteMatrix>(
+        matrix.type(),
+        matrix,
+        permutation
+    );
+}

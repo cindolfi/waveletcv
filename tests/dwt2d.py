@@ -179,6 +179,145 @@ if __name__ == '__main__':
     # plot_sure()
     # plt.show()
 
+
+
+
+    def mad(x):
+        m = np.median(x)
+        # print(m)
+        return np.median(np.abs(x - m))
+
+    def mad_std(x):
+        return mad(x) / 0.675
+
+
+    def get_subband(x, slices):
+        return x[..., slices[0], slices[1]]
+
+    def bayes_threshold(coeffs, noise_std):
+        noise_variance = noise_std**2
+        obs_variance = np.sum(coeffs**2) / coeffs.size
+
+        sig_variance = max(obs_variance - noise_variance, 0)
+        if sig_variance == 0:
+            return np.max(abs(coeffs))
+
+        return noise_variance / np.sqrt(sig_variance)
+
+    def subband_bayes_threshold(x, subband_slices, noise_std):
+        return {
+            name: np.array([
+                bayes_threshold(get_subband(x[i], rect_slices), noise_std[i])
+                for i in range(4)
+            ])
+            for name, rect_slices in subband_slices.items()
+        }
+
+
+    def levelwise_bayes_threshold(x, subband_slices, noise_std):
+        def get_level_coeffs(i, level):
+            return np.concatenate([
+                get_subband(x[i], subband_slices[f'h{level}']).ravel(),
+                get_subband(x[i], subband_slices[f'v{level}']).ravel(),
+                get_subband(x[i], subband_slices[f'd{level}']).ravel(),
+            ])
+        return {
+            f'level{level}': np.array([
+                bayes_threshold(get_level_coeffs(i, level), noise_std[i])
+                for i in range(4)
+            ])
+            for level in range(levels)
+        }
+
+
+    def global_bayes_threshold(x, subband_slices, noise_std, levels):
+        def get_global_coeffs(i):
+            return np.concatenate([
+                get_subband(x[i], s).ravel()
+                for name, s in subband_slices.items()
+                if int(name[-1]) in levels
+            ])
+        threshold = np.array([
+            bayes_threshold(get_global_coeffs(i), noise_std[i])
+            for i in range(4)
+        ])
+        return {'global': threshold}
+
+
+    levels = 3
+    n = 16
+    decimals = 4
+    fmt = f'0.{decimals}f'
+    fmt2 = '0.16f'
+
+    # x = np.random.randn(4, n, n)
+    x = np.linspace(0, 1, 4 * n * n).reshape(4, n, n)
+    # x = np.arange(4 * n * n).reshape(4, n, n)
+    x = np.round(x, decimals)
+
+    subband_slices = dict()
+    for i in range(levels):
+        k = n // 2**i
+        j = k // 2
+        subband_slices[f'h{i}'] = (slice(j, k), slice(0, j))
+        subband_slices[f'v{i}'] = (slice(0, j), slice(j, k))
+        subband_slices[f'd{i}'] = (slice(j, k), slice(j, k))
+
+    for i in range(x.shape[-2]):
+        print(f'//  row {i}')
+        for j in range(x.shape[-1]):
+            print(f'cv::Scalar({x[0, i, j]:{fmt}}, {x[1, i, j]:{fmt}}, {x[2, i, j]:{fmt}}, {x[3, i, j]:{fmt}}), ')
+    print()
+
+    noise_std = np.array([
+        mad_std(get_subband(x[0], subband_slices['d0'])),
+        mad_std(get_subband(x[1], subband_slices['d0'])),
+        mad_std(get_subband(x[2], subband_slices['d0'])),
+        mad_std(get_subband(x[3], subband_slices['d0'])),
+    ])
+    print(f'cv::Scalar({noise_std[0]:{fmt2}}, {noise_std[1]:{fmt2}}, {noise_std[2]:{fmt2}}, {noise_std[3]:{fmt2}})')
+    print()
+
+    def doit(compute_thresholds, *args):
+        thresholds = compute_thresholds(x, subband_slices, noise_std, *args)
+        for name, t in thresholds.items():
+            print(f'cv::Scalar({t[0]:{fmt2}}, {t[1]:{fmt2}}, {t[2]:{fmt2}}, {t[3]:{fmt2}}),')
+        print()
+
+    print('//  Subband Partition')
+    doit(subband_bayes_threshold)
+    print('//  Level Partition')
+    doit(levelwise_bayes_threshold)
+    print('//  All Levels')
+    doit(global_bayes_threshold, [0, 1, 2])
+    print('//  First Level')
+    doit(global_bayes_threshold, [0])
+    print('//  First Two Levels')
+    doit(global_bayes_threshold, [0, 1])
+    print('//  Last Level')
+    doit(global_bayes_threshold, [2])
+    print('//  Last Two Levels')
+    doit(global_bayes_threshold, [1, 2])
+
+    exit()
+
+    # image = cv2.imread('inputs/lena.png', cv2.IMREAD_COLOR)
+    # image = image / 255
+    # wavelet = pywt.Wavelet('db1')
+    # coeffs = pywt.wavedec2(image, wavelet, axes=(0, 1), level=1)
+    # coeffs, _ = pywt.coeffs_to_array(coeffs, axes=(0, 1))
+
+    # # print(coeffs)
+    # print(coeffs.shape)
+    # print(image.shape)
+
+    # cv2.imshow('image', image)
+    # cv2.imshow('coeffs', coeffs)
+
+    # cv2.waitKey(0)
+    # # cv2.destroyAllWindows()
+    # exit()
+
     def transform(image, wavelet, level=None):
         axes = (0, 1)
         # coeffs = pywt.wavedec2(image, wavelet, level=2, axes=axes)

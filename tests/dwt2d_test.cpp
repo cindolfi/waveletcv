@@ -2,6 +2,8 @@
  * DWT2D Unit Tests
 */
 #include <vector>
+#include <sstream>
+#include <algorithm>
 #include <cvwt/dwt2d.hpp>
 #include <cvwt/utils.hpp>
 #include "common.hpp"
@@ -1499,8 +1501,6 @@ INSTANTIATE_TEST_CASE_P(
 */
 struct NormalizeTestParam
 {
-    NormalizationMode approx_mode;
-    NormalizationMode detail_mode;
     double min_approx_value;
     double max_approx_value;
     double min_detail_value;
@@ -1509,32 +1509,56 @@ struct NormalizeTestParam
     double expected_max_approx_value;
     double expected_min_detail_value;
     double expected_max_detail_value;
+    std::string wavelet_name;
+    int levels;
+    cv::Size image_size;
 };
+
+void PrintTo(const NormalizeTestParam& param, std::ostream* stream)
+{
+    auto abs_max = std::max(
+        std::max(std::fabs(param.min_approx_value), std::fabs(param.max_approx_value)),
+        std::max(std::fabs(param.min_detail_value), std::fabs(param.max_detail_value))
+    );
+
+    *stream << "\n"
+        << "wavelet: " << param.wavelet_name << "\n"
+        << "levels: " << param.levels << "\n"
+        << "image_size: " << param.image_size << "\n"
+        << "range map: " << std::setprecision(2)
+        << "[" << param.min_detail_value << ", " << param.max_detail_value << "] "
+        << "/ " << abs_max << " "
+        << "-> [" << param.expected_min_detail_value << ", " << param.expected_max_detail_value << "]\n";
+}
 
 class Dwt2dCoeffsNormalizeTest : public testing::TestWithParam<NormalizeTestParam>
 {
 protected:
-    const int rows = 16;
-    const int cols = 8;
+    // const int rows = 16;
+    // const int cols = 8;
     const int type = CV_32F;
-    const cv::Size full_size = cv::Size(cols, rows);
+    // const int levels = 3;
+    // const cv::Size full_size = cv::Size(cols, rows);
 
 protected:
     Dwt2dCoeffsNormalizeTest() :
         testing::TestWithParam<ParamType>(),
-        dwt(create_haar())
+        // dwt(create_haar())
+        dwt(Wavelet::create(GetParam().wavelet_name))
     {
     }
 
     void SetUp() override
     {
         auto param = GetParam();
-        coeffs = dwt.create_coeffs(full_size, type, 3);
+        // coeffs = dwt.create_coeffs(full_size, type, 3);
+        auto coeffs_size = dwt.coeffs_size_for_image(param.image_size, param.levels);
+        coeffs = dwt.create_coeffs(coeffs_size, type, param.levels);
 
         populate_test_case_matrix(param, coeffs);
     }
 
-    void populate_test_case_matrix(const NormalizeTestParam& param, DWT2D::Coeffs& coeffs)
+    void populate_test_case_matrix(const ParamType& param, DWT2D::Coeffs& coeffs)
     {
         cv::Mat matrix = coeffs;
         auto set_value = [&](const auto& point, auto value) {
@@ -1577,6 +1601,312 @@ protected:
     cv::Mat expected_matrix;
     DWT2D dwt;
     DWT2D::Coeffs coeffs;
+
+public:
+
+
+    static std::vector<ParamType> create_test_cases()
+    {
+        std::vector<ParamType> base_params = {
+            //  Case 0
+            //  [-10, 10] / 10 -> [0, 1]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 10.0,
+                .min_detail_value = -10.0,
+                .max_detail_value = 10.0,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 10.0,
+                .expected_min_detail_value = 0.0,
+                .expected_max_detail_value = 1.0,
+            },
+            //  Case 1
+            //  [-8, 10] / 10 -> [0.1, 1]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 10.0,
+                .min_detail_value = -8.0,
+                .max_detail_value = 10.0,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 10.0,
+                .expected_min_detail_value = 0.1,
+                .expected_max_detail_value = 1.0,
+            },
+            //  Case 2
+            //  [-10, 8] / 10 -> [0.0, 0.9]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 10.0,
+                .min_detail_value = -10.0,
+                .max_detail_value = 8.0,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 10.0,
+                .expected_min_detail_value = 0.0,
+                .expected_max_detail_value = 0.9,
+            },
+            //  Case 3
+            //  [-10, 10] / 20 -> [0.25, 0.75]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 20.0,
+                .min_detail_value = -10.0,
+                .max_detail_value = 10.0,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 20.0,
+                .expected_min_detail_value = 0.25,
+                .expected_max_detail_value = 0.75,
+            },
+            //  Case 4
+            //  [-8, 10] / 20 -> [0.3, 0.75]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 20.0,
+                .min_detail_value = -8.0,
+                .max_detail_value = 10.0,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 20.0,
+                .expected_min_detail_value = 0.3,
+                .expected_max_detail_value = 0.75,
+            },
+            //  Case 5
+            //  [-10, 8] / 20 -> [0.25, 0.7]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 20.0,
+                .min_detail_value = -10.0,
+                .max_detail_value = 8.0,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 20.0,
+                .expected_min_detail_value = 0.25,
+                .expected_max_detail_value = 0.7,
+            },
+            //  Case 6
+            //  [-10, 10] / 0.5 -> [0.0, 1.0]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 0.5,
+                .min_detail_value = -0.5,
+                .max_detail_value = 0.5,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 0.5,
+                .expected_min_detail_value = 0.0,
+                .expected_max_detail_value = 1.0,
+            },
+            //  Case 7
+            //  [-8, 10] / 0.5 -> [0.1, 1.0]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 0.5,
+                .min_detail_value = -0.4,
+                .max_detail_value = 0.5,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 0.5,
+                .expected_min_detail_value = 0.1,
+                .expected_max_detail_value = 1.0,
+            },
+            //  Case 8
+            //  [-10, 8] / 0.5 -> [0.0, 0.9]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 0.5,
+                .min_detail_value = -0.5,
+                .max_detail_value = 0.4,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 0.5,
+                .expected_min_detail_value = 0.0,
+                .expected_max_detail_value = 0.9,
+            },
+            //  Case 9
+            //  [0, 0] / 10 -> [0.5, 0.5]
+            {
+                .min_approx_value = 0.0,
+                .max_approx_value = 10,
+                .min_detail_value = 0.0,
+                .max_detail_value = 0.0,
+                .expected_min_approx_value = 0.0,
+                .expected_max_approx_value = 10,
+                .expected_min_detail_value = 0.5,
+                .expected_max_detail_value = 0.5,
+            },
+        };
+
+
+        std::vector<ParamType> params;
+
+        auto build_params = [&](
+            const std::string& wavelet_name,
+            int levels,
+            const cv::Size& image_size
+        )
+        {
+            for (auto& param : base_params) {
+                param.wavelet_name = wavelet_name;
+                param.levels = levels;
+                param.image_size = image_size;
+                params.push_back(param);
+            }
+        };
+
+        build_params("db1", 1, cv::Size(8, 16));
+        build_params("db1", 3, cv::Size(8, 16));
+        build_params("db3", 1, cv::Size(16, 32));
+        build_params("db3", 3, cv::Size(16, 32));
+
+        return params;
+
+        // return {
+        //     //  Case 0
+        //     //  [-10, 10] / 10 -> [0, 1]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 10.0,
+        //         .min_detail_value = -10.0,
+        //         .max_detail_value = 10.0,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 10.0,
+        //         .expected_min_detail_value = 0.0,
+        //         .expected_max_detail_value = 1.0,
+        //     },
+        //     //  Case 1
+        //     //  [-8, 10] / 10 -> [0.1, 1]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 10.0,
+        //         .min_detail_value = -8.0,
+        //         .max_detail_value = 10.0,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 10.0,
+        //         .expected_min_detail_value = 0.1,
+        //         .expected_max_detail_value = 1.0,
+        //     },
+        //     //  Case 2
+        //     //  [-10, 8] / 10 -> [0.0, 0.9]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 10.0,
+        //         .min_detail_value = -10.0,
+        //         .max_detail_value = 8.0,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 10.0,
+        //         .expected_min_detail_value = 0.0,
+        //         .expected_max_detail_value = 0.9,
+        //     },
+        //     //  Case 3
+        //     //  [-10, 10] / 20 -> [0.25, 0.75]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 20.0,
+        //         .min_detail_value = -10.0,
+        //         .max_detail_value = 10.0,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 20.0,
+        //         .expected_min_detail_value = 0.25,
+        //         .expected_max_detail_value = 0.75,
+        //     },
+        //     //  Case 4
+        //     //  [-8, 10] / 20 -> [0.3, 0.75]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 20.0,
+        //         .min_detail_value = -8.0,
+        //         .max_detail_value = 10.0,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 20.0,
+        //         .expected_min_detail_value = 0.3,
+        //         .expected_max_detail_value = 0.75,
+        //     },
+        //     //  Case 5
+        //     //  [-10, 8] / 20 -> [0.25, 0.7]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 20.0,
+        //         .min_detail_value = -10.0,
+        //         .max_detail_value = 8.0,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 20.0,
+        //         .expected_min_detail_value = 0.25,
+        //         .expected_max_detail_value = 0.7,
+        //     },
+        //     //  Case 6
+        //     //  [-10, 10] / 0.5 -> [0.0, 1.0]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 0.5,
+        //         .min_detail_value = -0.5,
+        //         .max_detail_value = 0.5,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 0.5,
+        //         .expected_min_detail_value = 0.0,
+        //         .expected_max_detail_value = 1.0,
+        //     },
+        //     //  Case 7
+        //     //  [-8, 10] / 0.5 -> [0.1, 1.0]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 0.5,
+        //         .min_detail_value = -0.4,
+        //         .max_detail_value = 0.5,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 0.5,
+        //         .expected_min_detail_value = 0.1,
+        //         .expected_max_detail_value = 1.0,
+        //     },
+        //     //  Case 8
+        //     //  [-10, 8] / 0.5 -> [0.0, 0.9]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 0.5,
+        //         .min_detail_value = -0.5,
+        //         .max_detail_value = 0.4,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 0.5,
+        //         .expected_min_detail_value = 0.0,
+        //         .expected_max_detail_value = 0.9,
+        //     },
+        //     //  Case 9
+        //     //  [0, 0] / 10 -> [0.5, 0.5]
+        //     {
+        //         .size = cv::Size(8, 16),
+        //         .levels = 3,
+        //         .wavelet_name = "haar",
+        //         .min_approx_value = 0.0,
+        //         .max_approx_value = 10,
+        //         .min_detail_value = 0.0,
+        //         .max_detail_value = 0.0,
+        //         .expected_min_approx_value = 0.0,
+        //         .expected_max_approx_value = 10,
+        //         .expected_min_detail_value = 0.5,
+        //         .expected_max_detail_value = 0.5,
+        //     },
+        // };
+    }
 };
 
 TEST_P(Dwt2dCoeffsNormalizeTest, ApproxValuesAreCorrect)
@@ -1584,10 +1914,16 @@ TEST_P(Dwt2dCoeffsNormalizeTest, ApproxValuesAreCorrect)
     auto param = GetParam();
     auto approx_mask = coeffs.approx_mask();
 
-    coeffs.normalize(param.approx_mode, param.detail_mode);
+    auto normalized_coeffs = coeffs.map_details_to_unit_interval();
 
-    EXPECT_THAT(coeffs, IsMaskedMatrixMin(param.expected_min_approx_value, approx_mask));
-    EXPECT_THAT(coeffs, IsMaskedMatrixMax(param.expected_max_approx_value, approx_mask));
+    EXPECT_THAT(
+        normalized_coeffs,
+        IsMaskedMatrixMin(param.expected_min_approx_value, approx_mask)
+    );
+    EXPECT_THAT(
+        normalized_coeffs,
+        IsMaskedMatrixMax(param.expected_max_approx_value, approx_mask)
+    );
 }
 
 TEST_P(Dwt2dCoeffsNormalizeTest, DetailValuesAreCorrect)
@@ -1595,804 +1931,971 @@ TEST_P(Dwt2dCoeffsNormalizeTest, DetailValuesAreCorrect)
     auto param = GetParam();
     auto detail_mask = coeffs.detail_mask();
 
-    coeffs.normalize(param.approx_mode, param.detail_mode);
+    auto normalized_coeffs = coeffs.map_details_to_unit_interval();
 
-    EXPECT_THAT(coeffs, IsMaskedMatrixMin(param.expected_min_detail_value, detail_mask));
-    EXPECT_THAT(coeffs, IsMaskedMatrixMax(param.expected_max_detail_value, detail_mask));
-}
+    std::cout << "\n";
+    cvwt::PrintTo(coeffs, &std::cout);
 
-
-std::string normalize_mode_string(int mode)
-{
-    switch (mode){
-        case DWT_NO_NORMALIZE: return "DWT_NO_NORMALIZE";
-        case DWT_ZERO_TO_HALF_NORMALIZE: return "DWT_ZERO_TO_HALF_NORMALIZE";
-        case DWT_MAX_NORMALIZE: return "DWT_MAX_NORMALIZE";
-    }
-
-    return "";
-}
-
-void PrintTo(const Dwt2dCoeffsNormalizeTest::ParamType& param, std::ostream* stream)
-{
-    auto abs_max = std::max(
-        std::max(std::fabs(param.min_approx_value), std::fabs(param.max_approx_value)),
-        std::max(std::fabs(param.min_detail_value), std::fabs(param.max_detail_value))
+    EXPECT_THAT(
+        normalized_coeffs,
+        IsMaskedMatrixMin(param.expected_min_detail_value, detail_mask)
     );
-
-    *stream << std::setprecision(2)
-        << "\n"
-        << "APPROX: " << normalize_mode_string(param.approx_mode) << " "
-        << "[" << param.min_approx_value << ", " << param.max_approx_value << "] "
-        << "/ " << abs_max << " "
-        << "-> [" << param.expected_min_approx_value << ", " << param.expected_max_approx_value << "] "
-        << "\n"
-        << "DETAIL: " << normalize_mode_string(param.detail_mode) << " "
-        << "[" << param.min_detail_value << ", " << param.max_detail_value << "] "
-        << "/ " << abs_max << " "
-        << "-> [" << param.expected_min_detail_value << ", " << param.expected_max_detail_value << "] ";
+    EXPECT_THAT(
+        normalized_coeffs,
+        IsMaskedMatrixMax(param.expected_max_detail_value, detail_mask)
+    );
 }
-
-
-std::vector<NormalizeTestParam> normalize_test_cases = {
-    //  ========================================================================
-    //  Do Not Normalize Approx, Do Not Normalize Detail
-    //  ========================================================================
-    //  Case 0
-    //  DWT_NO_NORMALIZE
-    //  [-10, 10] / 10 -> [-10, 10]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10.0,
-        .expected_min_detail_value = -10.0,
-        .expected_max_detail_value = 10.0,
-    },
-    //  ========================================================================
-    //  Do Not Normalize Approx, Normalize Detail
-    //  ========================================================================
-    //  Case 1
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 2
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 10 -> [0.1, 1]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -8.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10.0,
-        .expected_min_detail_value = 0.1,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 3
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 10 -> [0.0, 0.9]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 8.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.9,
-    },
-    //  Case 4
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 20 -> [0.25, 0.75]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 20.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 20.0,
-        .expected_min_detail_value = 0.25,
-        .expected_max_detail_value = 0.75,
-    },
-    //  Case 5
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 20 -> [0.3, 0.75]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 20.0,
-        .min_detail_value = -8.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 20.0,
-        .expected_min_detail_value = 0.3,
-        .expected_max_detail_value = 0.75,
-    },
-    //  Case 6
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 20 -> [0.25, 0.7]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 20.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 8.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 20.0,
-        .expected_min_detail_value = 0.25,
-        .expected_max_detail_value = 0.7,
-    },
-    //  Case 7
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 0.5 -> [0.0, 1.0]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 0.5,
-        .min_detail_value = -0.5,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 8
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 0.5 -> [0.1, 1.0]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 0.5,
-        .min_detail_value = -0.4,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = 0.1,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 9
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 0.5 -> [0.0, 0.9]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 0.5,
-        .min_detail_value = -0.5,
-        .max_detail_value = 0.4,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.9,
-    },
-    //  Case 10
-    //  DWT_NO_NORMALIZE
-    //  DWT_ZERO_TO_HALF_NORMALIZE [0, 0] / 10 -> [0.5, 0.5]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10,
-        .min_detail_value = 0.0,
-        .max_detail_value = 0.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10,
-        .expected_min_detail_value = 0.5,
-        .expected_max_detail_value = 0.5,
-    },
-    //  ------------------------------------------------------------------------
-    //  Case 11
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-10, 10] / 10 -> [-1, 1]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10.0,
-        .expected_min_detail_value = -1.0,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 12
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-8, 10] / 10 -> [-0.8, 1]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -8.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10.0,
-        .expected_min_detail_value = -0.8,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 13
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-10, 8] / 10 -> [-1.0, 0.8]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 8.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10.0,
-        .expected_min_detail_value = -1.0,
-        .expected_max_detail_value = 0.8,
-    },
-    //  Case 14
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-10, 10] / 20 -> [-0.5, 0.5]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 20.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 20.0,
-        .expected_min_detail_value = -0.5,
-        .expected_max_detail_value = 0.5,
-    },
-    //  Case 15
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-8, 10] / 20 -> [-0.4, 0.5]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 20.0,
-        .min_detail_value = -8.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 20.0,
-        .expected_min_detail_value = -0.4,
-        .expected_max_detail_value = 0.5,
-    },
-    //  Case 16
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-10, 8] / 20 -> [-0.5, 0.4]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 20.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 8.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 20.0,
-        .expected_min_detail_value = -0.5,
-        .expected_max_detail_value = 0.4,
-    },
-    //  Case 17
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-0.5, 0.5] / 0.5 -> [-1.0, 1.0]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 0.5,
-        .min_detail_value = -0.5,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = -1.0,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 18
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-0.4, 0.5] / 0.5 -> [-0.8, 1.0]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 0.5,
-        .min_detail_value = -0.4,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = -0.8,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 19
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [-0.5, 0.4] / 0.5 -> [-1.0, 0.8]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 0.5,
-        .min_detail_value = -0.5,
-        .max_detail_value = 0.4,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = -1.0,
-        .expected_max_detail_value = 0.8,
-    },
-    //  Case 20
-    //  DWT_NO_NORMALIZE
-    //  DWT_MAX_NORMALIZE [0, 0] / 10 -> [0.0, 0.0]
-    {
-        .approx_mode = DWT_NO_NORMALIZE,
-        .detail_mode = DWT_MAX_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10,
-        .min_detail_value = 0.0,
-        .max_detail_value = 0.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 10,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.0,
-    },
-    //  ========================================================================
-    //  Normalize Approx, Do Not Normalize Detail
-    //  ========================================================================
-    //  Case 21
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -10.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 10.0,
-    },
-    //  Case 22
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 10 -> [0.1, 1]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -8.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.1,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 10.0,
-    },
-    //  Case 23
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 10 -> [0.0, 0.9]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -10.0,
-        .max_approx_value = 8.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.9,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 10.0,
-    },
-    //  Case 24
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 20 -> [0.25, 0.75]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -10.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 20.0,
-        .expected_min_approx_value = 0.25,
-        .expected_max_approx_value = 0.75,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 20.0,
-    },
-    //  Case 25
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 20 -> [0.3, 0.75]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -8.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 20.0,
-        .expected_min_approx_value = 0.3,
-        .expected_max_approx_value = 0.75,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 20.0,
-    },
-    //  Case 26
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 20 -> [0.25, 0.7]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -10.0,
-        .max_approx_value = 8.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 20.0,
-        .expected_min_approx_value = 0.25,
-        .expected_max_approx_value = 0.7,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 20.0,
-    },
-    //  Case 27
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 0.5 -> [0.0, 1.0]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -0.5,
-        .max_approx_value = 0.5,
-        .min_detail_value = 0.0,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.5,
-    },
-    //  Case 28
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 0.5 -> [0.1, 1.0]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -0.4,
-        .max_approx_value = 0.5,
-        .min_detail_value = 0.0,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = 0.1,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.5,
-    },
-    //  Case 29
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 0.5 -> [0.0, 0.9]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -0.5,
-        .max_approx_value = 0.4,
-        .min_detail_value = 0.0,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.9,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.5,
-    },
-    //  Case 30
-    //  DWT_ZERO_TO_HALF_NORMALIZE [0, 0] / 10 -> [0.5, 0.5]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 0.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 10,
-        .expected_min_approx_value = 0.5,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 10,
-    },
-    //  ------------------------------------------------------------------------
-    //  Case 31
-    //  DWT_MAX_NORMALIZE [-10, 10] / 10 -> [-1, 1]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -10.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = -1.0,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 10.0,
-    },
-    //  Case 32
-    //  DWT_MAX_NORMALIZE [-8, 10] / 10 -> [-0.8, 1]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -8.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = -0.8,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 10.0,
-    },
-    //  Case 33
-    //  DWT_MAX_NORMALIZE [-10, 8] / 10 -> [-1.0, 0.8]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -10.0,
-        .max_approx_value = 8.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = -1.0,
-        .expected_max_approx_value = 0.8,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 10.0,
-    },
-    //  Case 34
-    //  DWT_MAX_NORMALIZE [-10, 10] / 20 -> [-0.5, 0.5]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -10.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 20.0,
-        .expected_min_approx_value = -0.5,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 20.0,
-    },
-    //  Case 35
-    //  DWT_MAX_NORMALIZE [-8, 10] / 20 -> [-0.4, 0.5]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -8.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 20.0,
-        .expected_min_approx_value = -0.4,
-        .expected_max_approx_value = 0.5,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 20.0,
-    },
-    //  Case 36
-    //  DWT_MAX_NORMALIZE [-10, 8] / 20 -> [-0.5, 0.4]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -10.0,
-        .max_approx_value = 8.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 20.0,
-        .expected_min_approx_value = -0.5,
-        .expected_max_approx_value = 0.4,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 20.0,
-    },
-    //  Case 37
-    //  DWT_MAX_NORMALIZE [-0.5, 0.5] / 0.5 -> [-1.0, 1.0]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -0.5,
-        .max_approx_value = 0.5,
-        .min_detail_value = 0.0,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = -1.0,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.5,
-    },
-    //  Case 38
-    //  DWT_MAX_NORMALIZE [-0.4, 0.5] / 0.5 -> [-0.8, 1.0]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -0.4,
-        .max_approx_value = 0.5,
-        .min_detail_value = 0.0,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = -0.8,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.5,
-    },
-    //  Case 39
-    //  DWT_MAX_NORMALIZE [-0.5, 0.4] / 0.5 -> [-1.0, 0.8]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = -0.5,
-        .max_approx_value = 0.4,
-        .min_detail_value = 0.0,
-        .max_detail_value = 0.5,
-        .expected_min_approx_value = -1.0,
-        .expected_max_approx_value = 0.8,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 0.5,
-    },
-    //  Case 40
-    //  DWT_MAX_NORMALIZE [0, 0] / 10 -> [0.0, 0.0]
-    //  DWT_NO_NORMALIZE
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_NO_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 0.0,
-        .min_detail_value = 0.0,
-        .max_detail_value = 10,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 10,
-    },
-    //  ========================================================================
-    //  Normalize Approx, Normalize Detail
-    //  ========================================================================
-    //  Case 41
-    //  DWT_ZERO_TO_HALF_NORMALIZE [0, 10] / 10 -> [0.5, 1]
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.5,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 42
-    //  DWT_ZERO_TO_HALF_NORMALIZE [0, 10] / 10 -> [0.5, 1]
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 10 -> [0.1, 1]
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -8.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.5,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.1,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 43
-    //  DWT_ZERO_TO_HALF_NORMALIZE [0, 8] / 10 -> [0, 0.8]
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 8.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.5,
-        .expected_max_approx_value = 0.9,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 44
-    //  DWT_ZERO_TO_HALF_NORMALIZE [0, 10] / 10 -> [0.5, 1]
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, -8] / 10 -> [0.1, 0.9]
-    {
-        .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -8.0,
-        .max_detail_value = 8.0,
-        .expected_min_approx_value = 0.5,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.1,
-        .expected_max_detail_value = 0.9,
-    },
-    //  ------------------------------------------------------------------------
-    //  Case 45
-    //  DWT_MAX_NORMALIZE [0, 10] / 10 -> [0, 1]
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 46
-    //  DWT_MAX_NORMALIZE [0, 10] / 10 -> [0, 1]
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 10 -> [0.1, 1]
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -8.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.1,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 47
-    //  DWT_MAX_NORMALIZE [0, 8] / 10 -> [0, 0.8]
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 8.0,
-        .min_detail_value = -10.0,
-        .max_detail_value = 10.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 0.8,
-        .expected_min_detail_value = 0.0,
-        .expected_max_detail_value = 1.0,
-    },
-    //  Case 48
-    //  DWT_ZERO_TO_HALF_NORMALIZE [0, 10] / 10 -> [0.0, 1]
-    //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 8] / 10 -> [0.1, 0.9]
-    {
-        .approx_mode = DWT_MAX_NORMALIZE,
-        .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
-        .min_approx_value = 0.0,
-        .max_approx_value = 10.0,
-        .min_detail_value = -8.0,
-        .max_detail_value = 8.0,
-        .expected_min_approx_value = 0.0,
-        .expected_max_approx_value = 1.0,
-        .expected_min_detail_value = 0.1,
-        .expected_max_detail_value = 0.9,
-    },
-};
 
 
 INSTANTIATE_TEST_CASE_P(
     Dwt2dCoeffsGroup,
     Dwt2dCoeffsNormalizeTest,
-    testing::ValuesIn(normalize_test_cases)
+    testing::ValuesIn(Dwt2dCoeffsNormalizeTest::create_test_cases()),
+    [](const auto& info) {
+        std::string wavelet_name = info.param.wavelet_name;
+        std::ranges::replace(wavelet_name, '.', '_');
+
+        std::stringstream stream;
+        stream << wavelet_name << "_"
+            << info.param.levels << "_"
+            << info.param.image_size.width << "x" << info.param.image_size.height << "__"
+            << "approx_" << info.param.min_approx_value << "_to_"
+            << info.param.max_approx_value << "__"
+            << "detail_" << info.param.min_detail_value << "_to_"
+            << info.param.max_detail_value;
+
+        std::string param_name = stream.str();
+        // std::ranges::replace(param_name, '.', '');
+        std::ranges::replace(param_name, '-', 'n');
+        std::ranges::replace(param_name, '.', 'd');
+        // std::erase(param_name, '.');
+
+        // str.erase(std::remove(param_name.begin(), param_name.end(), '.'), param_name.end());
+
+        return param_name;
+    }
 );
+
+
+// struct NormalizeTestParam
+// {
+//     NormalizationMode approx_mode;
+//     NormalizationMode detail_mode;
+//     double min_approx_value;
+//     double max_approx_value;
+//     double min_detail_value;
+//     double max_detail_value;
+//     double expected_min_approx_value;
+//     double expected_max_approx_value;
+//     double expected_min_detail_value;
+//     double expected_max_detail_value;
+// };
+
+// class Dwt2dCoeffsNormalizeTest : public testing::TestWithParam<NormalizeTestParam>
+// {
+// protected:
+//     const int rows = 16;
+//     const int cols = 8;
+//     const int type = CV_32F;
+//     const cv::Size full_size = cv::Size(cols, rows);
+
+// protected:
+//     Dwt2dCoeffsNormalizeTest() :
+//         testing::TestWithParam<ParamType>(),
+//         dwt(create_haar())
+//     {
+//     }
+
+//     void SetUp() override
+//     {
+//         auto param = GetParam();
+//         coeffs = dwt.create_coeffs(full_size, type, 3);
+
+//         populate_test_case_matrix(param, coeffs);
+//     }
+
+//     void populate_test_case_matrix(const NormalizeTestParam& param, DWT2D::Coeffs& coeffs)
+//     {
+//         cv::Mat matrix = coeffs;
+//         auto set_value = [&](const auto& point, auto value) {
+//             if (matrix.type() == CV_32F) {
+//                 matrix.at<float>(point) = value;
+//             } else if (matrix.type() == CV_64F) {
+//                 matrix.at<double>(point) = value;
+//             } else {
+//                 throw std::runtime_error("invalid type");
+//             }
+//         };
+
+//         auto approx_rect = coeffs.approx_rect();
+
+//         double num_approx_elements = approx_rect.width * approx_rect.height;
+//         double approx_value = param.min_approx_value;
+//         double approx_step = \
+//             (param.max_approx_value - param.min_approx_value) / (num_approx_elements - 1);
+
+//         double num_detail_elements = matrix.total() - num_approx_elements;
+//         double detail_value = param.min_detail_value;
+//         double detail_step = \
+//             (param.max_detail_value - param.min_detail_value) / (num_detail_elements - 1);
+
+//         for (int y = 0; y < coeffs.size().height; ++y) {
+//             for (int x = 0; x < coeffs.size().width; ++x) {
+//                 auto point = cv::Point(x, y);
+//                 if (approx_rect.contains(point)) {
+//                     set_value(point, approx_value);
+//                     approx_value += approx_step;
+//                 } else {
+//                     set_value(point, detail_value);
+//                     detail_value += detail_step;
+//                 }
+//             }
+//         }
+//     }
+
+// protected:
+//     cv::Mat expected_matrix;
+//     DWT2D dwt;
+//     DWT2D::Coeffs coeffs;
+// };
+
+// TEST_P(Dwt2dCoeffsNormalizeTest, ApproxValuesAreCorrect)
+// {
+//     auto param = GetParam();
+//     auto approx_mask = coeffs.approx_mask();
+
+//     auto normalized_coeffs = coeffs.map_details_to_unit_interval();
+
+//     EXPECT_THAT(normalized_coeffs, IsMaskedMatrixMin(param.expected_min_approx_value, approx_mask));
+//     EXPECT_THAT(normalized_coeffs, IsMaskedMatrixMax(param.expected_max_approx_value, approx_mask));
+// }
+
+// TEST_P(Dwt2dCoeffsNormalizeTest, DetailValuesAreCorrect)
+// {
+//     auto param = GetParam();
+//     auto detail_mask = coeffs.detail_mask();
+
+//     // coeffs.normalize(param.approx_mode, param.detail_mode);
+//     auto normalized_coeffs = coeffs.map_details_to_unit_interval();
+
+//     EXPECT_THAT(normalized_coeffs, IsMaskedMatrixMin(param.expected_min_detail_value, detail_mask));
+//     EXPECT_THAT(normalized_coeffs, IsMaskedMatrixMax(param.expected_max_detail_value, detail_mask));
+// }
+
+// // TEST_P(Dwt2dCoeffsNormalizeTest, ApproxValuesAreCorrect)
+// // {
+// //     auto param = GetParam();
+// //     auto approx_mask = coeffs.approx_mask();
+
+// //     coeffs.normalize(param.approx_mode, param.detail_mode);
+
+// //     EXPECT_THAT(coeffs, IsMaskedMatrixMin(param.expected_min_approx_value, approx_mask));
+// //     EXPECT_THAT(coeffs, IsMaskedMatrixMax(param.expected_max_approx_value, approx_mask));
+// // }
+
+// // TEST_P(Dwt2dCoeffsNormalizeTest, DetailValuesAreCorrect)
+// // {
+// //     auto param = GetParam();
+// //     auto detail_mask = coeffs.detail_mask();
+
+// //     coeffs.normalize(param.approx_mode, param.detail_mode);
+
+// //     EXPECT_THAT(coeffs, IsMaskedMatrixMin(param.expected_min_detail_value, detail_mask));
+// //     EXPECT_THAT(coeffs, IsMaskedMatrixMax(param.expected_max_detail_value, detail_mask));
+// // }
+
+
+// std::string normalize_mode_string(int mode)
+// {
+//     switch (mode){
+//         case DWT_NO_NORMALIZE: return "DWT_NO_NORMALIZE";
+//         case DWT_ZERO_TO_HALF_NORMALIZE: return "DWT_ZERO_TO_HALF_NORMALIZE";
+//         case DWT_MAX_NORMALIZE: return "DWT_MAX_NORMALIZE";
+//     }
+
+//     return "";
+// }
+
+// void PrintTo(const Dwt2dCoeffsNormalizeTest::ParamType& param, std::ostream* stream)
+// {
+//     auto abs_max = std::max(
+//         std::max(std::fabs(param.min_approx_value), std::fabs(param.max_approx_value)),
+//         std::max(std::fabs(param.min_detail_value), std::fabs(param.max_detail_value))
+//     );
+
+//     *stream << std::setprecision(2)
+//         << "\n"
+//         << "APPROX: " << normalize_mode_string(param.approx_mode) << " "
+//         << "[" << param.min_approx_value << ", " << param.max_approx_value << "] "
+//         << "/ " << abs_max << " "
+//         << "-> [" << param.expected_min_approx_value << ", " << param.expected_max_approx_value << "] "
+//         << "\n"
+//         << "DETAIL: " << normalize_mode_string(param.detail_mode) << " "
+//         << "[" << param.min_detail_value << ", " << param.max_detail_value << "] "
+//         << "/ " << abs_max << " "
+//         << "-> [" << param.expected_min_detail_value << ", " << param.expected_max_detail_value << "] ";
+// }
+
+
+// std::vector<NormalizeTestParam> normalize_test_cases = {
+//     //  ========================================================================
+//     //  Do Not Normalize Approx, Do Not Normalize Detail
+//     //  ========================================================================
+//     //  Case 0
+//     //  DWT_NO_NORMALIZE
+//     //  [-10, 10] / 10 -> [-10, 10]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10.0,
+//         .expected_min_detail_value = -10.0,
+//         .expected_max_detail_value = 10.0,
+//     },
+//     //  ========================================================================
+//     //  Do Not Normalize Approx, Normalize Detail
+//     //  ========================================================================
+//     //  Case 1
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 2
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 10 -> [0.1, 1]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -8.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10.0,
+//         .expected_min_detail_value = 0.1,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 3
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 10 -> [0.0, 0.9]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 8.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.9,
+//     },
+//     //  Case 4
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 20 -> [0.25, 0.75]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 20.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 20.0,
+//         .expected_min_detail_value = 0.25,
+//         .expected_max_detail_value = 0.75,
+//     },
+//     //  Case 5
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 20 -> [0.3, 0.75]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 20.0,
+//         .min_detail_value = -8.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 20.0,
+//         .expected_min_detail_value = 0.3,
+//         .expected_max_detail_value = 0.75,
+//     },
+//     //  Case 6
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 20 -> [0.25, 0.7]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 20.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 8.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 20.0,
+//         .expected_min_detail_value = 0.25,
+//         .expected_max_detail_value = 0.7,
+//     },
+//     //  Case 7
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 0.5 -> [0.0, 1.0]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = -0.5,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 8
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 0.5 -> [0.1, 1.0]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = -0.4,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = 0.1,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 9
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 0.5 -> [0.0, 0.9]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = -0.5,
+//         .max_detail_value = 0.4,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.9,
+//     },
+//     //  Case 10
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [0, 0] / 10 -> [0.5, 0.5]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 0.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10,
+//         .expected_min_detail_value = 0.5,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  ------------------------------------------------------------------------
+//     //  Case 11
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-10, 10] / 10 -> [-1, 1]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10.0,
+//         .expected_min_detail_value = -1.0,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 12
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-8, 10] / 10 -> [-0.8, 1]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -8.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10.0,
+//         .expected_min_detail_value = -0.8,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 13
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-10, 8] / 10 -> [-1.0, 0.8]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 8.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10.0,
+//         .expected_min_detail_value = -1.0,
+//         .expected_max_detail_value = 0.8,
+//     },
+//     //  Case 14
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-10, 10] / 20 -> [-0.5, 0.5]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 20.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 20.0,
+//         .expected_min_detail_value = -0.5,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  Case 15
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-8, 10] / 20 -> [-0.4, 0.5]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 20.0,
+//         .min_detail_value = -8.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 20.0,
+//         .expected_min_detail_value = -0.4,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  Case 16
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-10, 8] / 20 -> [-0.5, 0.4]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 20.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 8.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 20.0,
+//         .expected_min_detail_value = -0.5,
+//         .expected_max_detail_value = 0.4,
+//     },
+//     //  Case 17
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-0.5, 0.5] / 0.5 -> [-1.0, 1.0]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = -0.5,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = -1.0,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 18
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-0.4, 0.5] / 0.5 -> [-0.8, 1.0]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = -0.4,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = -0.8,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 19
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [-0.5, 0.4] / 0.5 -> [-1.0, 0.8]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = -0.5,
+//         .max_detail_value = 0.4,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = -1.0,
+//         .expected_max_detail_value = 0.8,
+//     },
+//     //  Case 20
+//     //  DWT_NO_NORMALIZE
+//     //  DWT_MAX_NORMALIZE [0, 0] / 10 -> [0.0, 0.0]
+//     {
+//         .approx_mode = DWT_NO_NORMALIZE,
+//         .detail_mode = DWT_MAX_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 0.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 10,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.0,
+//     },
+//     //  ========================================================================
+//     //  Normalize Approx, Do Not Normalize Detail
+//     //  ========================================================================
+//     //  Case 21
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -10.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 10.0,
+//     },
+//     //  Case 22
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 10 -> [0.1, 1]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -8.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.1,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 10.0,
+//     },
+//     //  Case 23
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 10 -> [0.0, 0.9]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -10.0,
+//         .max_approx_value = 8.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.9,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 10.0,
+//     },
+//     //  Case 24
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 20 -> [0.25, 0.75]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -10.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 20.0,
+//         .expected_min_approx_value = 0.25,
+//         .expected_max_approx_value = 0.75,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 20.0,
+//     },
+//     //  Case 25
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 20 -> [0.3, 0.75]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -8.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 20.0,
+//         .expected_min_approx_value = 0.3,
+//         .expected_max_approx_value = 0.75,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 20.0,
+//     },
+//     //  Case 26
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 20 -> [0.25, 0.7]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -10.0,
+//         .max_approx_value = 8.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 20.0,
+//         .expected_min_approx_value = 0.25,
+//         .expected_max_approx_value = 0.7,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 20.0,
+//     },
+//     //  Case 27
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 0.5 -> [0.0, 1.0]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -0.5,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  Case 28
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 0.5 -> [0.1, 1.0]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -0.4,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = 0.1,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  Case 29
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 8] / 0.5 -> [0.0, 0.9]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -0.5,
+//         .max_approx_value = 0.4,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.9,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  Case 30
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [0, 0] / 10 -> [0.5, 0.5]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 0.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 10,
+//         .expected_min_approx_value = 0.5,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 10,
+//     },
+//     //  ------------------------------------------------------------------------
+//     //  Case 31
+//     //  DWT_MAX_NORMALIZE [-10, 10] / 10 -> [-1, 1]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -10.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = -1.0,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 10.0,
+//     },
+//     //  Case 32
+//     //  DWT_MAX_NORMALIZE [-8, 10] / 10 -> [-0.8, 1]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -8.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = -0.8,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 10.0,
+//     },
+//     //  Case 33
+//     //  DWT_MAX_NORMALIZE [-10, 8] / 10 -> [-1.0, 0.8]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -10.0,
+//         .max_approx_value = 8.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = -1.0,
+//         .expected_max_approx_value = 0.8,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 10.0,
+//     },
+//     //  Case 34
+//     //  DWT_MAX_NORMALIZE [-10, 10] / 20 -> [-0.5, 0.5]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -10.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 20.0,
+//         .expected_min_approx_value = -0.5,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 20.0,
+//     },
+//     //  Case 35
+//     //  DWT_MAX_NORMALIZE [-8, 10] / 20 -> [-0.4, 0.5]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -8.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 20.0,
+//         .expected_min_approx_value = -0.4,
+//         .expected_max_approx_value = 0.5,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 20.0,
+//     },
+//     //  Case 36
+//     //  DWT_MAX_NORMALIZE [-10, 8] / 20 -> [-0.5, 0.4]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -10.0,
+//         .max_approx_value = 8.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 20.0,
+//         .expected_min_approx_value = -0.5,
+//         .expected_max_approx_value = 0.4,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 20.0,
+//     },
+//     //  Case 37
+//     //  DWT_MAX_NORMALIZE [-0.5, 0.5] / 0.5 -> [-1.0, 1.0]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -0.5,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = -1.0,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  Case 38
+//     //  DWT_MAX_NORMALIZE [-0.4, 0.5] / 0.5 -> [-0.8, 1.0]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -0.4,
+//         .max_approx_value = 0.5,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = -0.8,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  Case 39
+//     //  DWT_MAX_NORMALIZE [-0.5, 0.4] / 0.5 -> [-1.0, 0.8]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = -0.5,
+//         .max_approx_value = 0.4,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 0.5,
+//         .expected_min_approx_value = -1.0,
+//         .expected_max_approx_value = 0.8,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 0.5,
+//     },
+//     //  Case 40
+//     //  DWT_MAX_NORMALIZE [0, 0] / 10 -> [0.0, 0.0]
+//     //  DWT_NO_NORMALIZE
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_NO_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 0.0,
+//         .min_detail_value = 0.0,
+//         .max_detail_value = 10,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 10,
+//     },
+//     //  ========================================================================
+//     //  Normalize Approx, Normalize Detail
+//     //  ========================================================================
+//     //  Case 41
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [0, 10] / 10 -> [0.5, 1]
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.5,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 42
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [0, 10] / 10 -> [0.5, 1]
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 10 -> [0.1, 1]
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -8.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.5,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.1,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 43
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [0, 8] / 10 -> [0, 0.8]
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 8.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.5,
+//         .expected_max_approx_value = 0.9,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 44
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [0, 10] / 10 -> [0.5, 1]
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, -8] / 10 -> [0.1, 0.9]
+//     {
+//         .approx_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -8.0,
+//         .max_detail_value = 8.0,
+//         .expected_min_approx_value = 0.5,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.1,
+//         .expected_max_detail_value = 0.9,
+//     },
+//     //  ------------------------------------------------------------------------
+//     //  Case 45
+//     //  DWT_MAX_NORMALIZE [0, 10] / 10 -> [0, 1]
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 46
+//     //  DWT_MAX_NORMALIZE [0, 10] / 10 -> [0, 1]
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 10] / 10 -> [0.1, 1]
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -8.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.1,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 47
+//     //  DWT_MAX_NORMALIZE [0, 8] / 10 -> [0, 0.8]
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-10, 10] / 10 -> [0, 1]
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 8.0,
+//         .min_detail_value = -10.0,
+//         .max_detail_value = 10.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 0.8,
+//         .expected_min_detail_value = 0.0,
+//         .expected_max_detail_value = 1.0,
+//     },
+//     //  Case 48
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [0, 10] / 10 -> [0.0, 1]
+//     //  DWT_ZERO_TO_HALF_NORMALIZE [-8, 8] / 10 -> [0.1, 0.9]
+//     {
+//         .approx_mode = DWT_MAX_NORMALIZE,
+//         .detail_mode = DWT_ZERO_TO_HALF_NORMALIZE,
+//         .min_approx_value = 0.0,
+//         .max_approx_value = 10.0,
+//         .min_detail_value = -8.0,
+//         .max_detail_value = 8.0,
+//         .expected_min_approx_value = 0.0,
+//         .expected_max_approx_value = 1.0,
+//         .expected_min_detail_value = 0.1,
+//         .expected_max_detail_value = 0.9,
+//     },
+// };
+
+
+// INSTANTIATE_TEST_CASE_P(
+//     Dwt2dCoeffsGroup,
+//     Dwt2dCoeffsNormalizeTest,
+//     testing::ValuesIn(normalize_test_cases)
+// );
 
 
 

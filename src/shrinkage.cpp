@@ -40,18 +40,11 @@ void soft_threshold(
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_type<internal::soft_threshold>(
-            input.type(),
-            input,
-            output,
-            threshold
+            input.type(), input, output, threshold
         );
     else
         internal::dispatch_on_pixel_type<internal::soft_threshold>(
-            input.type(),
-            input,
-            output,
-            threshold,
-            mask
+            input.type(), input, output, threshold, mask
         );
 }
 
@@ -64,19 +57,104 @@ void hard_threshold(
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_type<internal::hard_threshold>(
-            input.type(),
-            input,
-            output,
-            threshold
+            input.type(), input, output, threshold
         );
     else
         internal::dispatch_on_pixel_type<internal::hard_threshold>(
-            input.type(),
-            input,
-            output,
-            threshold,
-            mask
+            input.type(), input, output, threshold, mask
         );
+}
+
+void less_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void less_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void greater_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void greater_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void compare(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::CmpTypes compare_type,
+    cv::InputArray mask
+)
+{
+    switch (compare_type) {
+    case cv::CMP_LT:
+        less_than(a, b, output, mask);
+        break;
+    case cv::CMP_LE:
+        less_than_or_equal(a, b, output, mask);
+        break;
+    case cv::CMP_GT:
+        greater_than(a, b, output, mask);
+        break;
+    case cv::CMP_GE:
+        greater_than_or_equal(a, b, output, mask);
+        break;
+    }
 }
 
 //  ----------------------------------------------------------------------------
@@ -109,7 +187,8 @@ void shrink_levels(
 
     level_thresholds_matrix.forEach<cv::Scalar>(
         [&](const auto& threshold, const auto position) {
-            int level = std::max(levels.start, 0) + position[1];
+            int level = std
+            ::max(levels.start, 0) + position[1];
             for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL}) {
                 auto subband_detail = coeffs.detail(level, subband);
                 threshold_function(subband_detail, subband_detail, threshold, cv::noArray());
@@ -196,7 +275,8 @@ void Shrink::shrink(
     const DWT2D::Coeffs& coeffs,
     DWT2D::Coeffs& shrunk_coeffs,
     const cv::Range& levels,
-    const cv::Scalar& stdev
+    const cv::Scalar& stdev,
+    cv::OutputArray thresholds
 ) const
 {
     const std::lock_guard<std::mutex> lock(_mutex);
@@ -205,24 +285,88 @@ void Shrink::shrink(
     if (&coeffs != &shrunk_coeffs)
         shrunk_coeffs = coeffs.clone();
 
-    auto thresholds = compute_partition_thresholds(coeffs, levels, stdev);
+    if (is_no_array(thresholds)) {
+    }
+
+    auto subset_thresholds = compute_partition_thresholds(coeffs, levels, stdev);
+    if (!is_no_array(thresholds))
+        thresholds.assign(subset_thresholds);
 
     switch (partition()) {
     case Shrink::GLOBALLY:
-        cvwt::shrink_globally(shrunk_coeffs, thresholds.at<cv::Scalar>(0, 0), threshold_function(), levels);
+        cvwt::shrink_globally(
+            shrunk_coeffs,
+            subset_thresholds.at<cv::Scalar>(0, 0),
+            threshold_function(),
+            levels
+        );
         break;
     case Shrink::LEVELS:
-        cvwt::shrink_levels(shrunk_coeffs, thresholds, threshold_function(), levels);
+        cvwt::shrink_levels(shrunk_coeffs, subset_thresholds, threshold_function(), levels);
         break;
     case Shrink::SUBBANDS:
-        cvwt::shrink_subbands(shrunk_coeffs, thresholds, threshold_function(), levels);
+        cvwt::shrink_subbands(shrunk_coeffs, subset_thresholds, threshold_function(), levels);
         break;
     case Shrink::SUBSETS:
-        shrink_subsets(shrunk_coeffs, thresholds, levels);
+        shrink_subsets(shrunk_coeffs, subset_thresholds, levels);
         break;
     }
 
-    finish(coeffs, levels, stdev, shrunk_coeffs, thresholds);
+    finish(coeffs, levels, stdev, shrunk_coeffs, subset_thresholds);
+}
+
+cv::Mat Shrink::expand_thresholds(
+    const DWT2D::Coeffs& coeffs,
+    const cv::Mat4d& thresholds,
+    const cv::Range& levels
+) const
+{
+    // cv::Mat4d expanded_thresholds(coeffs.size(), cv::Scalar(0.0));
+    cv::Mat expanded_thresholds(
+        coeffs.size(),
+        // thresholds.type(),
+        CV_MAKE_TYPE(thresholds.depth(), coeffs.channels()),
+        cv::Scalar::all(0.0)
+    );
+    auto resolved_levels = (levels == cv::Range::all()) ? cv::Range(0, coeffs.levels())
+                                                        : levels;
+    switch (partition()) {
+    case Shrink::GLOBALLY:
+        expanded_thresholds.setTo(thresholds.at<cv::Scalar>(0, 0), coeffs.detail_mask(levels));
+        break;
+    case Shrink::LEVELS:
+        for (int level = resolved_levels.start; level < resolved_levels.end; ++level)
+            for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL})
+                expanded_thresholds(coeffs.detail_rect(level, subband)) = thresholds.at<cv::Scalar>(level);
+        break;
+    case Shrink::SUBBANDS:
+        for (int level = resolved_levels.start; level < resolved_levels.end; ++level)
+            for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL})
+                expanded_thresholds(coeffs.detail_rect(level, subband)) = thresholds.at<cv::Scalar>(level, subband);
+        break;
+    case Shrink::SUBSETS:
+        expand_subset_thresholds(coeffs, thresholds, levels, expanded_thresholds);
+        break;
+    }
+
+    // if (coeffs.channels() < expanded_thresholds.channels()) {
+    //     cv::Mat collected_channels(
+    //         expanded_thresholds.size(),
+    //         CV_MAKE_TYPE(expanded_thresholds.depth(), coeffs.channels())
+    //     );
+    //     std::vector<int> from_to(2 * coeffs.channels());
+    //     std::ranges::transform(
+    //         std::views::iota(0, 2 * coeffs.channels()),
+    //         from_to.begin(),
+    //         [](int i) { return i / 2; }
+    //     );
+
+    //     cv::mixChannels(expanded_thresholds, collected_channels, from_to);
+    //     expanded_thresholds = collected_channels;
+    // }
+    // std::cout << expanded_thresholds << "\n";
+
+    return expanded_thresholds;
 }
 
 cv::Mat4d Shrink::compute_thresholds(
@@ -324,6 +468,19 @@ cv::Mat4d Shrink::compute_subset_thresholds(
     );
 }
 
+void Shrink::expand_subset_thresholds(
+    const DWT2D::Coeffs& coeffs,
+    const cv::Mat4d& thresholds,
+    const cv::Range& levels,
+    cv::Mat& expanded_thresholds
+) const
+{
+    internal::throw_member_not_implemented(
+        typeid(*this).name(),
+        "expand_subset_thresholds()"
+    );
+}
+
 cv::Mat4d Shrink::compute_level_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Range& levels,
@@ -349,7 +506,7 @@ cv::Mat4d Shrink::compute_subband_thresholds(
 ) const
 {
     cv::Range resolved_levels = resolve_levels(levels, coeffs);
-    cv::Mat4d thresholds(levels.size(), 3);
+    cv::Mat4d thresholds(resolved_levels.size(), 3, cv::Scalar(0.0));
     for (int level = resolved_levels.start; level < resolved_levels.end; ++level) {
         for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL}) {
             auto detail_coeffs = coeffs.detail(level, subband);
@@ -399,10 +556,6 @@ cv::Scalar SureShrink::compute_sure_threshold(
 //  ----------------------------------------------------------------------------
 //  SureShrink Functional API
 //  ----------------------------------------------------------------------------
-// const SureShrink sure_shrink;
-// const SureShrink sure_shrink_levelwise(SureShrink::LEVELS);
-
-
 DWT2D::Coeffs sure_shrink(const DWT2D::Coeffs& coeffs)
 {
     SureShrink shrink;
@@ -454,16 +607,46 @@ void sure_shrink_levelwise(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_co
 
 
 
-// //  ----------------------------------------------------------------------------
-// //  BayesShrink
-// //  ----------------------------------------------------------------------------
-// cv::Scalar bayes_shrink_threshold(const DWT2D::Coeffs& coeffs)
-// {
-//     return cv::Scalar();
-// }
+//  ----------------------------------------------------------------------------
+//  BayesShrink
+//  ----------------------------------------------------------------------------
+cv::Scalar BayesShrink::compute_bayes_threshold(
+    cv::InputArray detail_coeffs,
+    const cv::Scalar& stdev
+) const
+{
+    return internal::dispatch_on_pixel_type<internal::ComputeBayesThreshold>(
+        detail_coeffs.type(),
+        detail_coeffs,
+        stdev
+    );
+}
 
-// void bayes_shrink(DWT2D::Coeffs& coeffs)
-// {
-// }
+cv::Scalar BayesShrink::compute_bayes_threshold(
+    cv::InputArray detail_coeffs,
+    cv::InputArray mask,
+    const cv::Scalar& stdev
+) const
+{
+    return internal::dispatch_on_pixel_type<internal::ComputeBayesThreshold>(
+        detail_coeffs.type(),
+        detail_coeffs,
+        mask,
+        stdev
+    );
+}
+
+DWT2D::Coeffs bayes_shrink(const DWT2D::Coeffs& coeffs)
+{
+    BayesShrink shrink;
+    return shrink(coeffs);
+}
+
+void bayes_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs)
+{
+    BayesShrink shrink;
+    shrink(coeffs, shrunk_coeffs);
+}
+
 }   // namespace cvwt
 
