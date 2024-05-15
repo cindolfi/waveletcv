@@ -8,14 +8,6 @@ namespace cvwt
 {
 void flatten(cv::InputArray array, cv::OutputArray result)
 {
-    // cv::Mat matrix;
-    // if (array.isSubmatrix())
-    //     array.copyTo(matrix);
-    // else
-    //     matrix = array.getMat();
-
-    // matrix.reshape(0, 1).copyTo(result);
-
     array.copyTo(result);
     result.assign(result.getMat().reshape(0, array.total()));
 }
@@ -54,18 +46,6 @@ bool identical(const cv::Mat& a, const cv::Mat& b)
         );
 }
 
-// cv::Scalar median(cv::InputArray array)
-// {
-//     cv::Scalar result;
-//     internal::dispatch_on_pixel_type<internal::Median>(
-//         array.type(),
-//         array,
-//         result
-//     );
-
-//     return result;
-// }
-
 cv::Scalar median(cv::InputArray array, cv::InputArray mask)
 {
     if (is_no_array(mask)) {
@@ -80,6 +60,17 @@ cv::Scalar median(cv::InputArray array, cv::InputArray mask)
             mask
         );
     }
+}
+
+cv::Scalar mad(cv::InputArray data, cv::InputArray mask)
+{
+    auto x = data.getMat();
+    return median(cv::abs(x - median(x, mask)), mask);
+}
+
+cv::Scalar mad_stdev(cv::InputArray data)
+{
+    return mad(data) / 0.675;
 }
 
 void negate_evens(cv::InputArray vector, cv::OutputArray result)
@@ -112,6 +103,146 @@ std::string join_string(const std::ranges::range auto& items, const std::string&
     std::copy(items.begin(), items.end(), joiner);
 
     return stream.str();
+}
+
+void less_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void less_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void greater_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void greater_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_EQ>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_EQ>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void not_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask
+)
+{
+    if (is_no_array(mask))
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_NE>(
+            a.type(), b.type(), a, b, output
+        );
+    else
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_NE>(
+            a.type(), b.type(), a, b, output, mask
+        );
+}
+
+void compare(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::CmpTypes compare_type,
+    cv::InputArray mask
+)
+{
+    switch (compare_type) {
+    case cv::CMP_LT:
+        less_than(a, b, output, mask);
+        break;
+    case cv::CMP_LE:
+        less_than_or_equal(a, b, output, mask);
+        break;
+    case cv::CMP_GT:
+        greater_than(a, b, output, mask);
+        break;
+    case cv::CMP_GE:
+        greater_than_or_equal(a, b, output, mask);
+        break;
+    case cv::CMP_EQ:
+        equal(a, b, output, mask);
+        break;
+    case cv::CMP_NE:
+        not_equal(a, b, output, mask);
+        break;
+    }
+}
+
+
+void patch_nans(cv::InputOutputArray array, double value)
+{
+    cv::Mat nan_mask;
+    compare(array, array, nan_mask, cv::CMP_NE);
+    array.setTo(value, nan_mask);
 }
 
 double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
@@ -200,101 +331,14 @@ std::string get_type_name(int type)
     assert(false);
     return "";
 }
+
+cv::Scalar set_unused_channels(const cv::Scalar& scalar, int channels, double value)
+{
+    cv::Scalar result(0.0, 0.0, 0.0, 0.0);
+    for (int i = 0; i < channels; ++i)
+        result[i] = scalar[i];
+
+    return result;
+}
 }   // namespace internal
 }   // namespace cvwt
-
-
-// PlaneIterator::PlaneIterator(std::shared_ptr<std::vector<cv::Mat>>&& arrays) :
-//     _arrays(arrays),
-//     _planes(_arrays->size()),
-//     _channel(0)
-// {
-//     if (!_arrays->empty()) {
-//         int dims = _arrays->front().dims;
-//         auto equal_dims = [&](const auto& array) { return array.dims == dims; };
-//         if ((dims != 2 && dims != 3) || !std::ranges::all_of(*_arrays, equal_dims)) {
-//             auto get_dims = [](const auto& array) { return array.dims; };
-//             std::string all_dims = join_string(
-//                 *_arrays | std::views::transform(get_dims)
-//             );
-//             internal::throw_bad_arg(
-//                 "All arrays must be 2 or 3-dimensional, got dimensions ",
-//                 all_dims, "."
-//             );
-//         }
-
-//         auto equal_channels = [&](const auto& array) { return array.channels() == channels(); };
-//         if (!std::ranges::all_of(*_arrays, equal_channels)) {
-//             auto get_channels = [](const auto& array) { return array.channels(); };
-//             std::string all_channels = join_string(
-//                 *_arrays | std::views::transform(get_channels)
-//             );
-//             internal::throw_bad_arg(
-//                 "All arrays must have the same number of channels, got ",
-//                 all_channels, "."
-//             );
-//         }
-//     }
-
-//     gather_planes();
-// }
-
-// void PlaneIterator::gather_planes()
-// {
-//     if (channel() >= channels() || channel() < 0) {
-//         std::cout << channel() << "  " << channels() << "\n";
-//         // assert(false);
-//         for (int i = 0; i < _arrays->size(); ++i) {
-//             _planes[i] = cv::Mat(0, 0, (*_arrays)[i].depth());
-//         }
-//     } else {
-//         if (dims() == 5) {
-//             for (int i = 0; i < _arrays->size(); ++i)
-//                 _planes[i] = (*_arrays)[i];
-//         } else {
-//             for (int i = 0; i < _arrays->size(); ++i) {
-//                 auto& array = (*_arrays)[i];
-//                 _planes[i] = cv::Mat(
-//                     std::vector<int>({array.rows, array.cols}),
-//                     array.depth(),
-//                     array.data + channel() * array.elemSize1(),
-//                     array.step.p
-//                 );
-//                 _planes[i].step.p[1] = array.step.p[1];
-//                 // _planes[i] = cv::Mat(
-//                 //     array.size(),
-//                 //     array.depth(),
-//                 //     array.data + channel() * array.step[2],
-//                 //     array.step[0]
-//                 // );
-//             }
-//         }
-//     }
-// }
-
-// std::ranges::subrange<PlaneIterator> planes_range(const std::vector<cv::Mat>& arrays)
-// {
-//     PlaneIterator planes_begin(arrays);
-//     return std::ranges::subrange(
-//         planes_begin,
-//         planes_begin + planes_begin.channels()
-//     );
-// }
-
-// // auto planes_range(std::vector<cv::Mat>&& arrays)
-// // {
-// //     PlaneIterator planes_begin(arrays);
-// //     return std::views::counted(
-// //         planes_begin,
-// //         planes_begin.channels()
-// //     );
-// // }
-
-// // std::ranges::subrange<PlaneIterator> planes_range(std::same_as<cv::Mat> auto... arrays)
-// // {
-// //     PlaneIterator planes_begin(arrays...);
-// //     return std::ranges::subrange(
-// //         planes_begin,
-// //         planes_begin + planes_begin.channels()
-// //     );
-// // }

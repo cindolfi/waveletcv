@@ -3,6 +3,7 @@
 #include <opencv2/core/utils/logger.hpp>
 #include "cvwt/dwt2d.hpp"
 #include "cvwt/utils.hpp"
+#include "cvwt/exception.hpp"
 #include <iostream>
 
 namespace cvwt
@@ -276,26 +277,50 @@ cv::Mat DWT2D::Coeffs::invalid_detail_mask() const
     return mask;
 }
 
+int DWT2D::Coeffs::total_valid() const
+{
+    cv::Rect approx_rect = this->approx_rect();
+    return total_details() + approx_rect.width * approx_rect.height;
+}
+
+int DWT2D::Coeffs::total_details() const
+{
+    int result = 0;
+    for (int level = 0; level < levels(); ++level) {
+        auto subband_rect = diagonal_detail_rect(level);
+        result += 3 * (subband_rect.width * subband_rect.height);
+    }
+
+    return result;
+}
+
 cv::Mat DWT2D::Coeffs::detail_mask() const
 {
-    return detail_mask(0, -1);
+    return detail_mask(cv::Range(0, levels()));
 }
 
 cv::Mat DWT2D::Coeffs::detail_mask(int level) const
 {
-    return detail_mask(level, level);
-}
-
-cv::Mat DWT2D::Coeffs::detail_mask(int lower_level, int upper_level) const
-{
-    throw_if_level_out_of_range(lower_level, "lower_level");
-    lower_level = resolve_level(lower_level);
-
-    throw_if_level_out_of_range(upper_level, "upper_level");
-    upper_level = resolve_level(upper_level);
+    throw_if_level_out_of_range(level);
 
     cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
-    for (int level = lower_level; level <= upper_level; ++level) {
+    mask(horizontal_detail_rect(level)) = 255;
+    mask(vertical_detail_rect(level)) = 255;
+    mask(diagonal_detail_rect(level)) = 255;
+
+    return mask;
+}
+
+cv::Mat DWT2D::Coeffs::detail_mask(const cv::Range& levels) const
+{
+    if (levels == cv::Range::all())
+        return detail_mask();
+
+    auto resolved_levels = resolve_level_range(levels);
+    throw_if_levels_out_of_range(resolved_levels.start, resolved_levels.end);
+
+    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
+    for (int level = resolved_levels.start; level < resolved_levels.end; ++level) {
         mask(horizontal_detail_rect(level)) = 255;
         mask(vertical_detail_rect(level)) = 255;
         mask(diagonal_detail_rect(level)) = 255;
@@ -304,98 +329,78 @@ cv::Mat DWT2D::Coeffs::detail_mask(int lower_level, int upper_level) const
     return mask;
 }
 
-cv::Mat DWT2D::Coeffs::detail_mask(const cv::Range& levels) const
+cv::Mat DWT2D::Coeffs::detail_mask(int level, int subband) const
 {
-    return levels == cv::Range::all() ? detail_mask()
-                                      : detail_mask(levels.start, levels.end);
+    throw_if_level_out_of_range(level);
+    throw_if_invalid_subband(subband);
+
+    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
+    mask(detail_rect(resolve_level(level), subband)) = 255;
+
+    return mask;
+}
+
+cv::Mat DWT2D::Coeffs::detail_mask(int lower_level, int upper_level, int subband) const
+{
+    return detail_mask(cv::Range(lower_level, upper_level), subband);
+}
+
+cv::Mat DWT2D::Coeffs::detail_mask(const cv::Range& levels, int subband) const
+{
+    auto resolved_levels = resolve_level_range(levels);
+    throw_if_invalid_subband(subband);
+    throw_if_levels_out_of_range(resolved_levels.start, resolved_levels.end);
+
+    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
+    for (int level = resolved_levels.start; level < resolved_levels.end; ++level)
+        mask(detail_rect(level, subband)) = 255;
+
+    return mask;
 }
 
 cv::Mat DWT2D::Coeffs::horizontal_detail_mask(int level) const
 {
-    auto mask = cv::Mat(size(), CV_8UC1, cv::Scalar(0));
-    mask(horizontal_detail_rect(level)) = 255;
-
-    return mask;
+    return detail_mask(level, HORIZONTAL);
 }
 
 cv::Mat DWT2D::Coeffs::horizontal_detail_mask(const cv::Range& levels) const
 {
-    return levels == cv::Range::all() ? horizontal_detail_mask(0, this->levels())
-                                      : horizontal_detail_mask(levels.start, levels.end);
+    return detail_mask(levels, HORIZONTAL);
 }
 
 cv::Mat DWT2D::Coeffs::horizontal_detail_mask(int lower_level, int upper_level) const
 {
-    throw_if_level_out_of_range(lower_level, "lower_level");
-    lower_level = resolve_level(lower_level);
-
-    throw_if_level_out_of_range(upper_level, "upper_level");
-    upper_level = resolve_level(upper_level);
-
-    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
-    for (int level = lower_level; level <= upper_level; ++level)
-        mask(horizontal_detail_rect(level)) = 255;
-
-    return mask;
+    return detail_mask(lower_level, upper_level, HORIZONTAL);
 }
-
 
 cv::Mat DWT2D::Coeffs::vertical_detail_mask(int level) const
 {
-    auto mask = cv::Mat(size(), CV_8UC1, cv::Scalar(0));
-    mask(vertical_detail_rect(level)) = 255;
-
-    return mask;
+    return detail_mask(level, VERTICAL);
 }
 
 cv::Mat DWT2D::Coeffs::vertical_detail_mask(const cv::Range& levels) const
 {
-    return levels == cv::Range::all() ? vertical_detail_mask(0, this->levels())
-                                      : vertical_detail_mask(levels.start, levels.end);
+    return detail_mask(levels, VERTICAL);
 }
 
 cv::Mat DWT2D::Coeffs::vertical_detail_mask(int lower_level, int upper_level) const
 {
-    throw_if_level_out_of_range(lower_level, "lower_level");
-    lower_level = resolve_level(lower_level);
-
-    throw_if_level_out_of_range(upper_level, "upper_level");
-    upper_level = resolve_level(upper_level);
-
-    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
-    for (int level = lower_level; level <= upper_level; ++level)
-        mask(vertical_detail_rect(level)) = 255;
-
-    return mask;
+    return detail_mask(lower_level, upper_level, VERTICAL);
 }
 
 cv::Mat DWT2D::Coeffs::diagonal_detail_mask(int level) const
 {
-    auto mask = cv::Mat(size(), CV_8U, cv::Scalar(0));
-    mask(diagonal_detail_rect(level)) = 255;
-
-    return mask;
+    return detail_mask(level, DIAGONAL);
 }
 
 cv::Mat DWT2D::Coeffs::diagonal_detail_mask(const cv::Range& levels) const
 {
-    return levels == cv::Range::all() ? diagonal_detail_mask(0, this->levels())
-                                      : diagonal_detail_mask(levels.start, levels.end);
+    return detail_mask(levels, DIAGONAL);
 }
 
 cv::Mat DWT2D::Coeffs::diagonal_detail_mask(int lower_level, int upper_level) const
 {
-    throw_if_level_out_of_range(lower_level, "lower_level");
-    lower_level = resolve_level(lower_level);
-
-    throw_if_level_out_of_range(upper_level, "upper_level");
-    upper_level = resolve_level(upper_level);
-
-    cv::Mat mask(size(), CV_8UC1, cv::Scalar(0));
-    for (int level = lower_level; level <= upper_level; ++level)
-        mask(diagonal_detail_rect(level)) = 255;
-
-    return mask;
+    return detail_mask(lower_level, upper_level, DIAGONAL);
 }
 
 bool DWT2D::Coeffs::shares_data(const DWT2D::Coeffs& other) const
@@ -488,57 +493,6 @@ double DWT2D::Coeffs::map_detail_to_unit_interval_scale(cv::InputArray read_mask
 
     return 0.5 / max_value;
 }
-
-// double DWT2D::Coeffs::maximum_abs_value(cv::InputArray mask) const
-// {
-//     if (empty())
-//         return 0;
-
-//     auto get_abs_max = [](const cv::Mat& channel_coeffs, cv::InputArray channel_mask) {
-//         double min, max;
-//         cv::minMaxIdx(channel_coeffs, &min, &max, nullptr, nullptr, channel_mask);
-
-//         return std::max(std::abs(min), std::abs(max));
-//     };
-
-//     double result = 0;
-//     if (is_no_array(mask)) {
-//         auto coeff_matrix = (isContinuous() || channels() == 1)
-//                             ? _p->coeff_matrix.reshape(1)
-//                             : _p->coeff_matrix.clone().reshape(1);
-
-//         result = get_abs_max(coeff_matrix, cv::noArray());
-//     } else {
-//         assert(mask.size() == size());
-//         if (channels() == 1) {
-//             assert(mask.channels() == channels());
-//             result = get_abs_max(_p->coeff_matrix, mask);
-//         } else {
-//             auto split = [this](const cv::Mat& matrix, std::vector<cv::Mat>& matrices) {
-//                 if (matrix.channels() == 1)
-//                     matrices = std::vector<cv::Mat>(channels(), matrix);
-//                 else
-//                     cv::split(matrix, matrices);
-//             };
-
-//             std::vector<cv::Mat> coeff_matrices;
-//             split(_p->coeff_matrix, coeff_matrices);
-
-//             std::vector<cv::Mat> masks;
-//             split(mask.getMat(), masks);
-
-//             for (int i = 0; i < coeff_matrices.size(); ++i) {
-//                 result = std::max(
-//                     result,
-//                     get_abs_max(coeff_matrices.at(i), masks.at(i))
-//                 );
-//             }
-//         }
-//     }
-
-//     return result;
-// }
-
 
 std::pair<double, double> DWT2D::Coeffs::normalization_constants(
     NormalizationMode normalization_mode,
@@ -701,13 +655,32 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) co
     }
 }
 
-void DWT2D::Coeffs::throw_if_level_out_of_range(int level, const std::string& level_name) const
+void DWT2D::Coeffs::throw_if_level_out_of_range(int level) const
 {
     if (level < -levels() || level >= levels()) {
         internal::throw_out_of_range(
-            "DWT2D::Coeffs: ", level_name, " is out of range. ",
-            "Must be ", -levels(), " <= ", level_name, " < ", levels(), ", ",
-            "got ", level_name, " = ", level, "."
+            "DWT2D::Coeffs: level is out of range. ",
+            "Must be ", -levels(), " <= level < ", levels(), ", ",
+            "got level = ", level, "."
+        );
+    }
+}
+
+void DWT2D::Coeffs::throw_if_levels_out_of_range(int lower_level, int upper_level) const
+{
+    if (lower_level < -levels() || lower_level >= levels()) {
+        internal::throw_out_of_range(
+            "DWT2D::Coeffs: lower_level is out of range. ",
+            "Must be ", -levels(), " <= lower_level < ", levels(), ", ",
+            "got lower_level = ", lower_level, "."
+        );
+    }
+
+    if (upper_level < -levels() || upper_level > levels()) {
+        internal::throw_out_of_range(
+            "DWT2D::Coeffs: upper_level is out of range. ",
+            "Must be ", -levels(), " <= upper_level < ", levels(), ", ",
+            "got upper_level = ", upper_level, "."
         );
     }
 }
@@ -790,11 +763,10 @@ DWT2D::Coeffs merge(const std::vector<DWT2D::Coeffs>& coeffs)
     );
 }
 
-/**
- * =============================================================================
- * Public API
- * =============================================================================
-*/
+
+//  ============================================================================
+//  Public API
+//  ============================================================================
 DWT2D::DWT2D(const Wavelet& wavelet, cv::BorderTypes border_type) :
     wavelet(wavelet),
     border_type(border_type)
@@ -1006,11 +978,9 @@ inline void DWT2D::warn_if_border_effects_will_occur(const Coeffs& coeffs) const
 #endif  // CVWT_DISABLE_DWT_WARNINGS_ENABLED
 
 
-/**
- * -----------------------------------------------------------------------------
- * Functional Interface
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  Functional Interface
+//  ----------------------------------------------------------------------------
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
     const Wavelet& wavelet,

@@ -85,16 +85,6 @@ void save_coeffs(const DWT2D::Coeffs& coeffs, const std::filesystem::path& filep
     save_image(coeffs.map_details_to_unit_interval(), filepath);
 }
 
-// double max_global_value(cv::InputArray matrix, cv::InputArray mask)
-// {
-//     assert(matrix.isContinuous());
-//     double min, max;
-//     cv::minMaxIdx(matrix.getMat().reshape(1), &min, &max, nullptr, nullptr, mask);
-//     return maximum_abs_value(matrix, mask);
-
-//     return max;
-// }
-
 void finalize_normalize_details(cv::Mat& normalized_coeffs, const DWT2D::Coeffs& coeffs, bool scaled)
 {
     if (scaled) {
@@ -102,18 +92,24 @@ void finalize_normalize_details(cv::Mat& normalized_coeffs, const DWT2D::Coeffs&
         normalized_coeffs = normalized_coeffs / maximum;
     }
 
-    cv::Mat approx;
-    cv::normalize(coeffs.approx(), approx);
-    if (normalized_coeffs.channels() == 1 && approx.channels() != 1) {
-        approx.convertTo(approx, CV_32F);
-        if (approx.channels() == 3)
-            cv::cvtColor(approx, approx, cv::COLOR_BGR2GRAY);
-        else if (approx.channels() == 4)
-            cv::cvtColor(approx, approx, cv::COLOR_BGRA2GRAY);
-        approx.convertTo(approx, CV_64F);
+    if (normalized_coeffs.channels() == 1 && coeffs.channels() != 1) {
+        auto original_type = normalized_coeffs.type();
+        normalized_coeffs.convertTo(normalized_coeffs, CV_32F);
+        if (coeffs.channels() == 3)
+            cv::cvtColor(normalized_coeffs, normalized_coeffs, cv::COLOR_GRAY2BGR);
+        else if (coeffs.channels() == 4)
+            cv::cvtColor(normalized_coeffs, normalized_coeffs, cv::COLOR_GRAY2BGRA);
+
+        normalized_coeffs.convertTo(normalized_coeffs, original_type);
     }
 
-    normalized_coeffs(coeffs.approx_rect()) = approx;
+    cv::normalize(
+        coeffs.approx(),
+        normalized_coeffs(coeffs.approx_rect()),
+        1.0,
+        0.0,
+        cv::NORM_MINMAX
+    );
 }
 
 cv::Mat normalize_details_abs(const DWT2D::Coeffs& coeffs, bool scaled)
@@ -140,7 +136,6 @@ cv::Mat normalize_details_l2(const DWT2D::Coeffs& coeffs, bool scaled)
 
     cv::Mat result;
     cv::sqrt(sum_channels(static_cast<cv::Mat>(coeffs).mul(coeffs)), result);
-
     finalize_normalize_details(result, coeffs, scaled);
 
     return result;
@@ -153,7 +148,6 @@ cv::Mat normalize_details_l1(const DWT2D::Coeffs& coeffs, bool scaled)
 
     cv::Mat abs_coeffs = cv::abs(coeffs);
     auto result = sum_channels(abs_coeffs);
-
     finalize_normalize_details(result, coeffs, scaled);
 
     return result;
@@ -194,8 +188,9 @@ void show_coeffs(
 {
     auto normalized_coeffs = normalize_details(coeffs, normalization_method);
     auto subtitle = title_info.empty() ? "" : ", " + title_info;
+
     show_image(
-        coeffs,
+        normalized_coeffs,
         split_channels,
         title,
         make_title(
@@ -253,6 +248,10 @@ void add_common_options(cxxopts::Options& options)
 {
     options.add_options()
         (
+            "h, help",
+            ""
+        )
+        (
             "image_file",
             "The input image file.",
             cxxopts::value<std::string>(),
@@ -278,14 +277,14 @@ void add_common_options(cxxopts::Options& options)
             "show-coeffs",
             "Show the original and shrunk normalized DWT coefficients. "
             "Detail coefficients are mapped to the interval [0, 1]. "
-            "The available methods are\n"
-            "- affine: scale and shift such that 0.0 is mapped to 0.5\n"
-            "- abs-clip: absolute value and clip\n"
-            "- abs-scale: absolute value and scale\n"
-            "- l2-clip: channel-wise L2 norm clip\n"
-            "- l2-scale: channel-wise L2 norm and scale\n"
-            "- l1-clip: channel-wise L1 norm clip\n"
-            "- l1-scale: channel-wise L1 norm and scale\n",
+            "The available maps are:\n"
+            "  - affine: shift 0.0 to 0.5 and scale\n"
+            "  - abs-clip: absolute value and clip\n"
+            "  - abs-scale: absolute value and scale\n"
+            "  - l2-clip: channel-wise L2 norm and clip\n"
+            "  - l2-scale: channel-wise L2 norm and scale\n"
+            "  - l1-clip: channel-wise L1 norm clip\n"
+            "  - l1-scale: channel-wise L1 norm and scale",
             cxxopts::value<std::string>()->implicit_value("affine"),
             join(AVAILABLE_NORMALIZATION_METHODS, "|")
         )
@@ -299,10 +298,6 @@ void add_common_options(cxxopts::Options& options)
             "Set the OpenCV logging level.",
             cxxopts::value<std::string>()->default_value("warning"),
             "[" + join(std::views::keys(AVAILABLE_LOG_LEVELS), "|") + "]"
-        )
-        (
-            "h, help",
-            "Print usage."
         );
 
     options.parse_positional({"image_file"});
@@ -365,7 +360,7 @@ int execute(
     int argc,
     char* argv[],
     cxxopts::Options& options,
-    void body(const cxxopts::ParseResult&)
+    void main_program(const cxxopts::ParseResult&)
 )
 {
     try {
@@ -378,7 +373,7 @@ int execute(
             verify_common_args(args);
             set_log_level_from_args(args);
 
-            body(args);
+            main_program(args);
         }
     } catch (const cxxopts::exceptions::exception& error) {
         std::cerr

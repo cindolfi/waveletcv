@@ -7,6 +7,7 @@
 #include <string>
 #include <opencv2/core.hpp>
 #include <iostream>
+#include "cvwt/exception.hpp"
 
 namespace cvwt
 {
@@ -48,6 +49,35 @@ bool identical(const cv::Mat& a, const cv::Mat& b);
  */
 cv::Scalar median(cv::InputArray array, cv::InputArray mask = cv::noArray());
 /**
+ * @brief Masked mean absolute deviation.
+ *
+ * The standard deviation of the \f$k^{th}\f$ channel of \f$x\f$ is estimated by
+ * \f{equation}{
+ *     \mad(x_k) = \median(|x_k| - \median(x_k))
+ * \f}
+ * where the median is taken over locations where the mask is nonzero.
+ *
+ * @param data The multichannel data.
+ * @param mask A single channel matrix of type CV_8U where nonzero entries
+ *             indicate which data locations are used.
+ * @return cv::Scalar The estimated standard deviation of each channel.
+ */
+cv::Scalar mad(cv::InputArray data, cv::InputArray mask = cv::noArray());
+
+/**
+ * @brief Multichannel robust estimation of the standard deviation of normally distributed data.
+ *
+ * The standard deviation of the \f$k^{th}\f$ channel of \f$x\f$ is estimated by
+ * \f{equation}{
+ *     \hat{\sigma_k} = \frac{\mad(x_k)}{0.675}
+ * \f}
+ *
+ * @param data The multichannel data.
+ * @return cv::Scalar The estimated standard deviation of each channel.
+ */
+cv::Scalar mad_stdev(cv::InputArray data);
+
+/**
  * @brief Negates all even indexed values.
  *
  * @param[in] vector A row or column vector.
@@ -76,249 +106,45 @@ std::string join_string(const std::ranges::range auto& items, const std::string&
 
 double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray());
 
+void less_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask = cv::noArray()
+);
+void less_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask = cv::noArray()
+);
+void greater_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask = cv::noArray()
+);
+void greater_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::InputArray mask = cv::noArray()
+);
+void compare(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray output,
+    cv::CmpTypes compare_type,
+    cv::InputArray mask = cv::noArray()
+);
+
+void patch_nans(cv::InputOutputArray array, double value = 0.0);
+
+
 namespace internal
 {
 std::string get_type_name(int type);
-
-
-#define throw_error(code, ...) _throw_error(code, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-[[noreturn]]
-void _throw_error(
-    cv::Error::Code code,
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-) noexcept(false)
-{
-    std::stringstream message;
-    (message << ... << message_parts);
-
-    cv::error(code, message.str(), function, file, line);
-}
-
-#define throw_bad_size(...) _throw_bad_size(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-[[noreturn]]
-void _throw_bad_size(
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-) noexcept(false)
-{
-    throw_error(cv::Error::StsBadSize, function, file, line, message_parts...);
-}
-
-#define throw_if_empty(array, ...) _throw_if_empty(array, #array, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-void _throw_if_empty(
-    cv::InputArray array,
-    const char* array_name,
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-)
-{
-    if (array.empty()) {
-        if constexpr (sizeof...(message_parts) == 0)
-            _throw_bad_size(
-                function, file, line,
-                "The array `", array_name, "` cannot be empty."
-            );
-        else
-            _throw_bad_size(function, file, line, message_parts...);
-    }
-}
-
-#define throw_bad_arg(...) _throw_bad_arg(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-[[noreturn]]
-void _throw_bad_arg(
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-) noexcept(false)
-{
-    throw_error(
-        cv::Error::StsBadArg,
-        function, file, line,
-        message_parts...
-    );
-}
-
-#define throw_out_of_range(...) _throw_out_of_range(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-[[noreturn]]
-void _throw_out_of_range(
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-) noexcept(false)
-{
-    throw_error(
-        cv::Error::StsOutOfRange,
-        function, file, line,
-        message_parts...
-    );
-}
-
-#define throw_bad_mask(...) _throw_bad_mask(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-[[noreturn]]
-void _throw_bad_mask(
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-) noexcept(false)
-{
-    throw_error(
-        cv::Error::StsBadMask,
-        function, file, line,
-        message_parts...
-    );
-}
-
-#define throw_if_bad_mask_type(mask, ...) _throw_if_bad_mask_type(mask, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-void _throw_if_bad_mask_type(
-    cv::InputArray mask,
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-)
-{
-    if (mask.type() != CV_8UC1 && mask.type() != CV_8SC1) {
-        if constexpr (sizeof...(message_parts) == 0)
-            _throw_bad_mask(
-                function, file, line,
-                "Mask type must be CV_8UC1 or CV_8SC1, got ",
-                get_type_name(mask.type()), ". "
-            );
-        else
-            _throw_bad_mask(
-                function, file, line,
-                message_parts...,
-                " [Mask type must be CV_8UC1 or CV_8SC1, got ",
-                get_type_name(mask.type()), "]"
-            );
-    }
-}
-
-enum AllowedMaskChannels
-{
-    SINGLE,
-    SAME,
-    SINGLE_OR_SAME,
-};
-
-#define throw_if_bad_mask_for_array(array, mask, allowed_channels, ...) _throw_if_bad_mask_for_array(array, mask, #array, #mask, allowed_channels, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-void _throw_if_bad_mask_for_array(
-    cv::InputArray array,
-    cv::InputArray mask,
-    const std::string& array_name,
-    const std::string& mask_name,
-    AllowedMaskChannels allowed_channels,
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-)
-{
-    if (!array.sameSize(mask)) {
-        if constexpr (sizeof...(message_parts) == 0)
-            _throw_bad_mask(
-                function, file, line,
-                "The `", mask_name, "` must be the same size as `", array_name, "`. "
-                "Got ", array_name, ".size() = ", array.size(),
-                " and ", mask_name, ".size() = ", mask.size(), ". "
-            );
-        else
-            _throw_bad_mask(function, file, line, message_parts...);
-    }
-
-    switch (allowed_channels) {
-    case AllowedMaskChannels::SINGLE:
-        if (mask.channels() != 1) {
-            if constexpr (sizeof...(message_parts) == 0)
-                _throw_bad_mask(
-                    function, file, line,
-                    "Wrong number of `", mask_name, "` channels for `", array_name, "`. "
-                    "The number of `", mask_name, "` channels must be 1. "
-                    "Got ", mask_name, ".channels() = ", mask.channels(), ". "
-                );
-            else
-                _throw_bad_mask(function, file, line, message_parts...);
-        }
-        break;
-    case AllowedMaskChannels::SAME:
-        if (mask.channels() != array.channels()) {
-            if constexpr (sizeof...(message_parts) == 0)
-                _throw_bad_mask(
-                    function, file, line,
-                    "Wrong number of `", mask_name, "` channels for `", array_name, "`. ",
-                    "The number of `", mask_name, "` channels must be the same as `", array_name, "`. ",
-                    "Got ", array_name, ".channels() = ", array.channels(),
-                    " and ", mask_name, ".channels() = ", mask.channels(), "."
-                );
-            else
-                _throw_bad_mask(function, file, line, message_parts...);
-        }
-        break;
-    case AllowedMaskChannels::SINGLE_OR_SAME:
-        if (mask.channels() != 1 && mask.channels() != array.channels()) {
-            if constexpr (sizeof...(message_parts) == 0)
-                _throw_bad_mask(
-                    function, file, line,
-                    "The number of `", mask_name, "` channels must be 1 or the same as `", array_name, "`. ",
-                    "Got ", array_name, ".channels() = ", array.channels(),
-                    " and ", mask_name, ".channels() = ", mask.channels(), "."
-                );
-            else
-                _throw_bad_mask(function, file, line, message_parts...);
-        }
-        break;
-    }
-}
-
-#define throw_not_implemented(...) _throw_not_implemented(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-[[noreturn]]
-void _throw_not_implemented(
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-) noexcept(false)
-{
-    throw_error(cv::Error::StsNotImplemented, function, file, line, message_parts...);
-}
-
-#define throw_member_not_implemented(class_name, function_name, ...) _throw_member_not_implemented(class_name, function_name, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
-[[noreturn]]
-void _throw_member_not_implemented(
-    const std::string& class_name,
-    const std::string& function_name,
-    const char* function,
-    const char* file,
-    int line,
-    auto... message_parts
-)  noexcept(false)
-{
-    _throw_not_implemented(
-        function, file, line,
-        class_name, "::", function_name, " is not implemented. ",
-        message_parts...
-    );
-}
+cv::Scalar set_unused_channels(const cv::Scalar& scalar, int channels, double value = 0.0);
 
 template <template <typename T, int N, auto ...> typename Functor, auto ...TemplateArgs>
 auto dispatch_on_pixel_type(int type, auto&&... args)
@@ -627,128 +453,102 @@ struct NegateEveryOther
         );
     }
 };
+
+template <typename T1, typename T2, int N, cv::CmpTypes compare_type>
+struct Compare
+{
+    using Pixel1 = cv::Vec<T1, N>;
+    using Pixel2 = cv::Vec<T2, N>;
+    using OutputPixel = cv::Vec<uchar, N>;
+
+    constexpr bool compare(T1 x, T2 y) const
+    {
+        if constexpr (compare_type == cv::CMP_LT)
+            return x < y;
+        else if constexpr (compare_type == cv::CMP_LE)
+            return x <= y;
+        else if constexpr (compare_type == cv::CMP_GT)
+            return x > y;
+        else if constexpr (compare_type == cv::CMP_GE)
+            return x >= y;
+        else if constexpr (compare_type == cv::CMP_EQ)
+            return x == y;
+        else if constexpr (compare_type == cv::CMP_NE)
+            return x != y;
+    }
+
+    void operator()(
+        cv::InputArray input_a,
+        cv::InputArray input_b,
+        cv::OutputArray output
+    ) const
+    {
+        assert(input_a.channels() == N);
+        assert(input_b.channels() == N);
+        throw_if_comparing_different_sizes(input_a, input_b);
+
+        output.create(input_a.size(), CV_8UC(N));
+        auto a = input_a.getMat();
+        auto b = input_b.getMat();
+        auto result = output.getMat();
+        a.forEach<Pixel1>(
+            [&](const auto& x, const auto position) {
+                auto y = b.at<Pixel2>(position);
+                auto& z = result.at<OutputPixel>(position);
+                for (int i = 0; i < N; ++i)
+                    z[i] = 255 * compare(x[i], y[i]);
+            }
+        );
+    }
+
+    void operator()(
+        cv::InputArray input_a,
+        cv::InputArray input_b,
+        cv::OutputArray output,
+        cv::InputArray mask
+    ) const
+    {
+        assert(input_a.channels() == N);
+        assert(input_b.channels() == N);
+        throw_if_comparing_different_sizes(input_a, input_b);
+        throw_if_bad_mask_type(mask);
+        if (mask.size() != input_a.size())
+            throw_bad_size(
+                "Wrong size mask. Got ", mask.size(), ", must be ", input_a.size(), "."
+            );
+
+        output.create(input_a.size(), CV_8UC(N));
+        auto a = input_a.getMat();
+        auto b = input_b.getMat();
+        auto mask_matrix = mask.getMat();
+        auto result = output.getMat();
+        a.forEach<Pixel1>(
+            [&](const auto& x, const auto position) {
+                auto y = b.at<Pixel2>(position);
+                if (mask_matrix.at<uchar>(position)) {
+                    auto& z = result.at<OutputPixel>(position);
+                    for (int i = 0; i < N; ++i)
+                        z[i] = 255 * compare(x[i], y[i]);
+                } else {
+                    result.at<OutputPixel>(position) = 0;
+                }
+            }
+        );
+    }
+
+    void throw_if_comparing_different_sizes(cv::InputArray a, cv::InputArray b) const
+    {
+        if (a.size() != b.size())
+            throw_bad_size(
+                "Cannot compare matrices of different sizes. ",
+                "Got a.size() = ", a.size(),
+                " and b.size() = ", b.size(), "."
+            );
+    }
+};
 }   // namespace internal
 }   // namespace cvwt
 
-
-
-
-// class PlaneIterator
-// {
-// public:
-//     using value_type = std::vector<cv::Mat>;
-//     using reference_type = value_type&;
-//     using difference_type = int;
-
-// private:
-//     PlaneIterator(std::shared_ptr<std::vector<cv::Mat>>&& arrays);
-
-// public:
-//     explicit PlaneIterator(std::initializer_list<cv::Mat> arrays) :
-//         PlaneIterator(std::make_shared<std::vector<cv::Mat>>(arrays))
-//     {}
-
-//     explicit PlaneIterator(const std::vector<cv::Mat>& arrays) :
-//         PlaneIterator(std::make_shared<std::vector<cv::Mat>>(arrays))
-//     {}
-
-//     explicit PlaneIterator(std::vector<cv::Mat>&& arrays) :
-//         PlaneIterator(std::make_shared<std::vector<cv::Mat>>(arrays))
-//     {}
-
-//     explicit PlaneIterator(std::same_as<cv::Mat> auto... arrays) :
-//         PlaneIterator({arrays...})
-//     {}
-
-//     PlaneIterator(const PlaneIterator& other) = default;
-//     PlaneIterator(PlaneIterator&& other) = default;
-
-//     PlaneIterator& operator=(const PlaneIterator& other) = default;
-//     PlaneIterator& operator=(PlaneIterator&& other) = default;
-
-//     const reference_type operator*() { return _planes; }
-//     const reference_type operator->() { return _planes; }
-
-//     PlaneIterator& operator++()
-//     {
-//         ++_channel;
-//         gather_planes();
-//         return *this;
-//     }
-//     PlaneIterator operator++(int) { auto copy = *this; ++*this; return copy; }
-
-//     PlaneIterator operator--()
-//     {
-//         --_channel;
-//         gather_planes();
-//         return *this;
-//     }
-//     PlaneIterator operator--(int) { auto copy = *this; --*this; return copy; }
-
-//     PlaneIterator operator+(difference_type offset) const
-//     {
-//         auto copy = *this;
-//         copy._channel += offset;
-//         return copy;
-//     }
-//     difference_type operator-(const PlaneIterator& rhs) const { return channel() - rhs.channel(); }
-
-//     bool operator==(const PlaneIterator& other) const
-//     {
-//         return channel() == other.channel() && _arrays == other._arrays;
-//     }
-
-//     int channels() const { return _arrays->empty() ? 0 : _arrays->front().channels(); }
-//     int channel() const { return _channel; }
-//     int dims() const { return _arrays->empty() ? 2 : _arrays->front().dims; }
-
-// protected:
-//     void gather_planes();
-
-// private:
-//     std::shared_ptr<std::vector<cv::Mat>> _arrays;
-//     std::vector<cv::Mat> _planes;
-//     int _channel;
-// };
-
-
-// std::ranges::subrange<PlaneIterator> planes_range(const std::vector<cv::Mat>& arrays);
-// // auto planes_range(std::vector<cv::Mat>&& arrays);
-// std::ranges::subrange<PlaneIterator> planes_range(std::same_as<cv::Mat> auto... arrays)
-// {
-//     PlaneIterator planes_begin(arrays...);
-//     return std::ranges::subrange(
-//         planes_begin,
-//         planes_begin + planes_begin.channels()
-//     );
-// }
-
-// // auto planes_range(const std::vector<cv::Mat>& arrays)
-// // {
-// //     PlaneIterator planes_begin(arrays);
-// //     return std::views::counted(
-// //         planes_begin,
-// //         planes_begin.channels()
-// //     );
-// // }
-
-// // auto planes_range(std::vector<cv::Mat>&& arrays)
-// // {
-// //     PlaneIterator planes_begin(arrays);
-// //     return std::views::counted(
-// //         planes_begin,
-// //         planes_begin.channels()
-// //     );
-// // }
-
-// // auto planes_range(std::same_as<cv::Mat> auto... arrays)
-// // {
-// //     PlaneIterator planes_begin(arrays...);
-// //     return std::views::counted(
-// //         planes_begin,
-// //         planes_begin.channels()
-// //     );
-// // }
 
 #endif  // CVWT_UTILS_HPP
 

@@ -3,18 +3,13 @@
 
 #include <vector>
 #include <map>
-#include <nlohmann/json.hpp>
 #include <cvwt/dwt2d.hpp>
 #include <cvwt/utils.hpp>
 #include "common.hpp"
 
-using json = nlohmann::json;
-
-/**
- * =============================================================================
- * Transformation Tests
- * =============================================================================
-*/
+//  ============================================================================
+//  Transformation Tests
+//  ============================================================================
 struct DWT2DTestParam
 {
     std::string wavelet_name;
@@ -25,11 +20,6 @@ struct DWT2DTestParam
 };
 
 void PrintTo(const DWT2DTestParam& param, std::ostream* stream);
-
-namespace cv
-{
-    void from_json(const json& json_matrix, Mat& matrix);
-}
 
 class BaseDWT2DTest : public testing::TestWithParam<DWT2DTestParam>
 {

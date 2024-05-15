@@ -8,14 +8,11 @@
 using namespace cvwt;
 using namespace testing;
 
-/**
- * -----------------------------------------------------------------------------
- * Median Test
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  Median Test
+//  ----------------------------------------------------------------------------
 struct MedianTestParam
 {
-    // std::vector<double> values;
     cv::Mat matrix;
     double expected_median;
 };
@@ -42,7 +39,7 @@ public:
             "constant_nonzero_size_3",
             "constant_nonzero_size_4",
         };
-        for (int n = 2; n < MAX_SIZE; ++n)
+        for (int n = 1; n < MAX_SIZE; ++n)
         {
             std::vector<int> values(n);
             std::iota(values.begin(), values.end(), 0);
@@ -96,7 +93,7 @@ public:
                 .expected_median = 1,
             },
         };
-        for (int n = 2; n < MAX_SIZE; ++n)
+        for (int n = 1; n < MAX_SIZE; ++n)
         {
             std::vector<int> values(n);
             std::iota(values.begin(), values.end(), 0);
@@ -104,7 +101,7 @@ public:
                 std::vector<double> x;
                 std::ranges::copy(values, std::back_inserter(x));
                 params.push_back({
-                    .matrix = cv::Mat(x),
+                    .matrix = cv::Mat(x, true),
                     .expected_median = 0.5 * (n - 1),
                 });
             } while (std::next_permutation(values.begin(), values.end()));
@@ -398,7 +395,6 @@ public:
 
 TEST_P(MultiChannelMedianTest, MedianIsCorrect)
 {
-    std::cout << "\n";
     auto param = GetParam();
     auto actual_median = median(param.values);
 
@@ -415,13 +411,250 @@ INSTANTIATE_TEST_CASE_P(
 );
 
 
+//  ============================================================================
+//  MAD
+//  ============================================================================
+const std::vector<int> PERMUTATION1 = {1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14};
+const std::vector<int> PERMUTATION2 = {8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7};
+
+template<typename T, int CHANNELS>
+struct MadTestParam
+{
+    using Pixel = cv::Vec<T, CHANNELS>;
+    using Matrix = cv::Mat_<Pixel>;
+
+    cv::Mat matrix;
+    cv::Scalar expected_mad;
+    cv::Scalar expected_mad_stdev;
+};
+
+template<typename T, int CHANNELS>
+void PrintTo(const MadTestParam<T, CHANNELS>& param, std::ostream* stream)
+{
+    *stream << "\n";
+    *stream << "expected_mad = " << param.expected_mad << "\n";
+    *stream << "expected_mad_stdev = " << param.expected_mad_stdev << "\n";
+    *stream << "matrix =";
+    PrintTo(param.matrix, stream);
+}
+
+class MadTest : public testing::TestWithParam<MadTestParam<double, 4>>
+{
+    using Matrix = typename ParamType::Matrix;
+    using Pixel = typename ParamType::Pixel;
+
+public:
+    static std::vector<ParamType> create_params()
+    {
+        return {
+            //  0
+            {
+                .matrix = (Matrix(16, 1) <<
+                    cv::Scalar::all(-7),
+                    cv::Scalar::all(-6),
+                    cv::Scalar::all(-5),
+                    cv::Scalar::all(-4),
+                    cv::Scalar::all(-3),
+                    cv::Scalar::all(-2),
+                    cv::Scalar::all(-1),
+                    cv::Scalar::all( 0),
+                    cv::Scalar::all( 1),
+                    cv::Scalar::all( 2),
+                    cv::Scalar::all( 3),
+                    cv::Scalar::all( 4),
+                    cv::Scalar::all( 5),
+                    cv::Scalar::all( 6),
+                    cv::Scalar::all( 7),
+                    cv::Scalar::all( 8)
+                ),
+                .expected_mad = cv::Scalar::all(4.0),
+                .expected_mad_stdev = cv::Scalar::all(5.925925925925926),
+            },
+            //  1
+            {
+                .matrix = (Matrix(16, 1) <<
+                    cv::Scalar::all(-1.7236),
+                    cv::Scalar::all(-0.3368),
+                    cv::Scalar::all(-1.4274),
+                    cv::Scalar::all( 1.3655),
+                    cv::Scalar::all(-0.0454),
+                    cv::Scalar::all( 0.4042),
+                    cv::Scalar::all( 0.3494),
+                    cv::Scalar::all(-2.0478),
+                    cv::Scalar::all(-0.9477),
+                    cv::Scalar::all( 0.1772),
+                    cv::Scalar::all( 0.1628),
+                    cv::Scalar::all(-1.6662),
+                    cv::Scalar::all(-0.2807),
+                    cv::Scalar::all( 0.1733),
+                    cv::Scalar::all( 0.1010),
+                    cv::Scalar::all( 0.2946)
+                ),
+                .expected_mad = cv::Scalar::all(0.3431),
+                .expected_mad_stdev = cv::Scalar::all(0.5082962962962962),
+            },
+            //  2
+            {
+                .matrix = (Matrix(16, 1) <<
+                    cv::Scalar(-7, -14, -1.7236, -0.3164),
+                    cv::Scalar(-6, -12, -0.3368,  2.5333),
+                    cv::Scalar(-5, -10, -1.4274,  0.9211),
+                    cv::Scalar(-4,  -8,  1.3655, -1.0288),
+                    cv::Scalar(-3,  -6, -0.0454,  0.0947),
+                    cv::Scalar(-2,  -4,  0.4042,  1.1946),
+                    cv::Scalar(-1,  -2,  0.3494,  0.2992),
+                    cv::Scalar( 0,   0, -2.0478,  0.5138),
+                    cv::Scalar( 1,   2, -0.9477,  1.0836),
+                    cv::Scalar( 2,   4,  0.1772, -0.0993),
+                    cv::Scalar( 3,   6,  0.1628,  0.5039),
+                    cv::Scalar( 4,   8, -1.6662, -0.5849),
+                    cv::Scalar( 5,  10, -0.2807, -0.6364),
+                    cv::Scalar( 6,  12,  0.1733, -1.4400),
+                    cv::Scalar( 7,  14,  0.1010,  0.7369),
+                    cv::Scalar( 8,  16,  0.2946, -0.9443)
+                ),
+                .expected_mad = cv::Scalar(
+                    4.0,
+                    8.0,
+                    0.3431,
+                    0.7530
+                ),
+                .expected_mad_stdev = cv::Scalar(
+                    5.925925925925926,
+                    11.851851851851851,
+                    0.5082962962962962,
+                    1.1155555555555554
+                ),
+            },
+        };
+    }
+};
+
+TEST_P(MadTest, MadComputedCorrectly)
+{
+    auto param = GetParam();
+
+    auto actual_mad = mad(param.matrix);
+
+    EXPECT_THAT(actual_mad, ScalarDoubleEq(param.expected_mad));
+}
+
+TEST_P(MadTest, MadStdevComputedCorrectly)
+{
+    auto param = GetParam();
+
+    auto actual_mad_stdev = mad_stdev(param.matrix);
+
+    EXPECT_THAT(actual_mad_stdev, ScalarDoubleEq(param.expected_mad_stdev));
+}
+
+TEST_P(MadTest, InvariantUnderNegation)
+{
+    auto param = GetParam();
+    auto matrix = -param.matrix;
+
+    auto actual_mad = mad(matrix);
+
+    EXPECT_THAT(actual_mad, ScalarDoubleEq(param.expected_mad));
+}
+
+TEST_P(MadTest, CovariantUnderScale1)
+{
+    auto param = GetParam();
+    double scale = 2.0;
+    auto matrix = scale * param.matrix;
+
+    auto actual_mad = mad(matrix);
+
+    EXPECT_THAT(actual_mad, ScalarDoubleEq(scale * param.expected_mad));
+}
+
+TEST_P(MadTest, CovariantUnderScale2)
+{
+    auto param = GetParam();
+    double scale = 0.5;
+    auto matrix = scale * param.matrix;
+
+    auto actual_mad = mad(matrix);
+
+    EXPECT_THAT(actual_mad, ScalarDoubleEq(scale* param.expected_mad));
+}
+
+TEST_P(MadTest, InvariantUnderReversal)
+{
+    auto param = GetParam();
+    cv::Mat matrix;
+    cv::flip(param.matrix, matrix, -1);
+
+    auto actual_mad = mad(matrix);
+
+    EXPECT_THAT(actual_mad, ScalarDoubleEq(param.expected_mad));
+}
+
+TEST_P(MadTest, InvariantUnderPermutation1)
+{
+    auto param = GetParam();
+    auto matrix = permute_matrix(param.matrix, PERMUTATION1);
+
+    auto actual_mad = mad(matrix);
+
+    EXPECT_THAT(
+        actual_mad,
+        ScalarDoubleEq(param.expected_mad)
+    ) << "where permuation = [" << join(PERMUTATION1, ", ") << "]";
+}
+
+TEST_P(MadTest, InvariantUnderPermutation2)
+{
+    auto param = GetParam();
+    auto matrix = permute_matrix(param.matrix, PERMUTATION2);
+
+    auto actual_mad = mad(matrix);
+
+    EXPECT_THAT(
+        actual_mad,
+        ScalarDoubleEq(param.expected_mad)
+    ) << "where permuation = [" << join(PERMUTATION2, ", ") << "]";
+}
+
+TEST_P(MadTest, InvariantUnderReshape1)
+{
+    auto param = GetParam();
+    auto matrix = param.matrix;
+    matrix = matrix.reshape(0, 4);
+
+    auto actual_mad = mad(matrix);
+
+    EXPECT_THAT(
+        actual_mad,
+        ScalarDoubleEq(param.expected_mad)
+    ) << "where size = " << matrix.size();
+}
+
+TEST_P(MadTest, InvariantUnderReshape2)
+{
+    auto param = GetParam();
+    auto matrix = param.matrix;
+    matrix = matrix.reshape(0, 1);
+
+    auto actual_mad = mad(matrix);
+
+    EXPECT_THAT(
+        actual_mad,
+        ScalarDoubleEq(param.expected_mad)
+    ) << "where size = " << matrix.size();
+}
+
+INSTANTIATE_TEST_CASE_P(
+    MadGroup,
+    MadTest,
+    testing::ValuesIn(MadTest::create_params())
+);
 
 
-/**
- * -----------------------------------------------------------------------------
- * Collect Masked Test
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  Collect Masked Test
+//  ----------------------------------------------------------------------------
 template<typename T, int CHANNELS>
 struct MultiChannelCollectMaskedTestParam
 {
@@ -725,11 +958,9 @@ INSTANTIATE_TEST_CASE_P(
 
 
 
-/**
- * -----------------------------------------------------------------------------
- * Negate Every Other Tests
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  Negate Every Other Tests
+//  ----------------------------------------------------------------------------
 struct NegateEveryOtherTestParam
 {
     cv::Mat input;
@@ -826,13 +1057,9 @@ INSTANTIATE_TEST_CASE_P(
 );
 
 
-
-
-/**
- * -----------------------------------------------------------------------------
- * Is No Array
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  Is No Array
+//  ----------------------------------------------------------------------------
 TEST(IsNoArrayTest, IsArray)
 {
     EXPECT_FALSE(is_no_array(cv::Mat()));

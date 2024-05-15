@@ -4,6 +4,7 @@
 #include <fstream>
 #include <ranges>
 #include "common.hpp"
+#include "json.hpp"
 #include "base_dwt2d.hpp"
 
 using namespace cvwt;
@@ -16,32 +17,6 @@ void PrintTo(const DWT2DTestParam& param, std::ostream* stream)
             << "\nlevels: " << param.levels
             << "\ncoeffs: " << param.coeffs;
 }
-
-namespace cv
-{
-    void from_json(const json& json_matrix, Mat& matrix)
-    {
-        auto shape = json_matrix["shape"].get<std::vector<int>>();
-        int type;
-        if (json_matrix["dtype"] == "float64")
-            type = CV_64F;
-        else if (json_matrix["dtype"] == "float32")
-            type = CV_32F;
-        else
-            assert(false);
-
-        std::vector<double> data = json_matrix["data"];
-
-        Mat data_matrix(data, true);
-        matrix.create(data_matrix.size(), type);
-        data_matrix.convertTo(matrix, CV_64F);
-        if (!matrix.empty()) {
-            int channels = (shape.size() == 3) ? shape[2] : 1;
-            matrix = matrix.reshape(channels, shape[0]);
-        }
-    }
-}
-
 
 std::map<std::string, cv::Mat> BaseDWT2DTest::inputs;
 std::vector<DWT2DTestParam> BaseDWT2DTest::params;

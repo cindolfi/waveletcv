@@ -21,12 +21,14 @@ add_executable(
     cvwt_test
     common.hpp
     common.cpp
+    json.hpp
+    json.cpp
     base_dwt2d.hpp
     base_dwt2d.cpp
     utils_test.cpp
-    # wavelet_test.cpp
-    # filterbank_test.cpp
-    # dwt2d_test.cpp
+    wavelet_test.cpp
+    filterbank_test.cpp
+    dwt2d_test.cpp
     shrinkage_test.cpp
 )
 
@@ -44,6 +46,7 @@ target_compile_definitions(
     PRIVATE
     WAVELET_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/wavelet_test_data.json"
     DWT2D_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/dwt2d_test_data.json"
+    SHRINKAGE_THRESHOLD_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/shrinkage_thresholds_test_data.json"
 )
 
 #   ----------------------------------------------------------------------------

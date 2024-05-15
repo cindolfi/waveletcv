@@ -33,6 +33,7 @@ target_sources (
         ${CVWT_INCLUDE_DIR}/cvwt/symlets.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/coiflets.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/biorthogonal.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/exception.hpp
     PRIVATE
         wavelet.cpp
         filterbank.cpp

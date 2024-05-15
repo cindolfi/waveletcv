@@ -5,6 +5,7 @@
 #include <set>
 #include <ranges>
 #include <filesystem>
+#include <chrono>
 #include <cxxopts.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -28,6 +29,16 @@ const std::set<std::string> AVAILABLE_SHRINK_METHODS = {
     "bayes",
     "bayes-levelwise",
     "bayes-global",
+};
+const std::map<std::string, SureShrink::Optimizer> AVAILABLE_OPTIMIZERS = {
+    {"auto", SureShrink::AUTO},
+    {"sbplx", SureShrink::SBPLX},
+    {"nelder-mead", SureShrink::NELDER_MEAD},
+    {"cobyla", SureShrink::COBYLA},
+    {"bobyqa", SureShrink::BOBYQA},
+    {"direct", SureShrink::DIRECT},
+    {"direct-l", SureShrink::DIRECT_L},
+    {"brute-force", SureShrink::BRUTE_FORCE},
 };
 
 void show_images(
@@ -66,10 +77,21 @@ void verify_args(const cxxopts::ParseResult& args)
     auto method = args["method"].as<std::string>();
     if(!AVAILABLE_SHRINK_METHODS.contains(method)) {
         throw InvalidOptions(
-            "Invalid --method: \""
+            "Invalid --method: `"
             + method
-            + "\". Must be one of: "
+            + "`. Must be one of: "
             + join(AVAILABLE_SHRINK_METHODS, ", ")
+            + "."
+        );
+    }
+
+    auto optimizer = args["optimizer"].as<std::string>();
+    if(!AVAILABLE_OPTIMIZERS.contains(optimizer)) {
+        throw InvalidOptions(
+            "Invalid --optimizer: `"
+            + optimizer
+            + "`. Must be one of: "
+            + join(std::views::keys(AVAILABLE_OPTIMIZERS), ", ")
             + "."
         );
     }
@@ -78,14 +100,17 @@ void verify_args(const cxxopts::ParseResult& args)
         throw InvalidOptions("Invalid --add-noise. Must be a positive number.");
 }
 
+
 void main_program(const cxxopts::ParseResult& args)
 {
     verify_args(args);
     auto [image, filepath] = open_image(args["image_file"].as<std::string>());
     auto wavelet = Wavelet::create(args["wavelet"].as<std::string>());
-
     int levels = args.count("levels") ? args["levels"].as<int>() : 0;
     double stdev = args.count("add-noise") ? args["add-noise"].as<double>() : 0.0;
+    auto shrink_method = args["method"].as<std::string>();
+    auto optimizer = AVAILABLE_OPTIMIZERS.at(args["optimizer"].as<std::string>());
+    auto split_channels = args["split-channels"].as<bool>();
 
     cv::Mat noisy_image;
     if (stdev > 0)
@@ -93,25 +118,21 @@ void main_program(const cxxopts::ParseResult& args)
     else
         noisy_image = image;
 
-    auto coeffs = levels > 0 ? dwt2d(noisy_image, wavelet, levels)
-                             : dwt2d(noisy_image, wavelet);
-
-    auto shrink_method = args["method"].as<std::string>();
     std::unique_ptr<Shrink> shrinker;
     if (shrink_method == "visu")
         shrinker = std::make_unique<VisuShrink>();
     else if (shrink_method == "sure")
-        shrinker = std::make_unique<SureShrink>();
+        shrinker = std::make_unique<SureShrink>(SureShrink::SUBBANDS, SureShrink::HYBRID, optimizer);
     else if (shrink_method == "sure-levelwise")
-        shrinker = std::make_unique<SureShrink>(Shrink::LEVELS);
+        shrinker = std::make_unique<SureShrink>(Shrink::LEVELS, SureShrink::HYBRID, optimizer);
     else if (shrink_method == "sure-global")
-        shrinker = std::make_unique<SureShrink>(Shrink::GLOBALLY);
+        shrinker = std::make_unique<SureShrink>(Shrink::GLOBALLY, SureShrink::HYBRID, optimizer);
     else if (shrink_method == "sure-strict")
-        shrinker = std::make_unique<SureShrink>(SureShrink::STRICT);
+        shrinker = std::make_unique<SureShrink>(SureShrink::SUBBANDS, SureShrink::STRICT, optimizer);
     else if (shrink_method == "sure-strict-levelwise")
-        shrinker = std::make_unique<SureShrink>(Shrink::LEVELS, SureShrink::STRICT);
+        shrinker = std::make_unique<SureShrink>(Shrink::LEVELS, SureShrink::STRICT, optimizer);
     else if (shrink_method == "sure-strict-global")
-        shrinker = std::make_unique<SureShrink>(Shrink::GLOBALLY, SureShrink::STRICT);
+        shrinker = std::make_unique<SureShrink>(Shrink::GLOBALLY, SureShrink::STRICT, optimizer);
     else if (shrink_method == "bayes")
         shrinker = std::make_unique<BayesShrink>();
     else if (shrink_method == "bayes-levelwise")
@@ -119,15 +140,31 @@ void main_program(const cxxopts::ParseResult& args)
     else if (shrink_method == "bayes-global")
         shrinker = std::make_unique<BayesShrink>(Shrink::GLOBALLY);
 
-    cv::Mat thresholds;
-    auto shrunk_coeffs = shrinker->shrink(coeffs, thresholds);
-    CV_LOG_INFO(NULL, "thresholds = " << thresholds);
+    auto start_time = std::chrono::high_resolution_clock::now();
+    auto coeffs = levels > 0 ? dwt2d(noisy_image, wavelet, levels)
+                             : dwt2d(noisy_image, wavelet);
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> decompose_duration = end_time - start_time;
 
+    cv::Mat thresholds;
+    start_time = std::chrono::high_resolution_clock::now();
+    auto shrunk_coeffs = shrinker->shrink(coeffs, thresholds);
+    end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> shrink_duration = end_time - start_time;
+
+    start_time = std::chrono::high_resolution_clock::now();
     auto denoised_image = shrunk_coeffs.invert();
+    end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> reconstruct_duration = end_time - start_time;
+
+    CV_LOG_IF_INFO(NULL, shrink_method.starts_with("sure"), "SureShrink optimizer = " << args["optimizer"].as<std::string>());
+    CV_LOG_INFO(NULL, "DWT decomposition took " << decompose_duration.count() << " milliseconds");
+    CV_LOG_INFO(NULL, "Shrink coefficients took " << shrink_duration.count() << " milliseconds");
+    CV_LOG_INFO(NULL, "DWT reconstruction took " << reconstruct_duration.count() << " milliseconds");
+    CV_LOG_INFO(NULL, "Denoise took " << (decompose_duration + shrink_duration + reconstruct_duration).count() << " milliseconds");
+    CV_LOG_INFO(NULL, "Thresholds = \n" << thresholds);
 
     bool wait_for_key_press = false;
-    auto split_channels = args["split-channels"].as<bool>();
-
     if (args.count("out"))
         save_image(denoised_image, args["out"].as<std::string>());
 
@@ -161,16 +198,18 @@ void main_program(const cxxopts::ParseResult& args)
             "Shrunk DWT Coefficients",
             shrink_method
         );
-
         wait_for_key_press = true;
     }
 
     if (args.count("show-threshold-mask")) {
         cv::Mat thresholded_mask;
-        cv::Mat g = shrinker->expand_thresholds(coeffs, thresholds);
-        less_than_or_equal(coeffs, g, thresholded_mask);
-        show_image(thresholded_mask, split_channels, "DWT Coefficient < Threshold Mask");
-
+        greater_than(
+            coeffs,
+            shrinker->expand_thresholds(coeffs, thresholds),
+            thresholded_mask,
+            coeffs.detail_mask()
+        );
+        show_image(thresholded_mask, split_channels, "DWT Coefficient > Threshold Mask");
         wait_for_key_press = true;
     }
 
@@ -213,6 +252,12 @@ int main(int argc, char* argv[])
             "users should typically add it manually.",
             cxxopts::value<double>()->no_implicit_value(),
             "STDEV"
+        )
+        (
+            "optimizer",
+            "The optimization algorithm used for computing SureShrink thresholds.",
+            cxxopts::value<std::string>()->default_value("auto"),
+            "[" + join(std::views::keys(AVAILABLE_OPTIMIZERS), "|") + "]"
         )
         (
             "o, out",

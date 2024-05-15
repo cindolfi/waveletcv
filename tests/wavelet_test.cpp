@@ -5,10 +5,10 @@
 #include <nlohmann/json.hpp>
 #include <cvwt/wavelet.hpp>
 #include "common.hpp"
+#include "json.hpp"
 
 using namespace cvwt;
 using namespace testing;
-using json = nlohmann::json;
 
 struct WaveletTestParam
 {

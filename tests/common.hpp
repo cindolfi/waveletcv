@@ -15,6 +15,7 @@
 #include <cvwt/wavelet.hpp>
 #include <cvwt/dwt2d.hpp>
 
+
 namespace cvwt
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream);
@@ -106,6 +107,7 @@ struct print_matrix_to
                         auto pixel = matrix.at<Pixel>(row, col);
                         for (int k = 0 ; k < pixel.channels; ++k) {
                             int spacing = pixel.channels == 1 ? (col > 0) : (k > 0);
+
                             *stream << std::setfill(' ')
                                     << std::setw(spacing + widths.at<int>(col, k))
                                     << std::right
@@ -127,38 +129,32 @@ struct print_matrix_to
 
     cv::Mat calculate_widths(const cv::Mat& matrix) const
     {
-        auto calc_string_length = [&](auto value) -> int {
-            return (
-                std::stringstream()
-                    << std::setprecision(precision)
-                    << value
-                ).str().size();
-        };
-
-        cv::Mat widths(matrix.cols, matrix.channels(), CV_MAKE_TYPE(CV_32S, matrix.channels()));
-
+        cv::Mat widths(matrix.cols, matrix.channels(), CV_32S, cv::Scalar(0));
         int single_channel_min_width = 1;
-        for (int i = 0; i < matrix.cols; ++i) {
-            auto column = matrix.col(i);
-            std::vector<cv::Mat> channels;
-            cv::split(column, channels);
-            for (int j = 0; j < channels.size(); ++j) {
-                double abs_min, abs_max;
-                cv::minMaxIdx(cv::abs(channels[j]), &abs_min, &abs_max);
-                double min, max;
-                cv::minMaxIdx(channels[j], &min, &max);
+        for (int col = 0; col < matrix.cols; ++col) {
+            if (is_column_hidden(matrix, col))
+                continue;
 
-                int width = 0;
-                width = std::max(width, calc_string_length(abs_min));
-                width = std::max(width, calc_string_length(abs_max));
-                width = std::max(width, calc_string_length(min));
-                width = std::max(width, calc_string_length(max));
-                //  this gives columns of all zeros, ones, etc some extra padding
-                //  to make them stand out in matrices with wide columns
-                if (width >= 2)
-                    single_channel_min_width = 2;
+            for (int row = 0; row < matrix.rows; ++row) {
+                if (is_row_hidden(matrix, row))
+                    continue;
 
-                widths.at<int>(i, j) = width;
+                auto pixel = matrix.at<Pixel>(row, col);
+                for (int k = 0 ; k < pixel.channels; ++k) {
+                    int width = (std::stringstream()
+                        << std::setprecision(precision)
+                        << +pixel[k]
+                    ).str().size();
+                    //  this gives columns of all zeros, ones, etc some extra padding
+                    //  to make them stand out in matrices with wide columns
+                    if (width >= 2)
+                        single_channel_min_width = 2;
+
+                    widths.at<int>(col, k) = std::max(
+                        widths.at<int>(col, k),
+                        width
+                    );
+                }
             }
         }
 
@@ -168,6 +164,7 @@ struct print_matrix_to
         return widths;
     }
 };
+
 
 cv::Mat create_matrix(int rows, int cols, int type, double initial_value = 0.0);
 

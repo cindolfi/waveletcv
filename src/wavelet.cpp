@@ -4,6 +4,7 @@
 #include "cvwt/coiflets.hpp"
 #include "cvwt/biorthogonal.hpp"
 #include "cvwt/utils.hpp"
+#include "cvwt/exception.hpp"
 #include <opencv2/imgproc.hpp>
 #include <ranges>
 #include <functional>

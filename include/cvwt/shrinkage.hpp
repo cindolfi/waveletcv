@@ -12,113 +12,24 @@
 #include "cvwt/wavelet.hpp"
 #include "cvwt/dwt2d.hpp"
 #include "cvwt/utils.hpp"
+#include "cvwt/exception.hpp"
 
 namespace cvwt
 {
-using StdDevFunction = std::function<cv::Scalar(cv::InputArray)>;
-using ThresholdFunction = std::function<void(cv::InputArray, cv::OutputArray, cv::Scalar, cv::InputArray)>;
+using ThresholdFunction = std::function<
+    void(
+        cv::InputArray, // input
+        cv::OutputArray, // output
+        cv::Scalar, // threshold
+        cv::InputArray // mask
+    )
+>;
 template <typename Value, typename Threshold>
 using PrimitiveThresholdFunction = std::function<Value(Value, Threshold)>;
+using StdDevFunction = std::function<cv::Scalar(cv::InputArray)>;
 
 namespace internal
 {
-template <typename T1, typename T2, int N, cv::CmpTypes compare_type>
-struct Compare
-{
-    using Pixel1 = cv::Vec<T1, N>;
-    using Pixel2 = cv::Vec<T2, N>;
-    using OutputPixel = cv::Vec<uchar, N>;
-
-    constexpr bool compare(T1 x, T2 y) const
-    {
-        if constexpr (compare_type == cv::CMP_LT)
-            return x < y;
-        else if constexpr (compare_type == cv::CMP_LE)
-            return x <= y;
-        else if constexpr (compare_type == cv::CMP_GT)
-            return x > y;
-        else if constexpr (compare_type == cv::CMP_GE)
-            return x >= y;
-    }
-
-    void operator()(
-        cv::InputArray input_a,
-        cv::InputArray input_b,
-        cv::OutputArray output
-    ) const
-    {
-        assert(input_a.channels() == N);
-        assert(input_b.channels() == N);
-        throw_if_comparing_different_sizes(input_a, input_b);
-
-        output.create(input_a.size(), CV_8UC(N));
-        auto a = input_a.getMat();
-        auto b = input_b.getMat();
-        auto result = output.getMat();
-        a.forEach<Pixel1>(
-            [&](const auto& x, const auto position) {
-                auto y = b.at<Pixel2>(position);
-                auto& z = result.at<OutputPixel>(position);
-                for (int i = 0; i < N; ++i)
-                    z[i] = 255 * compare(x[i], y[i]);
-            }
-        );
-    }
-
-    void operator()(
-        cv::InputArray input_a,
-        cv::InputArray input_b,
-        cv::OutputArray output,
-        cv::InputArray mask
-    ) const
-    {
-        assert(input_a.channels() == N);
-        assert(input_b.channels() == N);
-        throw_if_comparing_different_sizes(input_a, input_b);
-        throw_if_bad_mask_type(mask);
-        if (mask.size() != input_a.size())
-            throw_bad_size(
-                "Wrong size mask. Got ", mask.size(), ", must be ", input_a.size(), "."
-            );
-
-        output.create(input_a.size(), CV_8UC(N));
-        auto a = input_a.getMat();
-        auto b = input_b.getMat();
-        auto mask_matrix = mask.getMat();
-        auto result = output.getMat();
-        a.forEach<Pixel1>(
-            [&](const auto& x, const auto position) {
-                auto y = b.at<Pixel2>(position);
-                if (mask_matrix.at<uchar>(position)) {
-                    auto& z = result.at<OutputPixel>(position);
-                    for (int i = 0; i < N; ++i)
-                        z[i] = 255 * compare(x[i], y[i]);
-                } else {
-                    result.at<OutputPixel>(position) = 0;
-                }
-            }
-        );
-    }
-
-    void throw_if_comparing_different_sizes(cv::InputArray a, cv::InputArray b) const
-    {
-        // if (a.channels() != b.channels())
-        //     throw_bad_size(
-        //         "Cannot compare matrices with different number of channels. ",
-        //         "Got a.channels() = ", get_type_name(a.channels()),
-        //         " and b.channels() = ", get_type_name(b.channels()), "."
-        //     );
-
-        if (a.size() != b.size())
-            throw_bad_size(
-                "Cannot compare matrices of different sizes. ",
-                "Got a.size() = ", a.size(),
-                " and b.size() = ", b.size(), "."
-            );
-    }
-};
-
-
 template <typename T, int N, typename ThresholdFunctor>
 struct Threshold
 {
@@ -141,7 +52,12 @@ struct Threshold
         );
     }
 
-    void operator()(cv::InputArray input, cv::OutputArray output, cv::Scalar threshold, cv::InputArray mask) const
+    void operator()(
+        cv::InputArray input,
+        cv::OutputArray output,
+        cv::Scalar threshold,
+        cv::InputArray mask
+    ) const
     {
         assert(input.channels() == N);
         throw_if_bad_mask_type(mask);
@@ -177,7 +93,7 @@ struct SoftThresholdFunctor
 };
 
 template <typename T, int N>
-using soft_threshold = Threshold<T, N, SoftThresholdFunctor>;
+using SoftThreshold = Threshold<T, N, SoftThresholdFunctor>;
 
 struct HardThresholdFunctor
 {
@@ -190,7 +106,7 @@ struct HardThresholdFunctor
 };
 
 template <typename T, int N>
-using hard_threshold = Threshold<T, N, HardThresholdFunctor>;
+using HardThreshold = Threshold<T, N, HardThresholdFunctor>;
 
 template <typename T, typename W>
 struct WrappedThresholdFunctor
@@ -230,49 +146,6 @@ struct WrappedThreshold : public Threshold<T, N, WrappedThresholdFunctor<T, W>>
 //  ============================================================================
 //  Low Level API
 //  ============================================================================
-/**
- * @brief Mean absolute deviation.
- *
- * The standard deviation of the \f$k^{th}\f$ channel of \f$x\f$ is estimated by
- * \f{equation}{
- *     \mad(x_k) = \median(|x_k| - \median(x_k))
- * \f}
- *
- * @param data The multichannel data.
- * @return cv::Scalar The estimated standard deviation of each channel.
- */
-cv::Scalar mad(cv::InputArray data);
-
-/**
- * @brief Masked mean absolute deviation.
- *
- * The standard deviation of the \f$k^{th}\f$ channel of \f$x\f$ is estimated by
- * \f{equation}{
- *     \mad(x_k) = \median(|x_k| - \median(x_k))
- * \f}
- * where the median is taken over locations where the mask is nonzero.
- *
- * @param data The multichannel data.
- * @param mask A single channel matrix of type CV_8U where nonzero entries
- *             indicate which data locations are used.
- * @return cv::Scalar The estimated standard deviation of each channel.
- */
-cv::Scalar mad(cv::InputArray data, cv::InputArray mask);
-
-/**
- * @brief Multichannel robust estimation of the standard deviation of normally distributed data.
- *
- * The standard deviation of the \f$k^{th}\f$ channel of \f$x\f$ is estimated by
- * \f{equation}{
- *     \hat{\sigma_k} = \frac{\mad(x_k)}{0.675}
- * \f}
- *
- * @param data The multichannel data.
- * @return cv::Scalar The estimated standard deviation of each channel.
- */
-cv::Scalar mad_stdev(cv::InputArray data);
-
-
 //  ----------------------------------------------------------------------------
 //  Thresholding
 //  ----------------------------------------------------------------------------
@@ -416,41 +289,6 @@ ThresholdFunction make_threshold_function(
     };
 }
 
-void less_than(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray output,
-    cv::InputArray mask = cv::noArray()
-);
-
-void less_than_or_equal(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray output,
-    cv::InputArray mask = cv::noArray()
-);
-
-void greater_than(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray output,
-    cv::InputArray mask = cv::noArray()
-);
-
-void greater_than_or_equal(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray output,
-    cv::InputArray mask = cv::noArray()
-);
-
-void compare(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray output,
-    cv::CmpTypes compare_type,
-    cv::InputArray mask = cv::noArray()
-);
 
 //  ----------------------------------------------------------------------------
 //  Shrink
@@ -614,7 +452,11 @@ public:
 
 public:
     Shrink() = delete;
-    Shrink(const Shrink& other) = default;
+    Shrink(const Shrink& other) :
+        _partition(other._partition),
+        _threshold_function(other._threshold_function),
+        _stdev_function(other._stdev_function)
+    {}
     Shrink(Shrink&& other) = default;
 
     //  ------------------------------------------------------------------------
@@ -626,12 +468,10 @@ public:
     //  ------------------------------------------------------------------------
     //  Shrink
     //  all levels
-    // DWT2D::Coeffs shrink(const DWT2D::Coeffs& coeffs) const
-    // {
-    //     return shrink(coeffs, cv::Range::all(), compute_stdev(coeffs));
-    // }
-
-    DWT2D::Coeffs shrink(const DWT2D::Coeffs& coeffs, cv::OutputArray thresholds = cv::noArray()) const
+    DWT2D::Coeffs shrink(
+        const DWT2D::Coeffs& coeffs,
+        cv::OutputArray thresholds = cv::noArray()
+    ) const
     {
         return shrink(coeffs, cv::Range::all(), compute_stdev(coeffs), thresholds);
     }
@@ -1125,6 +965,9 @@ public:
         )
     {}
 
+    UniversalShrink(const UniversalShrink& other) = default;
+    UniversalShrink(UniversalShrink&& other) = default;
+
 protected:
     cv::Scalar compute_global_threshold(
         const DWT2D::Coeffs& coeffs,
@@ -1173,6 +1016,9 @@ public:
             soft_threshold
         )
     {}
+
+    VisuShrink(const VisuShrink& other) = default;
+    VisuShrink(VisuShrink&& other) = default;
 };
 
 //  ----------------------------------------------------------------------------
@@ -1230,26 +1076,37 @@ public:
     };
 
     enum Optimizer {
+        AUTO,
         NELDER_MEAD,
+        SBPLX,
+        COBYLA,
+        BOBYQA,
+        DIRECT,
+        DIRECT_L,
         BRUTE_FORCE,
     };
 
     struct OptimizerStopConditions
     {
-        double threshold_rel_tol = 1e-8;
-        double threshold_abs_tol = 0.0;
-        double risk_rel_tol = 1e-8;
+        double threshold_rel_tol = 1e-4;
+        double threshold_abs_tol = 1e-6;
+        double risk_rel_tol = 1e-6;
         double risk_abs_tol = 0.0;
         double max_time = 10.0;
+        bool timeout_is_error = false;
         int max_evals = 0;
+        bool max_evals_is_error = false;
     };
+
+    static int AUTO_BRUTE_FORCE_SIZE_LIMIT;
+    static Optimizer AUTO_OPTIMIZER;
 
 public:
     SureShrink() :
         SureShrink(
             Shrink::SUBBANDS,
             SureShrink::HYBRID,
-            SureShrink::NELDER_MEAD
+            SureShrink::AUTO
         )
     {}
 
@@ -1257,7 +1114,7 @@ public:
         SureShrink(
             Shrink::SUBBANDS,
             variant,
-            SureShrink::NELDER_MEAD
+            SureShrink::AUTO
         )
     {}
 
@@ -1265,7 +1122,7 @@ public:
         SureShrink(
             partition,
             SureShrink::HYBRID,
-            SureShrink::NELDER_MEAD
+            SureShrink::AUTO
         )
     {}
 
@@ -1273,7 +1130,7 @@ public:
         SureShrink(
             partition,
             variant,
-            SureShrink::NELDER_MEAD
+            SureShrink::AUTO
         )
     {}
 
@@ -1291,13 +1148,39 @@ public:
         _optimizer(optimizer)
     {}
 
+    SureShrink(
+        Shrink::Partition partition,
+        SureShrink::Variant variant,
+        SureShrink::Optimizer optimizer,
+        const OptimizerStopConditions& stop_conditions
+    ) :
+        Shrink(
+            partition,
+            soft_threshold,
+            mad_stdev
+        ),
+        _variant(variant),
+        _optimizer(optimizer),
+        _stop_conditions(stop_conditions)
+    {}
+
+    SureShrink(const SureShrink& other) = default;
+    SureShrink(SureShrink&& other) = default;
+
     Variant variant() const { return _variant; }
     Optimizer optimizer() const { return _optimizer; }
-    OptimizerStopConditions optimizer_stop_conditions() const { return _optimizer_stop_conditions; }
+    OptimizerStopConditions optimizer_stop_conditions() const { return _stop_conditions; }
     void set_optimizer_stop_conditions(const OptimizerStopConditions& stop_conditions)
     {
-        _optimizer_stop_conditions = stop_conditions;
+        _stop_conditions = stop_conditions;
     }
+    void fail_on_timeout() { _stop_conditions.timeout_is_error = true; }
+    void warn_on_timeout() { _stop_conditions.timeout_is_error = false; }
+    bool is_timeout_an_error() { return _stop_conditions.timeout_is_error; }
+
+    void fail_on_max_evaluations() { _stop_conditions.max_evals_is_error = true; }
+    void warn_on_max_evaluations() { _stop_conditions.max_evals_is_error = false; }
+    bool is_max_evaluations_reached_an_error() const { return _stop_conditions.max_evals_is_error; }
 
     /**
      * @brief Compute the SureShrink algorithm threshold.
@@ -1391,11 +1274,32 @@ protected:
         return compute_sure_threshold(detail_coeffs, stdev);
     }
 
+    Optimizer resolve_optimizer(cv::InputArray detail_coeffs) const;
+
 private:
     SureShrink::Variant _variant;
     SureShrink::Optimizer _optimizer;
-    OptimizerStopConditions _optimizer_stop_conditions;
+    OptimizerStopConditions _stop_conditions;
 };
+
+
+class OptimizerStoppedEarly : public std::runtime_error
+{
+    using std::runtime_error::runtime_error;
+};
+
+class OptimizerTimeout : public OptimizerStoppedEarly
+{
+public:
+    OptimizerTimeout() : OptimizerStoppedEarly("Timeout occured") {}
+};
+
+class OptimizerMaxEvaluationsReached : public OptimizerStoppedEarly
+{
+public:
+    OptimizerMaxEvaluationsReached() : OptimizerStoppedEarly("Maximum evaluations reached") {}
+};
+
 
 namespace internal
 {
@@ -1410,6 +1314,9 @@ double nlopt_sure_threshold_objective(
 template <typename T>
 struct SingleChannelComputeSureThreshold
 {
+    static constexpr int MINIMUM_TOTAL_FOR_NLOPT = 16;
+    static constexpr double INITIAL_RELATIVE_THRESHOLD = 0.2;
+
     double operator()(
         cv::InputArray input,
         double stdev,
@@ -1418,6 +1325,7 @@ struct SingleChannelComputeSureThreshold
         const SureShrink::OptimizerStopConditions& stop_conditions
     ) const
     {
+        assert(input.channels() == 1);
         auto input_matrix = input.getMat();
         if (stdev != 1.0)
             input_matrix = input_matrix / stdev;
@@ -1426,7 +1334,9 @@ struct SingleChannelComputeSureThreshold
         if (variant == SureShrink::HYBRID && use_universal_threshold(input_matrix)) {
             threshold = compute_universal_threshold(input_matrix.total(), 1.0)[0];
         } else {
-            if (optimizer == SureShrink::BRUTE_FORCE) {
+            if (input_matrix.total() == 1) {
+                threshold = cv::abs(input_matrix.at<T>(0, 0));
+            } else if (optimizer == SureShrink::BRUTE_FORCE || input_matrix.total() <= MINIMUM_TOTAL_FOR_NLOPT) {
                 threshold = compute_sure_threshold_using_brute_force(input_matrix);
             } else {
                 threshold = compute_sure_threshold_using_nlopt(
@@ -1461,8 +1371,12 @@ private:
     nlopt::algorithm to_nlopt_algorithm(SureShrink::Optimizer optimizer) const
     {
         switch (optimizer) {
-            case SureShrink::NELDER_MEAD:
-                return nlopt::algorithm::LN_NELDERMEAD;
+        case SureShrink::NELDER_MEAD: return nlopt::algorithm::LN_NELDERMEAD;
+        case SureShrink::SBPLX: return nlopt::algorithm::LN_SBPLX;
+        case SureShrink::COBYLA: return nlopt::algorithm::LN_COBYLA;
+        case SureShrink::BOBYQA: return nlopt::algorithm::LN_BOBYQA;
+        case SureShrink::DIRECT: return nlopt::algorithm::GN_DIRECT;
+        case SureShrink::DIRECT_L: return nlopt::algorithm::GN_DIRECT_L;
         }
 
         assert(false);
@@ -1498,79 +1412,74 @@ private:
         cv::minMaxIdx(cv::abs(channel), &min_threshold, &max_threshold);
         optimizer.set_lower_bounds({min_threshold});
         optimizer.set_upper_bounds({max_threshold});
-        std::vector<double> threshold = {0.8 * min_threshold + 0.2 * max_threshold};
+        std::vector<double> threshold = {
+            (1.0 - INITIAL_RELATIVE_THRESHOLD) * min_threshold
+            + INITIAL_RELATIVE_THRESHOLD * max_threshold
+        };
 
         double optimal_risk;
-        auto result = optimizer.optimize(threshold, optimal_risk);
-        switch (result) {
-            case nlopt::SUCCESS:
-                CV_LOG_INFO(NULL, "nlopt success");
-                break;
-            case nlopt::STOPVAL_REACHED:
-                CV_LOG_WARNING(NULL, "nlopt stop value reached");
-                break;
-            case nlopt::FTOL_REACHED:
-                CV_LOG_INFO(NULL, "nlopt risk tolerance reached");
-                break;
-            case nlopt::XTOL_REACHED:
-                CV_LOG_INFO(NULL, "nlopt threshold tolerance reached");
-                break;
-            case nlopt::MAXEVAL_REACHED:
-                CV_LOG_WARNING(NULL, "nlopt max evals reached");
-                break;
-            case nlopt::MAXTIME_REACHED:
-                CV_LOG_WARNING(NULL, "nlopt max time reached");
-                break;
-            case nlopt::FAILURE:
-                CV_LOG_ERROR(NULL, "nlopt failed");
-                break;
-            case nlopt::INVALID_ARGS:
-                CV_LOG_ERROR(NULL, "nlopt invalid args");
-                break;
-            case nlopt::OUT_OF_MEMORY:
-                CV_LOG_ERROR(NULL, "nlopt out of memory");
-                break;
-            case nlopt::ROUNDOFF_LIMITED:
-                CV_LOG_ERROR(NULL, "nlopt round off limited completion");
-                break;
-            case nlopt::FORCED_STOP:
-                CV_LOG_ERROR(NULL, "nlopt forced stop");
-                break;
+        try {
+            auto result = optimizer.optimize(threshold, optimal_risk);
+            switch (result) {
+                case nlopt::SUCCESS:
+                    CV_LOG_DEBUG(NULL, "success");
+                    break;
+                case nlopt::STOPVAL_REACHED:
+                    CV_LOG_WARNING(NULL, "stop value reached");
+                    break;
+                case nlopt::FTOL_REACHED:
+                    CV_LOG_DEBUG(NULL, "risk tolerance reached");
+                    break;
+                case nlopt::XTOL_REACHED:
+                    CV_LOG_DEBUG(NULL, "threshold tolerance reached");
+                    break;
+                case nlopt::MAXEVAL_REACHED:
+                    if (stop_conditions.max_evals_is_error)
+                        throw OptimizerMaxEvaluationsReached();
+
+                    CV_LOG_WARNING(NULL, "maximum evaluations was reached");
+                    break;
+                case nlopt::MAXTIME_REACHED:
+                    if (stop_conditions.timeout_is_error)
+                        throw OptimizerTimeout();
+
+                    CV_LOG_WARNING(NULL, "maximum time was reached");
+                    break;
+            }
+
+            CV_LOG_IF_DEBUG(NULL, result > 0,
+                "optimal threshold = " << threshold[0]
+                << ", optimal risk = " << optimal_risk
+            );
+        } catch (const std::exception& error) {
+            CV_LOG_ERROR(NULL, "nlopt " << error.what());
+            throw error;
         }
-        CV_LOG_IF_INFO(NULL, result > 0, "optimal threshold = " << threshold[0] << ", optimal risk = " << optimal_risk);
 
         return threshold[0];
     }
 
     double compute_sure_threshold_using_brute_force(const cv::Mat& channel) const
     {
-        cv::Mat flat_channel;
-        flatten(channel, flat_channel);
-        flat_channel = flat_channel;
-
-        std::vector<T> risks(flat_channel.total());
-        flat_channel.forEach<T>(
-            [&](const auto& pixel, auto index) {
-                risks[index[1]] = compute_sure_risk(flat_channel, pixel);
+        cv::Mat_<T> risks(channel.size());
+        channel.forEach<T>(
+            [&](const auto& threshold, const auto index) {
+                risks(index) = compute_sure_risk(channel, cv::abs(threshold));
             }
         );
 
-        auto threshold_index = std::ranges::distance(
-            risks.begin(),
-            std::ranges::min_element(risks)
-        );
-
-        return std::fabs(flat_channel.at<T>(threshold_index));
+        int min_index[2];
+        cv::minMaxIdx(risks, nullptr, nullptr, min_index, nullptr);
+        return std::fabs(channel.at<T>(min_index));
     }
 
     bool use_universal_threshold(const cv::Mat& channel) const
     {
         int n = channel.total();
         auto universal_test_statistic = std::pow(std::log2(n), 1.5) / std::sqrt(n);
-        auto mse = (cv::sum(channel * channel - 1) / n)[0];
+        auto mse = -1 + cv::sum(channel.mul(channel))[0] / n;
 
         auto result = mse < universal_test_statistic;
-
         CV_LOG_DEBUG(
             NULL,
             (result ? "using universal threshold" : "using SURE threshold")
@@ -1609,7 +1518,6 @@ double nlopt_sure_threshold_objective(
 };
 
 
-
 template <typename T, int N>
 struct ComputeSureThreshold
 {
@@ -1628,7 +1536,7 @@ struct ComputeSureThreshold
         cv::split(input.getMat(), channels);
         cv::Scalar result;
         for (int i = 0; i < N; ++i) {
-            CV_LOG_INFO(NULL, "computing channel " << i);
+            CV_LOG_DEBUG(NULL, "computing channel " << i);
             result[i] = compute_single_channel_sure_threshold(
                 channels[i],
                 stdev[i],
@@ -1812,6 +1720,9 @@ public:
         )
     {}
 
+    BayesShrink(const BayesShrink& other) = default;
+    BayesShrink(BayesShrink&& other) = default;
+
     cv::Scalar compute_bayes_threshold(
         cv::InputArray detail_coeffs,
         const cv::Scalar& stdev
@@ -1830,9 +1741,7 @@ protected:
         const cv::Scalar& stdev
     ) const override
     {
-        cv::Range d = (levels == cv::Range::all()) ? levels : cv::Range(levels.start, levels.end - 1);
-        return compute_bayes_threshold(coeffs, coeffs.detail_mask(d), stdev);
-        // return compute_bayes_threshold(coeffs, coeffs.detail_mask(levels), stdev);
+        return compute_bayes_threshold(coeffs, coeffs.detail_mask(levels), stdev);
     }
 
     cv::Scalar compute_subband_threshold(

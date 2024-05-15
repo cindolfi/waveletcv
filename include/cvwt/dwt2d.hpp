@@ -1072,6 +1072,8 @@ public:
          * @return cv::Mat
          */
         cv::Mat invalid_detail_mask() const;
+        int total_valid() const;
+        int total_details() const;
 
         /**
          * @brief The mask indicating the approximation coefficients.
@@ -1095,14 +1097,14 @@ public:
          */
         cv::Mat detail_mask(int level) const;
 
-        /**
-         * @brief The mask indicating the detail coefficients over a range of levels.
-         *
-         * @param lower_level
-         * @param upper_level
-         * @return cv::Mat
-         */
-        cv::Mat detail_mask(int lower_level, int upper_level) const;
+        // /**
+        //  * @brief The mask indicating the detail coefficients over a range of levels.
+        //  *
+        //  * @param lower_level
+        //  * @param upper_level
+        //  * @return cv::Mat
+        //  */
+        // cv::Mat detail_mask(int lower_level, int upper_level) const;
 
         /**
          * @brief The mask indicating the detail coefficients over a range of levels.
@@ -1111,6 +1113,9 @@ public:
          * @return cv::Mat
          */
         cv::Mat detail_mask(const cv::Range& levels) const;
+        cv::Mat detail_mask(const cv::Range& levels, int subband) const;
+        cv::Mat detail_mask(int level, int subband) const;
+        cv::Mat detail_mask(int lower_level, int upper_level, int subband) const;
 
         /**
          * @brief The mask indicating the horizontal subband coefficients at the given level.
@@ -1568,6 +1573,14 @@ public:
          */
         bool shares_data(const Coeffs& other) const;
         bool shares_data(const cv::Mat& matrix) const;
+
+        cv::Range resolve_level_range(const cv::Range& levels) const
+        {
+            if (levels == cv::Range::all())
+                return cv::Range(0, this->levels());
+
+            return cv::Range(resolve_level(levels.start), resolve_level(levels.end));
+        }
         ///@}
 
         friend std::vector<Coeffs> split(const Coeffs& coeffs);
@@ -1584,7 +1597,9 @@ public:
         void throw_if_wrong_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const;
         void throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const;
         void throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const;
-        void throw_if_level_out_of_range(int level, const std::string& level_name = "level") const;
+        // void throw_if_level_out_of_range(int level, const std::string& level_name = "level") const;
+        void throw_if_level_out_of_range(int level) const;
+        void throw_if_levels_out_of_range(int lower_level, int upper_level) const;
         void throw_if_this_is_empty() const;
         void throw_if_invalid_subband(int subband) const;
         #else
@@ -1594,7 +1609,9 @@ public:
         void throw_if_wrong_size_for_set_detail(const cv::Mat& matrix, int level, int subband) const noexcept {}
         void throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const noexcept {};
         void throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const noexcept {}
-        void throw_if_level_out_of_range(int level, const std::string& level_name = "level") const noexcept {}
+        // void throw_if_level_out_of_range(int level, const std::string& level_name = "level") const noexcept {}
+        void throw_if_level_out_of_range(int level) const noexcept {}
+        void throw_if_levels_out_of_range(int lower_level, int upper_level) const noexcept {}
         void throw_if_this_is_empty() const noexcept {}
         void throw_if_invalid_subband(int subband) const noexcept {}
         #endif  // CVWT_ARGUMENT_CHECKING_ENABLED

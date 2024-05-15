@@ -250,8 +250,8 @@ if __name__ == '__main__':
     fmt = f'0.{decimals}f'
     fmt2 = '0.16f'
 
-    # x = np.random.randn(4, n, n)
-    x = np.linspace(0, 1, 4 * n * n).reshape(4, n, n)
+    x = np.random.randn(4, n, n)
+    # x = np.linspace(0, 1, 4 * n * n).reshape(4, n, n)
     # x = np.arange(4 * n * n).reshape(4, n, n)
     x = np.round(x, decimals)
 
