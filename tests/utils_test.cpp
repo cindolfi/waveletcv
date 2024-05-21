@@ -119,6 +119,15 @@ TEST_P(MedianTest, MedianIsCorrect)
     EXPECT_DOUBLE_EQ(actual_median, param.expected_median);
 }
 
+TEST_P(MedianTest, MatrixIsUnaffected)
+{
+    auto param = GetParam();
+    auto matrix_clone = param.matrix.clone();
+    auto actual_median = median(param.matrix)[0];
+
+    EXPECT_THAT(param.matrix, MatrixEq(matrix_clone));
+}
+
 TEST_P(MedianTest, CovariantUnderNegation)
 {
     auto param = GetParam();
@@ -399,6 +408,15 @@ TEST_P(MultiChannelMedianTest, MedianIsCorrect)
     auto actual_median = median(param.values);
 
     EXPECT_THAT(actual_median, ScalarEq(param.expected_median));
+}
+
+TEST_P(MultiChannelMedianTest, MatrixIsUnaffected)
+{
+    auto param = GetParam();
+    auto values_clone = param.values.clone();
+    auto actual_median = median(param.values);
+
+    EXPECT_THAT(param.values, MatrixEq(values_clone));
 }
 
 auto multi_channel_median_test_labels = MultiChannelMedianTest::create_labels();
@@ -1032,7 +1050,7 @@ TEST_P(NegateEveryOtherTest, NegateEvens)
     auto expected_output = param.negated_at_evens_indices;
 
     cv::Mat actual_output;
-    negate_evens(param.input, actual_output);
+    negate_even_indices(param.input, actual_output);
 
     EXPECT_THAT(actual_output, MatrixEq(expected_output));
 }
@@ -1045,7 +1063,7 @@ TEST_P(NegateEveryOtherTest, NegateOdds)
                          : -param.negated_at_evens_indices;
 
     cv::Mat actual_output;
-    negate_odds(param.input, actual_output);
+    negate_odd_indicies(param.input, actual_output);
 
     EXPECT_THAT(actual_output, MatrixEq(expected_output));
 }
@@ -1069,4 +1087,133 @@ TEST(IsNoArrayTest, IsNotArray)
 {
     EXPECT_TRUE(is_no_array(cv::noArray()));
 }
+
+
+
+//  ----------------------------------------------------------------------------
+//  Compare Tests
+//  ----------------------------------------------------------------------------
+struct CompareTestParam
+{
+    cv::Mat a;
+    cv::Mat b;
+    cv::CmpTypes cmp_type;
+    cv::Mat expected_result;
+};
+
+void PrintTo(const CompareTestParam& param, std::ostream* stream)
+{
+    *stream << "\n";
+    *stream << "a = \n";
+    PrintTo(param.a, stream);
+    *stream << "b = \n";
+    PrintTo(param.b, stream);
+    *stream << "expected_result = \n";
+    PrintTo(param.expected_result, stream);
+}
+
+class CompareTest : public testing::TestWithParam<CompareTestParam>
+{
+public:
+    static std::vector<ParamType> create_test_params()
+    {
+        cv::Mat a = (cv::Mat4d(3, 3) <<
+            cv::Scalar(1, 2, 3, 4), cv::Scalar(-1, -2, -3, -4), cv::Scalar(-2, -1, 1, 2),
+            cv::Scalar(1, 2, 3, 4), cv::Scalar(-1, -2, -3, -4), cv::Scalar(-2, -1, 1, 2),
+            cv::Scalar(1, 2, 3, 4), cv::Scalar(-1, -2, -3, -4), cv::Scalar(-2, -1, 1, 2)
+        );
+        cv::Mat b = (cv::Mat4d(3, 3) <<
+            cv::Scalar(1, 1, 1, 1), cv::Scalar(-1, -1, -1, -1), cv::Scalar(0, 0, 0, 0),
+            cv::Scalar(2, 2, 2, 2), cv::Scalar(-2, -2, -2, -2), cv::Scalar(-3, -1, 1, 3),
+            cv::Scalar(3, 3, 3, 3), cv::Scalar(-3, -3, -3, -3), cv::Scalar(-2, 0, 0, 2)
+        );
+
+        return {
+            //  0
+            {
+                .a = a,
+                .b = b,
+                .cmp_type = cv::CMP_EQ,
+                .expected_result = (cv::Mat_<cv::Scalar_<uchar>>(3, 3) <<
+                    cv::Scalar(255, 0, 0, 0), cv::Scalar(255, 0, 0, 0), cv::Scalar(0, 0, 0, 0),
+                    cv::Scalar(0, 255, 0, 0), cv::Scalar(0, 255, 0, 0), cv::Scalar(0, 255, 255, 0),
+                    cv::Scalar(0, 0, 255, 0), cv::Scalar(0, 0, 255, 0), cv::Scalar(255, 0, 0, 255)
+                ),
+            },
+            //  1
+            {
+                .a = a,
+                .b = b,
+                .cmp_type = cv::CMP_NE,
+                .expected_result = (cv::Mat_<cv::Scalar_<uchar>>(3, 3) <<
+                    cv::Scalar(0, 255, 255, 255), cv::Scalar(0, 255, 255, 255), cv::Scalar(255, 255, 255, 255),
+                    cv::Scalar(255, 0, 255, 255), cv::Scalar(255, 0, 255, 255), cv::Scalar(255, 0, 0, 255),
+                    cv::Scalar(255, 255, 0, 255), cv::Scalar(255, 255, 0, 255), cv::Scalar(0, 255, 255, 0)
+                ),
+            },
+            //  2
+            {
+                .a = a,
+                .b = b,
+                .cmp_type = cv::CMP_GE,
+                .expected_result = (cv::Mat_<cv::Scalar_<uchar>>(3, 3) <<
+                    cv::Scalar(255, 255, 255, 255), cv::Scalar(255, 0, 0, 0), cv::Scalar(0, 0, 255, 255),
+                    cv::Scalar(0, 255, 255, 255), cv::Scalar(255, 255, 0, 0), cv::Scalar(255, 255, 255, 0),
+                    cv::Scalar(0, 0, 255, 255), cv::Scalar(255, 255, 255, 0), cv::Scalar(255, 0, 255, 255)
+                ),
+            },
+            //  3
+            {
+                .a = a,
+                .b = b,
+                .cmp_type = cv::CMP_GT,
+                .expected_result = (cv::Mat_<cv::Scalar_<uchar>>(3, 3) <<
+                    cv::Scalar(0, 255, 255, 255), cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 0, 255, 255),
+                    cv::Scalar(0, 0, 255, 255), cv::Scalar(255, 0, 0, 0), cv::Scalar(255, 0, 0, 0),
+                    cv::Scalar(0, 0, 0, 255), cv::Scalar(255, 255, 0, 0), cv::Scalar(0, 0, 255, 0)
+                ),
+            },
+            //  4
+            {
+                .a = a,
+                .b = b,
+                .cmp_type = cv::CMP_LE,
+                .expected_result = (cv::Mat_<cv::Scalar_<uchar>>(3, 3) <<
+                    cv::Scalar(255, 0, 0, 0), cv::Scalar(255, 255, 255, 255), cv::Scalar(255, 255, 0, 0),
+                    cv::Scalar(255, 255, 0, 0), cv::Scalar(0, 255, 255, 255), cv::Scalar(0, 255, 255, 255),
+                    cv::Scalar(255, 255, 255, 0), cv::Scalar(0, 0, 255, 255), cv::Scalar(255, 255, 0, 255)
+                ),
+            },
+            //  5
+            {
+                .a = a,
+                .b = b,
+                .cmp_type = cv::CMP_LT,
+                .expected_result = (cv::Mat_<cv::Scalar_<uchar>>(3, 3) <<
+                    cv::Scalar(0, 0, 0, 0), cv::Scalar(0, 255, 255, 255), cv::Scalar(255, 255, 0, 0),
+                    cv::Scalar(255, 0, 0, 0), cv::Scalar(0, 0, 255, 255), cv::Scalar(0, 0, 0, 255),
+                    cv::Scalar(255, 255, 0, 0), cv::Scalar(0, 0, 0, 255), cv::Scalar(0, 255, 0, 0)
+                ),
+            },
+        };
+    }
+};
+
+TEST_P(CompareTest, CorrectComparison)
+{
+    auto param = GetParam();
+    auto expected_result = param.expected_result;
+
+    cv::Mat actual_output;
+    compare(param.a, param.b, actual_output, param.cmp_type);
+
+    EXPECT_THAT(actual_output, MatrixEq(expected_result));
+}
+
+
+INSTANTIATE_TEST_CASE_P(
+    CompareGroup,
+    CompareTest,
+    testing::ValuesIn(CompareTest::create_test_params())
+);
 

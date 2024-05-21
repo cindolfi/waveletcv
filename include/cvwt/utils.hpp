@@ -97,6 +97,7 @@ void patch_nans(cv::InputOutputArray array, double value = 0.0);
  * @return cv::Scalar
  */
 cv::Scalar median(cv::InputArray array, cv::InputArray mask = cv::noArray());
+
 /**
  * @brief Masked mean absolute deviation.
  *
@@ -377,67 +378,161 @@ auto dispatch_on_pixel_depth(std::tuple<ConstructorArgs...>&& constructor_args, 
     );
 }
 
-template <template <typename, typename, auto...> class Functor, typename T1>
-struct BindFirstDepth
-{
-    template <typename T2, auto... Args>
-    using type = Functor<T1, T2, Args...>;
-};
-
-template <template <typename, typename, auto...> class Functor, auto ...TemplateArgs>
+template <template <typename, typename, auto ...> class Functor, auto ...TemplateArgs>
 auto dispatch_on_pixel_depths(int type1, int type2, auto&&... args)
 {
-    switch (CV_MAT_DEPTH(type1)) {
+    int depth1 = CV_MAT_DEPTH(type1);
+    int depth2 = CV_MAT_DEPTH(type2);
+    switch (depth1) {
+    //  32 bit floating point
+    case CV_32F:
+        switch (depth2) {
         //  32 bit floating point
-        case CV_32F: return dispatch_on_pixel_depth<BindFirstDepth<Functor, float>::template type, TemplateArgs...>(
-            type2,
-            std::forward<decltype(args)>(args)...
-        );
+        case CV_32F: return Functor<float, float, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  64 bit floating point
-        case CV_64F: return dispatch_on_pixel_depth<BindFirstDepth<Functor, double>::template type, TemplateArgs...>(
-            type2,
-            std::forward<decltype(args)>(args)...
-        );
+        case CV_64F: return Functor<float, double, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  32 bit signed integer
-        case CV_32S: return dispatch_on_pixel_depth<BindFirstDepth<Functor, int>::template type, TemplateArgs...>(
-            type2,
-            std::forward<decltype(args)>(args)...
-        );
+        case CV_32S: return Functor<float, int, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  16 bit signed integer
-        case CV_16S: return dispatch_on_pixel_depth<BindFirstDepth<Functor, short>::template type, TemplateArgs...>(
-            type2,
-            std::forward<decltype(args)>(args)...
-        );
+        case CV_16S: return Functor<float, short, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  16 bit unsigned integer
-        case CV_16U: return dispatch_on_pixel_depth<BindFirstDepth<Functor, ushort>::template type, TemplateArgs...>(
-            type2,
-            std::forward<decltype(args)>(args)...
-        );
+        case CV_16U: return Functor<float, ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  8 bit signed integer
-        case CV_8S: return dispatch_on_pixel_depth<BindFirstDepth<Functor, char>::template type, TemplateArgs...>(
-            type2,
-            std::forward<decltype(args)>(args)...
-        );
+        case CV_8S: return Functor<float, char, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
         //  8 bit unsigned integer
-        case CV_8U: return dispatch_on_pixel_depth<BindFirstDepth<Functor, uchar>::template type, TemplateArgs...>(
-            type2,
-            std::forward<decltype(args)>(args)...
-        );
+        case CV_8U: return Functor<float, uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        }
+        break;
+    //  64 bit floating point
+    case CV_64F:
+        switch (depth2) {
+        //  32 bit floating point
+        case CV_32F: return Functor<double, float, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  64 bit floating point
+        case CV_64F: return Functor<double, double, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  32 bit signed integer
+        case CV_32S: return Functor<double, int, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit signed integer
+        case CV_16S: return Functor<double, short, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit unsigned integer
+        case CV_16U: return Functor<double, ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit signed integer
+        case CV_8S: return Functor<double, char, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit unsigned integer
+        case CV_8U: return Functor<double, uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        }
+        break;
+    //  32 bit signed integer
+    case CV_32S:
+        switch (depth2) {
+        //  32 bit floating point
+        case CV_32F: return Functor<int, float, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  64 bit floating point
+        case CV_64F: return Functor<int, double, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  32 bit signed integer
+        case CV_32S: return Functor<int, int, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit signed integer
+        case CV_16S: return Functor<int, short, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit unsigned integer
+        case CV_16U: return Functor<int, ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit signed integer
+        case CV_8S: return Functor<int, char, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit unsigned integer
+        case CV_8U: return Functor<int, uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        }
+        break;
+    //  16 bit signed integer
+    case CV_16S:
+        switch (depth2) {
+        //  32 bit floating point
+        case CV_32F: return Functor<short, float, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  64 bit floating point
+        case CV_64F: return Functor<short, double, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  32 bit signed integer
+        case CV_32S: return Functor<short, int, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit signed integer
+        case CV_16S: return Functor<short, short, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit unsigned integer
+        case CV_16U: return Functor<short, ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit signed integer
+        case CV_8S: return Functor<short, char, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit unsigned integer
+        case CV_8U: return Functor<short, uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        }
+        break;
+    //  16 bit unsigned integer
+    case CV_16U:
+        switch (depth2) {
+        //  32 bit floating point
+        case CV_32F: return Functor<ushort, float, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  64 bit floating point
+        case CV_64F: return Functor<ushort, double, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  32 bit signed integer
+        case CV_32S: return Functor<ushort, int, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit signed integer
+        case CV_16S: return Functor<ushort, short, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit unsigned integer
+        case CV_16U: return Functor<ushort, ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit signed integer
+        case CV_8S: return Functor<ushort, char, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit unsigned integer
+        case CV_8U: return Functor<ushort, uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        }
+        break;
+    //  8 bit signed integer
+    case CV_8S:
+        switch (depth2) {
+        //  32 bit floating point
+        case CV_32F: return Functor<char, float, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  64 bit floating point
+        case CV_64F: return Functor<char, double, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  32 bit signed integer
+        case CV_32S: return Functor<char, int, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit signed integer
+        case CV_16S: return Functor<char, short, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit unsigned integer
+        case CV_16U: return Functor<char, ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit signed integer
+        case CV_8S: return Functor<char, char, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit unsigned integer
+        case CV_8U: return Functor<char, uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        }
+        break;
+    //  8 bit unsigned integer
+    case CV_8U:
+        switch (depth2) {
+        //  32 bit floating point
+        case CV_32F: return Functor<uchar, float, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  64 bit floating point
+        case CV_64F: return Functor<uchar, double, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  32 bit signed integer
+        case CV_32S: return Functor<uchar, int, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit signed integer
+        case CV_16S: return Functor<uchar, short, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  16 bit unsigned integer
+        case CV_16U: return Functor<uchar, ushort, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit signed integer
+        case CV_8S: return Functor<uchar, char, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        //  8 bit unsigned integer
+        case CV_8U: return Functor<uchar, uchar, TemplateArgs...>()(std::forward<decltype(args)>(args)...);
+        }
+        break;
     }
 
     throw_not_implemented(
-        "Dispatch for pixel type = ", get_type_name(type1), " is not implemented."
+        "Dispatch for pixel depths ",
+        get_type_name(type1),
+        " and ",
+        get_type_name(type2),
+        " is not implemented."
     );
 }
 
-template <typename T, int N>
+template <typename T>
 struct CollectMasked
 {
-    using Pixel = cv::Vec<T, N>;
-
     void operator()(cv::InputArray input, cv::OutputArray output, cv::InputArray mask) const
     {
-        assert(input.channels() == N);
         throw_if_bad_mask_type(mask);
         throw_if_bad_mask_for_array(input, mask, AllowedMaskChannels::SINGLE);
         if (input.empty())
@@ -454,11 +549,11 @@ struct CollectMasked
             cv::parallel_for_(
                 cv::Range(0, input_matrix.total()),
                 [&](const cv::Range& range) {
-                    for (int k = range.start; k < range.end; ++k) {
-                        int i = k / input_matrix.cols;
-                        int j = k % input_matrix.cols;
-                        if (mask_matrix.at<uchar>(i, j)) {
-                            auto pixel = input_matrix.ptr<T>(i, j);
+                    for (int index = range.start; index < range.end; ++index) {
+                        int row = index / input_matrix.cols;
+                        int col = index % input_matrix.cols;
+                        if (mask_matrix.at<uchar>(row, col)) {
+                            auto pixel = input_matrix.ptr<T>(row, col);
                             auto collected_pixel = collected.ptr<T>(insert_index++);
                             std::copy(pixel, pixel + channels, collected_pixel);
                         }
@@ -495,13 +590,13 @@ struct Median
     {
         throw_if_empty(array);
         cv::Mat masked_array;
-        CollectMasked<T, N>()(array, masked_array, mask);
+        CollectMasked<T>()(array, masked_array, mask);
 
         return compute_median(masked_array);
     }
 
 private:
-    cv::Scalar compute_median(cv::Mat& array) const
+    Pixel compute_median(cv::Mat& array) const
     {
         assert(array.channels() == N);
         assert(!array.empty());
@@ -512,14 +607,19 @@ private:
         } else if (array.total() == 2) {
             return 0.5 * (array.at<Pixel>(0) + array.at<Pixel>(1));
         } else {
-            cv::Scalar result;
+            Pixel result;
             if constexpr (N == 1) {
                 result[0] = single_channel_median(array);
             } else {
-                cv::Mat channels[N];
-                cv::split(array, channels);
-                for (int i = 0; i < N; ++i)
-                    result[i] = single_channel_median(channels[i]);
+                cv::Mat array_channels[N];
+                cv::split(array, array_channels);
+                cv::parallel_for_(
+                    cv::Range(0, N),
+                    [&](const cv::Range& range) {
+                        for (int i = range.start; i < range.end; ++i)
+                            result[i] = single_channel_median(array_channels[i]);
+                    }
+                );
             }
 
             return result;
@@ -544,7 +644,7 @@ private:
     }
 };
 
-template <typename T, int CHANNELS, int EVEN_OR_ODD>
+template <typename T, int EVEN_OR_ODD>
 requires(EVEN_OR_ODD == 0 || EVEN_OR_ODD == 1)
 struct NegateEveryOther
 {
@@ -564,26 +664,22 @@ struct NegateEveryOther
     }
 };
 
-template <typename T1, typename T2, int N, cv::CmpTypes compare_type>
+template <typename T1, typename T2, cv::CmpTypes COMPARE_TYPE>
 struct Compare
 {
-    using Pixel1 = cv::Vec<T1, N>;
-    using Pixel2 = cv::Vec<T2, N>;
-    using OutputPixel = cv::Vec<uchar, N>;
-
     constexpr bool compare(T1 x, T2 y) const
     {
-        if constexpr (compare_type == cv::CMP_LT)
+        if constexpr (COMPARE_TYPE == cv::CMP_LT)
             return x < y;
-        else if constexpr (compare_type == cv::CMP_LE)
+        else if constexpr (COMPARE_TYPE == cv::CMP_LE)
             return x <= y;
-        else if constexpr (compare_type == cv::CMP_GT)
+        else if constexpr (COMPARE_TYPE == cv::CMP_GT)
             return x > y;
-        else if constexpr (compare_type == cv::CMP_GE)
+        else if constexpr (COMPARE_TYPE == cv::CMP_GE)
             return x >= y;
-        else if constexpr (compare_type == cv::CMP_EQ)
+        else if constexpr (COMPARE_TYPE == cv::CMP_EQ)
             return x == y;
-        else if constexpr (compare_type == cv::CMP_NE)
+        else if constexpr (COMPARE_TYPE == cv::CMP_NE)
             return x != y;
     }
 
@@ -593,20 +689,26 @@ struct Compare
         cv::OutputArray output
     ) const
     {
-        assert(input_a.channels() == N);
-        assert(input_b.channels() == N);
         throw_if_comparing_different_sizes(input_a, input_b);
 
-        output.create(input_a.size(), CV_8UC(N));
+        int channels = input_a.channels();
+        output.create(input_a.size(), CV_8UC(channels));
         auto a = input_a.getMat();
         auto b = input_b.getMat();
         auto result = output.getMat();
-        a.forEach<Pixel1>(
-            [&](const auto& x, const auto position) {
-                auto y = b.at<Pixel2>(position);
-                auto& z = result.at<OutputPixel>(position);
-                for (int i = 0; i < N; ++i)
-                    z[i] = 255 * compare(x[i], y[i]);
+
+        cv::parallel_for_(
+            cv::Range(0, a.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    int row = index / a.cols;
+                    int col = index % a.cols;
+                    auto x = a.ptr<T1>(row, col);
+                    auto y = b.ptr<T2>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = 255 * compare(x[i], y[i]);
+                }
             }
         );
     }
@@ -618,29 +720,38 @@ struct Compare
         cv::InputArray mask
     ) const
     {
-        assert(input_a.channels() == N);
-        assert(input_b.channels() == N);
         throw_if_comparing_different_sizes(input_a, input_b);
         throw_if_bad_mask_type(mask);
+        throw_if_bad_mask_for_array(input_a, mask, AllowedMaskChannels::SINGLE);
+
         if (mask.size() != input_a.size())
             throw_bad_size(
                 "Wrong size mask. Got ", mask.size(), ", must be ", input_a.size(), "."
             );
 
-        output.create(input_a.size(), CV_8UC(N));
+        int channels = input_a.channels();
+        output.create(input_a.size(), CV_8UC(channels));
         auto a = input_a.getMat();
         auto b = input_b.getMat();
         auto mask_matrix = mask.getMat();
         auto result = output.getMat();
-        a.forEach<Pixel1>(
-            [&](const auto& x, const auto position) {
-                auto y = b.at<Pixel2>(position);
-                if (mask_matrix.at<uchar>(position)) {
-                    auto& z = result.at<OutputPixel>(position);
-                    for (int i = 0; i < N; ++i)
-                        z[i] = 255 * compare(x[i], y[i]);
-                } else {
-                    result.at<OutputPixel>(position) = 0;
+
+        cv::parallel_for_(
+            cv::Range(0, a.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    int row = index / a.cols;
+                    int col = index % a.cols;
+                    auto z = result.ptr<uchar>(row, col);
+                    if (mask_matrix.at<uchar>(row, col)) {
+                        auto x = a.ptr<T1>(row, col);
+                        auto y = b.ptr<T2>(row, col);
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 255 * compare(x[i], y[i]);
+                    } else {
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 0;
+                    }
                 }
             }
         );
@@ -653,6 +764,13 @@ struct Compare
                 "Cannot compare matrices of different sizes. ",
                 "Got a.size() = ", a.size(),
                 " and b.size() = ", b.size(), "."
+            );
+
+        if (a.channels() != b.channels())
+            throw_bad_size(
+                "Cannot compare matrices of with different number of channels. ",
+                "Got a.channels() = ", a.channels(),
+                " and b.channels() = ", b.channels(), "."
             );
     }
 };

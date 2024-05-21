@@ -195,12 +195,12 @@ void less_than(
 )
 {
     if (is_no_array(mask))
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_LT>(
-            a.type(), b.type(), a, b, output
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
+            a.depth(), b.depth(), a, b, output
         );
     else
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_LT>(
-            a.type(), b.type(), a, b, output, mask
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
+            a.depth(), b.depth(), a, b, output, mask
         );
 }
 
@@ -212,12 +212,12 @@ void less_than_or_equal(
 )
 {
     if (is_no_array(mask))
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_LE>(
-            a.type(), b.type(), a, b, output
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
+            a.depth(), b.depth(), a, b, output
         );
     else
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_LE>(
-            a.type(), b.type(), a, b, output, mask
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
+            a.depth(), b.depth(), a, b, output, mask
         );
 }
 
@@ -229,12 +229,12 @@ void greater_than(
 )
 {
     if (is_no_array(mask))
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_GT>(
-            a.type(), b.type(), a, b, output
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
+            a.depth(), b.depth(), a, b, output
         );
     else
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_GT>(
-            a.type(), b.type(), a, b, output, mask
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
+            a.depth(), b.depth(), a, b, output, mask
         );
 }
 
@@ -246,12 +246,12 @@ void greater_than_or_equal(
 )
 {
     if (is_no_array(mask))
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_GE>(
-            a.type(), b.type(), a, b, output
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
+            a.depth(), b.depth(), a, b, output
         );
     else
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_GE>(
-            a.type(), b.type(), a, b, output, mask
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
+            a.depth(), b.depth(), a, b, output, mask
         );
 }
 
@@ -263,12 +263,12 @@ void equal(
 )
 {
     if (is_no_array(mask))
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_EQ>(
-            a.type(), b.type(), a, b, output
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_EQ>(
+            a.depth(), b.depth(), a, b, output
         );
     else
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_EQ>(
-            a.type(), b.type(), a, b, output, mask
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_EQ>(
+            a.depth(), b.depth(), a, b, output, mask
         );
 }
 
@@ -280,12 +280,12 @@ void not_equal(
 )
 {
     if (is_no_array(mask))
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_NE>(
-            a.type(), b.type(), a, b, output
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_NE>(
+            a.depth(), b.depth(), a, b, output
         );
     else
-        internal::dispatch_on_pixel_depths_and_same_channels<internal::Compare, cv::CMP_NE>(
-            a.type(), b.type(), a, b, output, mask
+        internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_NE>(
+            a.depth(), b.depth(), a, b, output, mask
         );
 }
 
