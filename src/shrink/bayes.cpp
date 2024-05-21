@@ -35,7 +35,7 @@ struct ComputeBayesThreshold
     ) const
     {
         cv::Mat masked_input;
-        CollectMasked<T, CHANNELS>()(input, masked_input, mask);
+        CollectMasked<T>()(input, masked_input, mask);
         return this->operator()(masked_input, stdev);
     }
 

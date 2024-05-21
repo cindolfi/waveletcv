@@ -75,7 +75,7 @@ struct ComputeSureRisk
     {
         assert(coeffs.channels() == N);
         cv::Mat masked_coeffs;
-        CollectMasked<T, N>()(coeffs, masked_coeffs, mask);
+        CollectMasked<T>()(coeffs, masked_coeffs, mask);
         return this->operator()(masked_coeffs, threshold, stdev);
     }
 };
@@ -348,7 +348,7 @@ struct ComputeSureThreshold
     {
         assert(coeffs.channels() == N);
         cv::Mat masked_coeffs;
-        CollectMasked<T, N>()(coeffs, masked_coeffs, mask);
+        CollectMasked<T>()(coeffs, masked_coeffs, mask);
         return this->operator()(masked_coeffs, stdev, optimizer, variant, stop_conditions);
     }
 };

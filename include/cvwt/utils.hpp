@@ -5,6 +5,7 @@
 #include <ranges>
 #include <memory>
 #include <string>
+#include <atomic>
 #include <opencv2/core.hpp>
 #include <iostream>
 #include "cvwt/exception.hpp"
@@ -439,23 +440,31 @@ struct CollectMasked
         assert(input.channels() == N);
         throw_if_bad_mask_type(mask);
         throw_if_bad_mask_for_array(input, mask, AllowedMaskChannels::SINGLE);
-        if (input.empty()) {
+        if (input.empty())
             output.create(cv::Size(), input.type());
-        } else {
-            std::vector<Pixel> result;
-            result.reserve(cv::countNonZero(mask));
-            auto mask_mat = mask.getMat();
-            std::mutex push_back_mutex;
-            input.getMat().forEach<Pixel>(
-                [&](const auto& pixel, const auto position) {
-                    if (mask_mat.at<uchar>(position)) {
-                        std::lock_guard<std::mutex> lock(push_back_mutex);
-                        result.push_back(pixel);
+        else
+            output.create(cv::countNonZero(mask), 1, input.type());
+
+        auto collected = output.getMat();
+        if (!collected.empty()) {
+            std::atomic<int> insert_index = 0;
+            auto input_matrix = input.getMat();
+            auto mask_matrix = mask.getMat();
+            int channels = input_matrix.channels();
+            cv::parallel_for_(
+                cv::Range(0, input_matrix.total()),
+                [&](const cv::Range& range) {
+                    for (int k = range.start; k < range.end; ++k) {
+                        int i = k / input_matrix.cols;
+                        int j = k % input_matrix.cols;
+                        if (mask_matrix.at<uchar>(i, j)) {
+                            auto pixel = input_matrix.ptr<T>(i, j);
+                            auto collected_pixel = collected.ptr<T>(insert_index++);
+                            std::copy(pixel, pixel + channels, collected_pixel);
+                        }
                     }
                 }
             );
-
-            cv::Mat(result).copyTo(output);
         }
     }
 };

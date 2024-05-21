@@ -14,8 +14,8 @@ void flatten(cv::InputArray array, cv::OutputArray result)
 
 void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputArray mask)
 {
-    internal::dispatch_on_pixel_type<internal::CollectMasked>(
-        array.type(),
+    internal::dispatch_on_pixel_depth<internal::CollectMasked>(
+        array.depth(),
         array,
         collected,
         mask
