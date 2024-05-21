@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <nlopt.hpp>
 #include <cvwt/shrinkage.hpp>
 #include "common.hpp"
 #include "json.hpp"
@@ -2693,20 +2694,15 @@ public:
     static constexpr double tolerance = 1e-12;
     using Matrix = typename ParamType::Matrix;
     using Pixel = typename ParamType::Pixel;
-    // using BaseParamsMap = std::map< std::string, SureTestBaseParam<typename Pixel::value_type, Pixel::channels>>;
     using BaseParamsMap = std::map< std::string, ParamType>;
 
-    auto compute_sure_risk(const cv::Mat& matrix, const cv::Scalar& threshold, const cv::Scalar& stdev)
+    cv::Scalar compute_sure_risk(
+        const cv::Mat& matrix,
+        const cv::Scalar& threshold,
+        const cv::Scalar& stdev
+    )
     {
-        cvwt::internal::ComputeSureThreshold<
-            SureRiskTest::Pixel::value_type,
-            SureRiskTest::Pixel::channels
-        > compute;
-
-        cv::Scalar risk;
-        compute.sure_risk(matrix, threshold, stdev, risk);
-
-        return risk;
+        return SureShrink().compute_sure_risk(matrix, threshold, stdev);
     }
 
     static BaseParamsMap create_base_params()
@@ -3412,10 +3408,10 @@ std::map<std::string, double> ShrinkThresholdTest::sure_optimizer_tolerance_map(
     }
 );
 
-TEST_P(ShrinkThresholdTest, CorrectStandardDeviation)
+TEST_P(ShrinkThresholdTest, CorrectNoiseStandardDeviation)
 {
     auto param = GetParam();
-    auto actual_stdev = param.shrinker->compute_stdev(param.coeffs);
+    auto actual_stdev = param.shrinker->compute_noise_stdev(param.coeffs);
 
     EXPECT_THAT(actual_stdev, ScalarNear(param.expected_stdev, 1e-12));
 }

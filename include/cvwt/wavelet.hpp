@@ -59,65 +59,54 @@ public:
     /**
      * @brief The number of vanishing moments of the wavelet function
      *
-     * @return int
      */
     int vanishing_moments_psi() const { return _p->vanishing_moments_psi; }
 
     /**
      * @brief The number of vanishing moments of the scaling function
      *
-     * @return int
      */
     int vanishing_moments_phi() const { return _p->vanishing_moments_phi; }
 
     /**
      * @brief Returns true if the wavelet is orthogonal
      *
-     * @return true
-     * @return false
      */
     bool orthogonal() const { return _p->orthogonal; }
 
     /**
      * @brief Returns true if the wavelet is biorthogonal
      *
-     * @return true
-     * @return false
      */
     bool biorthogonal() const { return _p->biorthogonal; }
 
     /**
      * @brief Returns how symmetric the wavelet is
      *
-     * @return Symmetry
      */
     Symmetry symmetry() const { return _p->symmetry; }
 
     /**
      * @brief The family name the wavelet belongs to
      *
-     * @return std::string
      */
     std::string family() const { return _p->family; }
 
     /**
      * @brief The name of the wavelet
      *
-     * @return std::string
      */
     std::string name() const { return _p->name; }
 
     /**
      * @brief The wavelet filter bank
      *
-     * @return FilterBank
      */
     FilterBank filter_bank() const { return _p->filter_bank; }
 
     /**
      * @brief The length of the wavelet's filter kernel
      *
-     * @return int
      */
     int filter_length() const { return _p->filter_bank.filter_length(); }
 
@@ -127,8 +116,6 @@ public:
      * A valid wavelet has a non-empty Wavelet::name() and a non-empty
      * Wavelet::filter_bank(). A default constructed wavelet is always invalid.
      *
-     * @return true
-     * @return false
      */
     bool is_valid() const { return _p->filter_bank.filter_length() > 0; }
 
@@ -142,14 +129,12 @@ public:
      * Use Wavelet::register_factory() to register a factory for custom wavelets.
      *
      * @param name
-     * @return Wavelet
      */
     static Wavelet create(const std::string& name);
 
     /**
      * @brief Returns a collection of wavelet names that can be used with Wavelet::create()
      *
-     * @return std::vector<std::string>
      */
     static std::vector<std::string> registered_wavelets();
 
@@ -217,7 +202,6 @@ private:
  *
  * @param stream
  * @param wavelet
- * @return std::ostream&
  */
 std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
 
@@ -226,9 +210,12 @@ std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
 //  Factories
 //  ----------------------------------------------------------------------------
 /**
+ * @name Wavelet Factories
+ * @{
+ */
+/**
  * @brief Create a Haar Wavelet object
  *
- * @return Wavelet
  */
 Wavelet create_haar();
 
@@ -236,7 +223,6 @@ Wavelet create_haar();
  * @brief Create a Daubechies Wavelet object
  *
  * @param order The order of the wavelet.  Must be 2 <= order <= 20.
- * @return Wavelet
  */
 Wavelet create_daubechies(int order);
 
@@ -244,7 +230,6 @@ Wavelet create_daubechies(int order);
  * @brief Create a Symlets Wavelet object
  *
  * @param order The order of the wavelet.  Must be 2 <= order <= 20.
- * @return Wavelet
  */
 Wavelet create_symlets(int order);
 
@@ -252,7 +237,6 @@ Wavelet create_symlets(int order);
  * @brief Create a Coiflets Wavelet object
  *
  * @param order The order of the wavelet.  Must be 1 <= order <= 17.
- * @return Wavelet
  */
 Wavelet create_coiflets(int order);
 
@@ -261,7 +245,6 @@ Wavelet create_coiflets(int order);
  *
  * @param vanishing_moments_psi The number of vanishing moments of the wavelet function.
  * @param vanishing_moments_phi The number of vanishing moments of the scaling function.
- * @return Wavelet
  */
 Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
 
@@ -270,9 +253,10 @@ Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi
  *
  * @param vanishing_moments_psi The number of vanishing moments of the wavelet function.
  * @param vanishing_moments_phi The number of vanishing moments of the scaling function.
- * @return Wavelet
  */
 Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
+
+/** @}*/
 
 namespace internal
 {

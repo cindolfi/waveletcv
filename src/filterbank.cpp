@@ -1,24 +1,52 @@
 #include "cvwt/filterbank.hpp"
-#include "cvwt/utils.hpp"
+#include <functional>
 #include <opencv2/imgproc.hpp>
 #include <ranges>
+#include "cvwt/utils.hpp"
 
 namespace cvwt
 {
 namespace internal
 {
-template <typename Pixel>
-inline void dot(const cv::Mat& a, const cv::Mat& b, Pixel& output_pixel)
+int convolve_output_type(int input_type, int kernel_type)
 {
-    auto c = cv::sum(a.mul(b));
-    for (int i = 0; i < Pixel::channels; ++i)
-        output_pixel[i] = c[i];
+    return CV_MAKE_TYPE(
+        std::max(CV_MAT_DEPTH(input_type), CV_MAT_DEPTH(kernel_type)),
+        std::max(CV_MAT_CN(input_type), CV_MAT_CN(kernel_type))
+    );
 }
 
-template <typename T, int CHANNELS>
+template<typename T1, typename T2>
+using MultiplyType = decltype(std::declval<T1>() * std::declval<T2>());
+
+template <
+    typename T1,
+    typename T2,
+    typename OutputType
+>
+inline void accum_dot_single_with_multi_channel(
+    const cv::Mat& single_channel_array,
+    const cv::Mat& multi_channel_array,
+    OutputType* output_pixel
+)
+{
+    assert(single_channel_array.size() == single_channel_array.size());
+    assert(single_channel_array.channels() == 1);
+
+    for (int i = 0; i < single_channel_array.rows; ++i) {
+        for (int j = 0; j < single_channel_array.cols; ++j) {
+            auto a = single_channel_array.at<T1>(i, j);
+            auto b = multi_channel_array.ptr<T2>(i, j);
+            for (int k = 0; k < multi_channel_array.channels(); ++k)
+                output_pixel[k] += a * b[k];
+        }
+    }
+}
+
+template <typename InputType, typename KernelType>
 struct ConvolveRowsAndDownsampleCols
 {
-    using Pixel = cv::Vec<T, CHANNELS>;
+    using OutputType = MultiplyType<InputType, KernelType>;
 
     /**
      * Input is assumed to be padded, kernel is assumed to be flipped and transposed (if necessary)
@@ -27,28 +55,37 @@ struct ConvolveRowsAndDownsampleCols
     {
         auto output_size = input.size() - kernel.size() + cv::Size(1, 1);
         output_size.width = output_size.width / 2;
-        output.create(output_size, input.type());
-
-        const auto input_image = input.getMat();
-        output.getMat().forEach<Pixel>(
-            [&](auto& output_pixel, const auto index) {
-                dot(
-                    kernel,
-                    input_image(cv::Rect(
-                        cv::Point(2 * index[1], index[0]),
-                        kernel.size()
-                    )),
-                    output_pixel
-                );
+        output.assign(
+            cv::Mat::zeros(
+                output_size,
+                convolve_output_type(input.type(), kernel.type())
+            )
+        );
+        const auto input_matrix = input.getMat();
+        auto output_matrix = output.getMat();
+        cv::parallel_for_(
+            cv::Range(0, output_matrix.total()),
+            [&](const cv::Range& range) {
+                for (int k = range.start; k < range.end; ++k) {
+                    const int index[2] = {k / output_matrix.cols, k % output_matrix.cols};
+                    accum_dot_single_with_multi_channel<KernelType, InputType>(
+                        kernel,
+                        input_matrix(cv::Rect(
+                            cv::Point(2 * index[1], index[0]),
+                            kernel.size()
+                        )),
+                        output_matrix.ptr<OutputType>(index)
+                    );
+                }
             }
         );
     }
 };
 
-template <typename T, int CHANNELS>
+template <typename InputType, typename KernelType>
 struct ConvolveColsAndDownsampleRows
 {
-    using Pixel = cv::Vec<T, CHANNELS>;
+    using OutputType = MultiplyType<InputType, KernelType>;
 
     /**
      * Input is assumed to be padded, kernel is assumed to be flipped and transposed (if necessary)
@@ -57,28 +94,37 @@ struct ConvolveColsAndDownsampleRows
     {
         auto output_size = input.size() - kernel.size() + cv::Size(1, 1);
         output_size.height = output_size.height / 2;
-        output.create(output_size, input.type());
-
-        const auto input_image = input.getMat();
-        output.getMat().forEach<Pixel>(
-            [&](auto& output_pixel, const auto index) {
-                dot(
-                    kernel,
-                    input_image(cv::Rect(
-                        cv::Point(index[1], 2 * index[0]),
-                        kernel.size()
-                    )),
-                    output_pixel
-                );
+        output.assign(
+            cv::Mat::zeros(
+                output_size,
+                convolve_output_type(input.type(), kernel.type())
+            )
+        );
+        const auto input_matrix = input.getMat();
+        auto output_matrix = output.getMat();
+        cv::parallel_for_(
+            cv::Range(0, output_matrix.total()),
+            [&](const cv::Range& range) {
+                for (int k = range.start; k < range.end; ++k) {
+                    const int index[2] = {k / output_matrix.cols, k % output_matrix.cols};
+                    accum_dot_single_with_multi_channel<KernelType, InputType>(
+                        kernel,
+                        input_matrix(cv::Rect(
+                            cv::Point(index[1], 2 * index[0]),
+                            kernel.size()
+                        )),
+                        output_matrix.ptr<OutputType>(index)
+                    );
+                }
             }
         );
     }
 };
 
-template <typename T, int CHANNELS>
+template <typename InputType, typename KernelType>
 struct UpsampleRowsAndConvolveCols
 {
-    using Pixel = cv::Vec<T, CHANNELS>;
+    using OutputType = MultiplyType<InputType, KernelType>;
 
     /**
      * Kernels are assumed to be flipped and transposed (if necessary)
@@ -88,36 +134,43 @@ struct UpsampleRowsAndConvolveCols
         cv::OutputArray output,
         const cv::Mat& even_index_kernel,
         const cv::Mat& odd_index_kernel,
-        const cv::Size& output_size
+        const cv::Size& image_size
     ) const
     {
-        output.create(
-            cv::Size(input.size().width, output_size.height),
-            input.type()
-        );
-        const auto input_image = input.getMat();
-        output.getMat().forEach<Pixel>(
-            [&](auto& output_pixel, const auto index) {
-                const cv::Mat& kernel = (index[0] % 2 == 1)
-                                      ? odd_index_kernel
-                                      : even_index_kernel;
-                dot(
-                    kernel,
-                    input_image(cv::Rect(
-                        cv::Point(index[1], index[0] / 2),
-                        kernel.size()
-                    )),
-                    output_pixel
-                );
+        if (output.empty())
+            output.assign(cv::Mat::zeros(
+                cv::Size(input.size().width, image_size.height),
+                convolve_output_type(input.type(), even_index_kernel.type())
+            ));
+
+        const auto input_matrix = input.getMat();
+        auto output_matrix = output.getMat();
+        cv::parallel_for_(
+            cv::Range(0, output_matrix.total()),
+            [&](const cv::Range& range) {
+                for (int k = range.start; k < range.end; ++k) {
+                    const int index[2] = {k / output_matrix.cols, k % output_matrix.cols};
+                    const cv::Mat& kernel = (index[0] % 2 == 1)
+                                          ? odd_index_kernel
+                                          : even_index_kernel;
+                    accum_dot_single_with_multi_channel<KernelType, InputType>(
+                        kernel,
+                        input_matrix(cv::Rect(
+                            cv::Point(index[1], index[0] / 2),
+                            kernel.size()
+                        )),
+                        output_matrix.ptr<OutputType>(index)
+                    );
+                }
             }
         );
     }
 };
 
-template <typename T, int CHANNELS>
+template <typename InputType, typename KernelType>
 struct UpsampleColsAndConvolveRows
 {
-    using Pixel = cv::Vec<T, CHANNELS>;
+    using OutputType = MultiplyType<InputType, KernelType>;
 
     /**
      * Kernels are assumed to be flipped and transposed (if necessary)
@@ -127,37 +180,42 @@ struct UpsampleColsAndConvolveRows
         cv::OutputArray output,
         const cv::Mat& even_index_kernel,
         const cv::Mat& odd_index_kernel,
-        const cv::Size& output_size
+        const cv::Size& image_size
     ) const
     {
-        output.create(
-            cv::Size(output_size.width, input.size().height),
-            input.type()
-        );
-        const auto input_image = input.getMat();
-        output.getMat().forEach<Pixel>(
-            [&](auto& output_pixel, const auto index) {
-                const cv::Mat& kernel = (index[1] % 2 == 1)
-                                      ? odd_index_kernel
-                                      : even_index_kernel;
-                dot(
-                    kernel,
-                    input_image(cv::Rect(
-                        cv::Point(index[1] / 2, index[0]),
-                        kernel.size()
-                    )),
-                    output_pixel
-                );
+        if (output.empty())
+            output.assign(cv::Mat::zeros(
+                cv::Size(image_size.width, input.size().height),
+                convolve_output_type(input.type(), even_index_kernel.type())
+            ));
+
+        const auto input_matrix = input.getMat();
+        auto output_matrix = output.getMat();
+        cv::parallel_for_(
+            cv::Range(0, output_matrix.total()),
+            [&](const cv::Range& range) {
+                for (int k = range.start; k < range.end; ++k) {
+                    const int index[2] = {k / output_matrix.cols, k % output_matrix.cols};
+                    const cv::Mat& kernel = (index[1] % 2 == 1)
+                                          ? odd_index_kernel
+                                          : even_index_kernel;
+                    accum_dot_single_with_multi_channel<KernelType, InputType>(
+                        kernel,
+                        input_matrix(cv::Rect(
+                            cv::Point(index[1] / 2, index[0]),
+                            kernel.size()
+                        )),
+                        output_matrix.ptr<OutputType>(index)
+                    );
+                }
             }
         );
     }
 };
 
-template <typename T, int CHANNELS>
+template <typename T>
 struct SplitKernelIntoOddAndEvenParts
 {
-    using Pixel = cv::Vec<T, CHANNELS>;
-
     void operator()(cv::InputArray full_kernel, cv::OutputArray even_output, cv::OutputArray odd_output) const
     {
         //  Build the kernels to use for even output rows/columns and odd output
@@ -181,20 +239,18 @@ struct SplitKernelIntoOddAndEvenParts
         even_output.create(even_size, kernel.type());
         auto even_kernel = even_output.getMat();
         for (int i = 0; i < even_kernel.total(); ++i)
-            even_kernel.at<Pixel>(i) = kernel.at<Pixel>(2 * i + 1);
+            even_kernel.at<T>(i) = kernel.at<T>(2 * i + 1);
 
         odd_output.create(odd_size, kernel.type());
         auto odd_kernel = odd_output.getMat();
         for (int i = 0; i < odd_kernel.total(); ++i)
-            odd_kernel.at<Pixel>(i) = kernel.at<Pixel>(2 * i);
+            odd_kernel.at<T>(i) = kernel.at<T>(2 * i);
     }
 };
 
-template <typename T, int CHANNELS>
+template <typename T>
 struct MergeEvenAndOddKernels
 {
-    using Pixel = cv::Vec<T, CHANNELS>;
-
     void operator()(cv::InputArray even_kernel_input, cv::InputArray odd_kernel_input, cv::OutputArray full_kernel) const
     {
         cv::Mat even_kernel = even_kernel_input.getMat();
@@ -212,7 +268,7 @@ struct MergeEvenAndOddKernels
             //  even/odd-ness of the image rows & columns, which is opposite
             //  to the even/odd-ness of the kernel indices.
             cv::Mat& source_kernel = (i % 2 == 0) ? odd_kernel : even_kernel;
-            kernel.at<Pixel>(i) = source_kernel.at<Pixel>(i / 2);
+            kernel.at<T>(i) = source_kernel.at<T>(i / 2);
         }
     }
 };
@@ -271,8 +327,8 @@ FilterBankImpl::FilterBankImpl(
 
 void FilterBankImpl::split_kernel_into_odd_and_even_parts(cv::InputArray kernel, cv::OutputArray even_kernel, cv::OutputArray odd_kernel) const
 {
-    dispatch_on_pixel_type<SplitKernelIntoOddAndEvenParts>(
-        kernel.type(),
+    dispatch_on_pixel_depth<SplitKernelIntoOddAndEvenParts>(
+        kernel.depth(),
         kernel,
         even_kernel,
         odd_kernel
@@ -285,8 +341,8 @@ void FilterBankImpl::merge_even_and_odd_kernels(
     cv::OutputArray kernel
 ) const
 {
-    dispatch_on_pixel_type<MergeEvenAndOddKernels>(
-        even_kernel.type(),
+    dispatch_on_pixel_depth<MergeEvenAndOddKernels>(
+        even_kernel.depth(),
         even_kernel,
         odd_kernel,
         kernel
@@ -382,7 +438,7 @@ void FilterBankImpl::throw_if_wrong_size(
 bool KernelPair::operator==(const KernelPair& other) const
 {
     return this == &other || (
-        equals(_lowpass, other._lowpass) && equals(_highpass, other._highpass)
+        matrix_equals(_lowpass, other._lowpass) && matrix_equals(_highpass, other._highpass)
     );
 }
 
@@ -438,69 +494,46 @@ void FilterBank::decompose(
 {
     throw_if_decompose_image_is_wrong_size(image);
 
-    bool was_prepared = is_decompose_prepared(image.type());
-    if (!was_prepared)
-        prepare_decompose(image.type());
-
-    cv::Mat promoted_image;
-    promote(image, promoted_image);
-
-    cv::Mat padded_image;
-    extrapolate_border(promoted_image, padded_image, border_type, border_value);
+    cv::Mat exptrapolated_image;
+    extrapolate_border(image, exptrapolated_image, border_type, border_value);
 
     //  Stage 1
     cv::Mat stage1_lowpass_output;
     convolve_rows_and_downsample_cols(
-        padded_image,
+        exptrapolated_image,
         stage1_lowpass_output,
-        _p->promoted_decompose.lowpass
+        _p->decompose.lowpass
     );
     cv::Mat stage1_highpass_output;
     convolve_rows_and_downsample_cols(
-        padded_image,
+        exptrapolated_image,
         stage1_highpass_output,
-        _p->promoted_decompose.highpass
+        _p->decompose.highpass
     );
 
     //  Stage 2
     convolve_cols_and_downsample_rows(
         stage1_lowpass_output,
         approx,
-        _p->promoted_decompose.lowpass
+        _p->decompose.lowpass
     );
     convolve_cols_and_downsample_rows(
         stage1_lowpass_output,
         horizontal_detail,
-        _p->promoted_decompose.highpass
+        _p->decompose.highpass
     );
     convolve_cols_and_downsample_rows(
         stage1_highpass_output,
         vertical_detail,
-        _p->promoted_decompose.lowpass
+        _p->decompose.lowpass
     );
     convolve_cols_and_downsample_rows(
         stage1_highpass_output,
         diagonal_detail,
-        _p->promoted_decompose.highpass
+        _p->decompose.highpass
     );
-
-    if (!was_prepared)
-        finish_decompose();
 }
 
-void FilterBank::prepare_decompose(int type) const
-{
-    if (is_decompose_prepared(type))
-        return;
-
-    promote_kernel(_p->decompose.lowpass, _p->promoted_decompose.lowpass, type);
-    promote_kernel(_p->decompose.highpass, _p->promoted_decompose.highpass, type);
-}
-
-void FilterBank::finish_decompose() const
-{
-    _p->promoted_decompose.release();
-}
 
 void FilterBank::reconstruct(
     cv::InputArray approx,
@@ -513,109 +546,56 @@ void FilterBank::reconstruct(
 {
     throw_if_reconstruct_coeffs_are_wrong_size(approx, horizontal_detail, vertical_detail, diagonal_detail);
 
-    bool was_prepared = is_reconstruct_prepared(approx.type());
-    if (!was_prepared)
-        prepare_reconstruct(approx.type());
-
-    cv::Mat promoted_approx;
-    promote(approx, promoted_approx);
-    cv::Mat promoted_horizontal_detail;
-    promote(horizontal_detail, promoted_horizontal_detail);
-    cv::Mat promoted_vertical_detail;
-    promote(vertical_detail, promoted_vertical_detail);
-    cv::Mat promoted_diagonal_detail;
-    promote(diagonal_detail, promoted_diagonal_detail);
-
     //  Stage 1a
-    cv::Mat stage1a_lowpass_output;
+    cv::Mat stage1a_output;
     upsample_rows_and_convolve_cols(
-        promoted_approx,
-        stage1a_lowpass_output,
-        _p->promoted_reconstruct.even_lowpass,
-        _p->promoted_reconstruct.odd_lowpass,
+        approx.getMat(),
+        stage1a_output,
+        _p->reconstruct.even_lowpass,
+        _p->reconstruct.odd_lowpass,
         output_size
     );
-    cv::Mat stage1a_highpass_output;
     upsample_rows_and_convolve_cols(
-        promoted_horizontal_detail,
-        stage1a_highpass_output,
-        _p->promoted_reconstruct.even_highpass,
-        _p->promoted_reconstruct.odd_highpass,
+        horizontal_detail.getMat(),
+        stage1a_output,
+        _p->reconstruct.even_highpass,
+        _p->reconstruct.odd_highpass,
         output_size
     );
 
     //  Stage 1b
-    cv::Mat stage1b_lowpass_output;
+    cv::Mat stage1b_output;
     upsample_rows_and_convolve_cols(
-        promoted_vertical_detail,
-        stage1b_lowpass_output,
-        _p->promoted_reconstruct.even_lowpass,
-        _p->promoted_reconstruct.odd_lowpass,
+        vertical_detail.getMat(),
+        stage1b_output,
+        _p->reconstruct.even_lowpass,
+        _p->reconstruct.odd_lowpass,
         output_size
     );
-    cv::Mat stage1b_highpass_output;
     upsample_rows_and_convolve_cols(
-        promoted_diagonal_detail,
-        stage1b_highpass_output,
-        _p->promoted_reconstruct.even_highpass,
-        _p->promoted_reconstruct.odd_highpass,
+        diagonal_detail.getMat(),
+        stage1b_output,
+        _p->reconstruct.even_highpass,
+        _p->reconstruct.odd_highpass,
         output_size
     );
 
     //  Stage 2
-    cv::Mat stage2_lowpass_output;
+    cv::Mat stage2_output;
     upsample_cols_and_convolve_rows(
-        stage1a_lowpass_output + stage1a_highpass_output,
-        stage2_lowpass_output,
-        _p->promoted_reconstruct.even_lowpass,
-        _p->promoted_reconstruct.odd_lowpass,
-        output_size
-    );
-    cv::Mat stage2_highpass_output;
-    upsample_cols_and_convolve_rows(
-        stage1b_lowpass_output + stage1b_highpass_output,
-        stage2_highpass_output,
-        _p->promoted_reconstruct.even_highpass,
-        _p->promoted_reconstruct.odd_highpass,
-        output_size
-    );
-
-    output.assign(stage2_lowpass_output + stage2_highpass_output);
-
-    if (!was_prepared)
-        finish_reconstruct();
-}
-
-void FilterBank::prepare_reconstruct(int type) const
-{
-    if (is_reconstruct_prepared(type))
-        return;
-
-    promote_kernel(
+        stage1a_output,
+        output,
         _p->reconstruct.even_lowpass,
-        _p->promoted_reconstruct.even_lowpass,
-        type
-    );
-    promote_kernel(
         _p->reconstruct.odd_lowpass,
-        _p->promoted_reconstruct.odd_lowpass,
-        type
+        output_size
     );
-    promote_kernel(
+    upsample_cols_and_convolve_rows(
+        stage1b_output,
+        output,
         _p->reconstruct.even_highpass,
-        _p->promoted_reconstruct.even_highpass,
-        type
-    );
-    promote_kernel(
         _p->reconstruct.odd_highpass,
-        _p->promoted_reconstruct.odd_highpass,
-        type
+        output_size
     );
-}
-
-void FilterBank::finish_reconstruct() const
-{
-    _p->promoted_reconstruct.release();
 }
 
 cv::Size FilterBank::subband_size(const cv::Size& image_size) const
@@ -686,36 +666,6 @@ int FilterBank::promote_type(int type) const
     );
 }
 
-void FilterBank::promote(
-    cv::InputArray array,
-    cv::OutputArray promoted_array
-) const
-{
-    int type = promote_type(array.type());
-    array.getMat().convertTo(promoted_array, type);
-}
-
-void FilterBank::promote_kernel(
-    cv::InputArray kernel,
-    cv::OutputArray promoted_kernel,
-    int type
-) const
-{
-    type = promote_type(type);
-
-    cv::Mat converted;
-    kernel.getMat().convertTo(converted, type);
-
-    int channels = CV_MAT_CN(type);
-    if (channels == 1) {
-        promoted_kernel.assign(converted);
-    } else {
-        std::vector<cv::Mat> kernels(channels);
-        std::ranges::fill(kernels, converted);
-        cv::merge(kernels, promoted_kernel);
-    }
-}
-
 void FilterBank::extrapolate_border(
     cv::InputArray image,
     cv::OutputArray output,
@@ -741,8 +691,9 @@ void FilterBank::convolve_rows_and_downsample_cols(
     const cv::Mat& kernel
 ) const
 {
-    internal::dispatch_on_pixel_type<internal::ConvolveRowsAndDownsampleCols>(
-        input.type(),
+    internal::dispatch_on_pixel_depths<internal::ConvolveRowsAndDownsampleCols>(
+        input.depth(),
+        kernel.depth(),
         input,
         output,
         kernel.t()
@@ -755,8 +706,9 @@ void FilterBank::convolve_cols_and_downsample_rows(
     const cv::Mat& kernel
 ) const
 {
-    internal::dispatch_on_pixel_type<internal::ConvolveColsAndDownsampleRows>(
-        input.type(),
+    internal::dispatch_on_pixel_depths<internal::ConvolveColsAndDownsampleRows>(
+        input.depth(),
+        kernel.depth(),
         input,
         output,
         kernel
@@ -771,8 +723,9 @@ void FilterBank::upsample_cols_and_convolve_rows(
     const cv::Size& output_size
 ) const
 {
-    internal::dispatch_on_pixel_type<internal::UpsampleColsAndConvolveRows>(
-        input.type(),
+    internal::dispatch_on_pixel_depths<internal::UpsampleColsAndConvolveRows>(
+        input.depth(),
+        even_kernel.depth(),
         input,
         output,
         even_kernel.t(),
@@ -789,8 +742,9 @@ void FilterBank::upsample_rows_and_convolve_cols(
     const cv::Size& output_size
 ) const
 {
-    internal::dispatch_on_pixel_type<internal::UpsampleRowsAndConvolveCols>(
-        input.type(),
+    internal::dispatch_on_pixel_depths<internal::UpsampleRowsAndConvolveCols>(
+        input.depth(),
+        even_kernel.depth(),
         input,
         output,
         even_kernel,
@@ -802,12 +756,12 @@ void FilterBank::upsample_rows_and_convolve_cols(
 bool FilterBank::operator==(const FilterBank& other) const
 {
     return this == &other || (
-        equals(_p->decompose.lowpass, other._p->decompose.lowpass)
-        && equals(_p->decompose.highpass, other._p->decompose.highpass)
-        && equals(_p->reconstruct.even_lowpass, other._p->reconstruct.even_lowpass)
-        && equals(_p->reconstruct.odd_lowpass, other._p->reconstruct.odd_lowpass)
-        && equals(_p->reconstruct.even_highpass, other._p->reconstruct.even_highpass)
-        && equals(_p->reconstruct.odd_highpass, other._p->reconstruct.odd_highpass)
+        matrix_equals(_p->decompose.lowpass, other._p->decompose.lowpass)
+        && matrix_equals(_p->decompose.highpass, other._p->decompose.highpass)
+        && matrix_equals(_p->reconstruct.even_lowpass, other._p->reconstruct.even_lowpass)
+        && matrix_equals(_p->reconstruct.odd_lowpass, other._p->reconstruct.odd_lowpass)
+        && matrix_equals(_p->reconstruct.even_highpass, other._p->reconstruct.even_highpass)
+        && matrix_equals(_p->reconstruct.odd_highpass, other._p->reconstruct.odd_highpass)
     );
 }
 

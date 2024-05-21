@@ -204,7 +204,7 @@ void main_program(const cxxopts::ParseResult& args)
     if (args.count("show-threshold-mask")) {
         cv::Mat thresholded_mask;
         greater_than(
-            coeffs,
+            cv::abs(coeffs),
             shrinker->expand_thresholds(coeffs, thresholds),
             thresholded_mask,
             coeffs.detail_mask()

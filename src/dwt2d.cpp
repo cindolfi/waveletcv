@@ -403,18 +403,6 @@ cv::Mat DWT2D::Coeffs::diagonal_detail_mask(int lower_level, int upper_level) co
     return detail_mask(lower_level, upper_level, DIAGONAL);
 }
 
-bool DWT2D::Coeffs::shares_data(const DWT2D::Coeffs& other) const
-{
-    return shares_data(other._p->coeff_matrix);
-}
-
-bool DWT2D::Coeffs::shares_data(const cv::Mat& matrix) const
-{
-    return _p->coeff_matrix.datastart == matrix.datastart;
-}
-
-
-
 DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
     cv::InputArray read_mask,
     cv::InputArray write_mask
@@ -492,27 +480,6 @@ double DWT2D::Coeffs::map_detail_to_unit_interval_scale(cv::InputArray read_mask
     );
 
     return 0.5 / max_value;
-}
-
-std::pair<double, double> DWT2D::Coeffs::normalization_constants(
-    NormalizationMode normalization_mode,
-    double max_abs_value
-) const
-{
-    double alpha = 1.0;
-    double beta = 0.0;
-    switch (normalization_mode) {
-        case DWT_ZERO_TO_HALF_NORMALIZE:
-            alpha = 0.5 / max_abs_value;
-            beta = 0.5;
-            break;
-        case DWT_MAX_NORMALIZE:
-            alpha = 1.0 / max_abs_value;
-            beta = 0.0;
-            break;
-    }
-
-    return std::make_pair(alpha, beta);
 }
 
 void DWT2D::Coeffs::convert_and_copy(const cv::Mat& source, const cv::Mat& destination)
@@ -793,7 +760,6 @@ void DWT2D::decompose(cv::InputArray image, DWT2D::Coeffs& output, int levels) c
     //  zero.
     output = 0.0;
 
-    wavelet.filter_bank().prepare_decompose(image.type());
     auto running_approx = image.getMat();
     for (int level = 0; level < levels; ++level) {
         cv::Mat approx;
@@ -815,14 +781,12 @@ void DWT2D::decompose(cv::InputArray image, DWT2D::Coeffs& output, int levels) c
     }
 
     output.set_approx(running_approx);
-    wavelet.filter_bank().finish_decompose();
 }
 
 void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray output) const
 {
     warn_if_border_effects_will_occur(coeffs);
 
-    wavelet.filter_bank().prepare_reconstruct(coeffs.type());
     cv::Mat approx = coeffs.approx();
     for (int level = coeffs.levels() - 1; level >= 0; --level) {
         cv::Mat result;
@@ -841,8 +805,6 @@ void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray output) con
         output.assign(approx);
     else
         approx.copyTo(output);
-
-    wavelet.filter_bank().finish_reconstruct();
 }
 
 DWT2D::Coeffs DWT2D::create_coeffs(

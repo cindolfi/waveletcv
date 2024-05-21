@@ -13,24 +13,17 @@ namespace cvwt
  *  @{
  */
 /**
- * @brief
- *
+ * @brief The DWT2D detail subbands
  */
 enum Subband {
+    /** Coefficients computed by cascading the low pass filter into the high pass filter */
     HORIZONTAL = 0,
+    /** Coefficients computed by cascading the high pass filter into the low pass filter */
     VERTICAL = 1,
+    /** Coefficients computed by cascading the high pass filter into the high pass filter */
     DIAGONAL = 2,
 };
 
-/**
- * @brief
- *
- */
-enum NormalizationMode {
-    DWT_NO_NORMALIZE = 0,
-    DWT_ZERO_TO_HALF_NORMALIZE,
-    DWT_MAX_NORMALIZE,
-};
 
 namespace internal
 {
@@ -390,7 +383,6 @@ public:
          *      it copies the shared pointer to the underlying data.
          *
          * @param matrix
-         * @return Coeffs&
          */
         Coeffs& operator=(const cv::Mat& matrix);
 
@@ -398,7 +390,6 @@ public:
          * @brief Assignment from a cv::MatExpr.
          *
          * @param matrix
-         * @return Coeffs&
          */
         Coeffs& operator=(const cv::MatExpr& matrix);
 
@@ -406,7 +397,6 @@ public:
          * @brief Assign all coefficients to a scalar.
          *
          * @param scalar
-         * @return Coeffs&
          */
         Coeffs& operator=(const cv::Scalar& scalar);
 
@@ -483,13 +473,11 @@ public:
         /**
          * @brief Copy
          *
-         * @return Coeffs
          */
         Coeffs clone() const;
         /**
          * @brief Copy metadata
          *
-         * @return Coeffs
          */
         Coeffs empty_clone() const;
 
@@ -499,7 +487,6 @@ public:
          * @brief Returns the coefficients at a given level
          *
          * @param level
-         * @return Coeffs
          */
         Coeffs at_level(int level) const;
 
@@ -529,7 +516,6 @@ public:
         /**
          * @brief Get the approximation coefficients
          *
-         * @return cv::Mat
          */
         cv::Mat approx() const
         {
@@ -563,7 +549,6 @@ public:
          *
          * @param level
          * @param subband
-         * @return cv::Mat
          */
         cv::Mat detail(int level, int subband) const;
 
@@ -571,7 +556,6 @@ public:
          * @brief Get the smallest scale detail coefficients in a given subband
          *
          * @param subband
-         * @return cv::Mat
          */
         cv::Mat detail(int subband) const { return detail(0, subband); }
 
@@ -660,7 +644,6 @@ public:
          *  - DWT2D::Coeffs::collect_diagonal_details()
          *
          * @param subband
-         * @return std::vector<cv::Mat>
          */
         std::vector<cv::Mat> collect_details(int subband) const;
         ///@}
@@ -672,7 +655,6 @@ public:
          * @brief Get the horizontal subband detail coefficients at a given level
          *
          * @param level
-         * @return cv::Mat
          */
         cv::Mat horizontal_detail(int level) const
         {
@@ -690,7 +672,6 @@ public:
          *     level_coeffs.horizontal_detail();
          * @endcode
          *
-         * @return cv::Mat
          */
         cv::Mat horizontal_detail() const { return horizontal_detail(0); }
 
@@ -765,7 +746,6 @@ public:
          *  - DWT2D::Coeffs::collect_vertical_details()
          *  - DWT2D::Coeffs::collect_diagonal_details()
          *
-         * @return std::vector<cv::Mat>
          */
         std::vector<cv::Mat> collect_horizontal_details() const { return collect_details(HORIZONTAL); }
         ///@}
@@ -777,7 +757,6 @@ public:
          * @brief Get the vertical subband detail coefficients at a given level
          *
          * @param level
-         * @return cv::Mat
          */
         cv::Mat vertical_detail(int level) const
         {
@@ -795,7 +774,6 @@ public:
          *     level_coeffs.vertical_detail();
          * @endcode
          *
-         * @return cv::Mat
          */
         cv::Mat vertical_detail() const { return vertical_detail(0); }
 
@@ -870,7 +848,6 @@ public:
          *  - DWT2D::Coeffs::collect_horizontal_details()
          *  - DWT2D::Coeffs::collect_diagonal_details()
          *
-         * @return std::vector<cv::Mat>
          */
         std::vector<cv::Mat> collect_vertical_details() const { return collect_details(VERTICAL); }
         ///@}
@@ -882,7 +859,6 @@ public:
          * @brief Get the diagonal subband detail coefficients at a given level
          *
          * @param level
-         * @return cv::Mat
          */
         cv::Mat diagonal_detail(int level) const
         {
@@ -900,7 +876,6 @@ public:
          *     level_coeffs.diagonal_detail();
          * @endcode
          *
-         * @return cv::Mat
          */
         cv::Mat diagonal_detail() const { return diagonal_detail(0); }
 
@@ -975,7 +950,6 @@ public:
          *  - DWT2D::Coeffs::collect_horizontal_details()
          *  - DWT2D::Coeffs::collect_vertical_details()
          *
-         * @return std::vector<cv::Mat>
          */
         std::vector<cv::Mat> collect_diagonal_details() const { return collect_details(DIAGONAL); }
         ///@}
@@ -987,7 +961,6 @@ public:
          * @brief The size of the sub-coefficents starting at the given level.
          *
          * @param level
-         * @return cv::Size
          */
         cv::Size level_size(int level) const;
 
@@ -995,7 +968,6 @@ public:
          * @brief The region containing the sub-coefficients starting at the given level.
          *
          * @param level
-         * @return cv::Rect
          */
         cv::Rect level_rect(int level) const;
 
@@ -1003,7 +975,6 @@ public:
          * @brief The size of the each of the subbands at the given level.
          *
          * @param level
-         * @return cv::Size
          */
         cv::Size detail_size(int level=0) const;
 
@@ -1012,7 +983,6 @@ public:
          *
          * @param level
          * @param subband
-         * @return cv::Rect
          */
         cv::Rect detail_rect(int level, int subband) const;
 
@@ -1020,14 +990,12 @@ public:
          * @brief The region containing the smallest scale coefficients in the given subband.
          *
          * @param subband
-         * @return cv::Rect
          */
         cv::Rect detail_rect(int subband) const { return detail_rect(0, subband); }
 
         /**
          * @brief The region containing the approximation coeffcients.
          *
-         * @return cv::Rect
          */
         cv::Rect approx_rect() const;
 
@@ -1035,7 +1003,6 @@ public:
          * @brief The region containing the horizontal subband coeffcients at the given level.
          *
          * @param level
-         * @return cv::Rect
          */
         cv::Rect horizontal_detail_rect(int level=0) const;
 
@@ -1043,7 +1010,6 @@ public:
          * @brief The region containing the vertical subband coeffcients at the given level.
          *
          * @param level
-         * @return cv::Rect
          */
         cv::Rect vertical_detail_rect(int level=0) const;
 
@@ -1051,7 +1017,6 @@ public:
          * @brief The region containing the diagonal subband coeffcients at the given level.
          *
          * @param level
-         * @return cv::Rect
          */
         cv::Rect diagonal_detail_rect(int level=0) const;
         ///@}
@@ -1069,7 +1034,6 @@ public:
          *
          * Users should typically use detail_mask() when operating on
          * coefficients over one or more levels or subbands.
-         * @return cv::Mat
          */
         cv::Mat invalid_detail_mask() const;
         int total_valid() const;
@@ -1078,14 +1042,12 @@ public:
         /**
          * @brief The mask indicating the approximation coefficients.
          *
-         * @return cv::Mat
          */
         cv::Mat approx_mask() const;
 
         /**
          * @brief The mask indicating the detail coefficients.
          *
-         * @return cv::Mat
          */
         cv::Mat detail_mask() const;
 
@@ -1093,7 +1055,6 @@ public:
          * @brief The mask indicating the detail coefficients at a level.
          *
          * @param level
-         * @return cv::Mat
          */
         cv::Mat detail_mask(int level) const;
 
@@ -1110,7 +1071,6 @@ public:
          * @brief The mask indicating the detail coefficients over a range of levels.
          *
          * @param levels
-         * @return cv::Mat
          */
         cv::Mat detail_mask(const cv::Range& levels) const;
         cv::Mat detail_mask(const cv::Range& levels, int subband) const;
@@ -1121,7 +1081,6 @@ public:
          * @brief The mask indicating the horizontal subband coefficients at the given level.
          *
          * @param level
-         * @return cv::Mat
          */
         cv::Mat horizontal_detail_mask(int level) const;
         cv::Mat horizontal_detail_mask(const cv::Range& levels) const;
@@ -1132,7 +1091,6 @@ public:
          * @brief The mask indicating the vertical subband coefficients at the given level.
          *
          * @param level
-         * @return cv::Mat
          */
         cv::Mat vertical_detail_mask(int level) const;
         cv::Mat vertical_detail_mask(const cv::Range& levels) const;
@@ -1143,7 +1101,6 @@ public:
          * @brief The mask indicating the diagonal subband coefficients at the given level.
          *
          * @param level
-         * @return cv::Mat
          */
         cv::Mat diagonal_detail_mask(int level) const;
         cv::Mat diagonal_detail_mask(const cv::Range& levels) const;
@@ -1157,21 +1114,18 @@ public:
         /**
          * @brief The number of rows.
          *
-         * @return int
          */
         int rows() const { return _p->coeff_matrix.rows; }
 
         /**
          * @brief The number of columns.
          *
-         * @return int
          */
         int cols() const { return _p->coeff_matrix.cols; }
 
         /**
          * @brief Returns the size of a coefficients matrix.
          *
-         * @return cv::Size
          */
         cv::Size size() const { return _p->coeff_matrix.size(); }
 
@@ -1180,7 +1134,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::type().
          *
-         * @return int
          */
         int type() const { return _p->coeff_matrix.type(); }
 
@@ -1189,7 +1142,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::depth().
          *
-         * @return int
          */
         int depth() const { return _p->coeff_matrix.depth(); }
 
@@ -1198,7 +1150,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::channels().
          *
-         * @return int
          */
         int channels() const { return _p->coeff_matrix.channels(); }
 
@@ -1207,8 +1158,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::empty().
          *
-         * @return true
-         * @return false
          */
         bool empty() const { return _p->coeff_matrix.empty(); }
 
@@ -1217,7 +1166,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::total().
          *
-         * @return int
          */
         size_t total() const { return _p->coeff_matrix.total(); }
 
@@ -1226,7 +1174,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::elemSize().
          *
-         * @return size_t
          */
         size_t elemSize() const { return _p->coeff_matrix.elemSize(); }
 
@@ -1235,7 +1182,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::elemSize1().
          *
-         * @return size_t
          */
         size_t elemSize1() const { return _p->coeff_matrix.elemSize1(); }
 
@@ -1277,8 +1223,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::isContinuous().
          *
-         * @return true
-         * @return false
          */
         bool isContinuous() const { return _p->coeff_matrix.isContinuous(); }
 
@@ -1287,8 +1231,6 @@ public:
          *
          * This is a convenience wrapper around cv::Mat::isSubmatrix().
          *
-         * @return true
-         * @return false
          */
         bool isSubmatrix() const { return _p->coeff_matrix.isSubmatrix(); }
         ///@}
@@ -1372,28 +1314,24 @@ public:
         /**
          * @brief Get the number of decomposition levels.
          *
-         * @return int
          */
         int levels() const { return _p->levels; }
 
         /**
          * @brief Get the wavelet used to generate the coefficients.
          *
-         * @return Wavelet
          */
         Wavelet wavelet() const { return _p->wavelet; }
 
         /**
          * @brief Get the border exptrapolation method used during decomposition.
          *
-         * @return cv::BorderTypes
          */
         cv::BorderTypes border_type() const { return _p->border_type; }
 
         /**
          * @brief Get the DWT2D transformation object used to compute the coeffcients.
          *
-         * @return DWT2D
          */
         DWT2D dwt() const;
 
@@ -1401,14 +1339,12 @@ public:
          * @brief Get the size of the image reconstructed from the coefficients at the given level.
          *
          * @param level
-         * @return cv::Size
          */
         cv::Size image_size(int level=0) const { return level == 0 ? _p->image_size : diagonal_detail_rect(level - 1).size(); }
 
         /**
          * @brief Transform from DWT space back to image space.
          *
-         * @return cv::Mat
          */
         cv::Mat invert() const;
 
@@ -1495,7 +1431,6 @@ public:
          * @param[in] write_mask Indicates which coefficients are mapped.
          *                       This can be a single channel or multichannel matrix
          *                       with depth CV_8U.
-         * @return Scale
          */
         double map_details_to_unit_interval(
             Coeffs& normalized_coeffs,
@@ -1563,17 +1498,6 @@ public:
          */
         double map_detail_to_unit_interval_scale(cv::InputArray read_mask = cv::noArray()) const;
 
-
-        /**
-         * @brief Returns true if this and other refer to the same underlying data
-         *
-         * @param other
-         * @return true
-         * @return false
-         */
-        bool shares_data(const Coeffs& other) const;
-        bool shares_data(const cv::Mat& matrix) const;
-
         cv::Range resolve_level_range(const cv::Range& levels) const
         {
             if (levels == cv::Range::all())
@@ -1617,11 +1541,6 @@ public:
         #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
         //  Helpers
-        // double maximum_abs_value(cv::InputArray mask = cv::noArray()) const;
-        std::pair<double, double> normalization_constants(
-            NormalizationMode normalization_mode,
-            double max_abs_value
-        ) const;
         void convert_and_copy(const cv::Mat& source, const cv::Mat& destination);
         int resolve_level(int level) const { return (level >= 0) ? level : level + levels(); }
 
@@ -1651,7 +1570,6 @@ public:
      * @brief Alias of decompose(cv::InputArray image) const.
      *
      * @param image The image to be transformed.
-     * @return Coeffs
      */
     Coeffs operator()(cv::InputArray image) const { return decompose(image); }
     /**
@@ -1659,7 +1577,6 @@ public:
      *
      * @param image The image to be transformed.
      * @param levels The number of levels.
-     * @return Coeffs
      */
     Coeffs operator()(cv::InputArray image, int levels) const { return decompose(image, levels); }
     /**
@@ -1698,7 +1615,6 @@ public:
      * @endcode
      *
      * @param image The image to be transformed.
-     * @return Coeffs
      */
     Coeffs decompose(cv::InputArray image) const
     {
@@ -1736,7 +1652,6 @@ public:
      *
      * @param image The image to be transformed.
      * @param levels
-     * @return Coeffs
      */
     Coeffs decompose(cv::InputArray image, int levels) const
     {
@@ -1765,7 +1680,6 @@ public:
      * @endcode
      *
      * @param coeffs
-     * @return cv::Mat
      */
     cv::Mat reconstruct(const Coeffs& coeffs) const
     {
@@ -1780,7 +1694,6 @@ public:
      * @param coeffs_matrix The initial discrete wavelet transform coefficients.
      * @param image_size The size of the reconstructed image.
      * @param levels The number of levels.
-     * @return Coeffs
      */
     Coeffs create_coeffs(cv::InputArray coeffs_matrix, const cv::Size& image_size, int levels) const;
 
@@ -1790,7 +1703,6 @@ public:
      * @param image_size The size of the reconstructed image.
      * @param type The type of the reconstructed image.
      * @param levels The number of levels.
-     * @return Coeffs
      */
     Coeffs create_coeffs(const cv::Size& image_size, int type, int levels) const;
 
@@ -1805,7 +1717,6 @@ public:
      *
      * @param image
      * @param levels
-     * @return Coeffs
      */
     Coeffs create_coeffs(cv::InputArray image, int levels) const
     {
@@ -1825,7 +1736,6 @@ public:
      * @param image_cols
      * @param type
      * @param levels
-     * @return Coeffs
      */
     Coeffs create_coeffs(int image_rows, int image_cols, int type, int levels) const
     {
@@ -1846,7 +1756,6 @@ public:
      *
      * @param image_size
      * @param levels
-     * @return cv::Size
      */
     cv::Size coeffs_size_for_image(const cv::Size& image_size, int levels) const;
 
@@ -1863,7 +1772,6 @@ public:
      *
      * @param image
      * @param levels
-     * @return cv::Size
      */
     cv::Size coeffs_size_for_image(cv::InputArray image, int levels) const
     {
@@ -1884,7 +1792,6 @@ public:
      * @param image_rows
      * @param image_cols
      * @param levels
-     * @return cv::Size
      */
     cv::Size coeffs_size_for_image(int image_rows, int image_cols, int levels) const
     {
@@ -1895,7 +1802,6 @@ public:
      * @brief Returns the maximum number of decomposition levels possible while maintaining perfect reconstruction
      *
      * @param image_size
-     * @return int
      */
     int max_levels_without_border_effects(const cv::Size& image_size) const
     {
@@ -1907,7 +1813,6 @@ public:
      *
      * @param image_rows
      * @param image_cols
-     * @return int
      */
     int max_levels_without_border_effects(int image_rows, int image_cols) const;
 
@@ -1915,7 +1820,6 @@ public:
      * @brief Returns the maximum number of decomposition levels possible while maintaining perfect reconstruction
      *
      * @param image
-     * @return int
      */
     int max_levels_without_border_effects(cv::InputArray image) const
     {
@@ -1961,6 +1865,9 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& wavelet);
 //  Functional Interface
 //  ----------------------------------------------------------------------------
 /**
+ * @{ DWT Functional API
+ */
+/**
  * @brief Perform a multiscale discrete wavelet transform.
  *
  * This convenience wrapper around a DWT2D object.
@@ -1975,7 +1882,6 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& wavelet);
  * @param image
  * @param wavelet
  * @param border_type
- * @return DWT2D::Coeffs
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -1999,7 +1905,6 @@ DWT2D::Coeffs dwt2d(
  * @param image
  * @param wavelet
  * @param border_type
- * @return DWT2D::Coeffs
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -2025,7 +1930,6 @@ DWT2D::Coeffs dwt2d(
  * @param wavelet
  * @param levels
  * @param border_type
- * @return DWT2D::Coeffs
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -2051,7 +1955,6 @@ DWT2D::Coeffs dwt2d(
  * @param wavelet
  * @param levels
  * @param border_type
- * @return DWT2D::Coeffs
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -2232,7 +2135,6 @@ void idwt2d(
  * @param coeffs
  * @param wavelet
  * @param border_type
- * @return cv::Mat
  */
 cv::Mat idwt2d(
     const DWT2D::Coeffs& coeffs,
@@ -2256,14 +2158,14 @@ cv::Mat idwt2d(
  * @param coeffs
  * @param wavelet
  * @param border_type
- * @return cv::Mat
  */
 cv::Mat idwt2d(
     const DWT2D::Coeffs& coeffs,
     const std::string& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );
-/** @}*/
+/** @} DWT Functional API*/
+/** @} dwt2d*/
 
 } // namespace cvwt
 

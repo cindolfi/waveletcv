@@ -180,7 +180,13 @@ if __name__ == '__main__':
     # plt.show()
 
 
+    x = np.zeros([128, 128])
+    coeffs = pywt.wavedec2(x, 'db4', level=3)
+    coeffs, slices = pywt.coeffs_to_array(coeffs)
 
+    print(coeffs.shape)
+
+    exit()
 
     def mad(x):
         m = np.median(x)

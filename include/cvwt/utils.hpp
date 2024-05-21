@@ -12,6 +12,10 @@
 namespace cvwt
 {
 /**
+ * @name Utilities
+ * @{
+ */
+/**
  * @brief Flatten an array.
  *
  * @param[in] array
@@ -22,24 +26,68 @@ void flatten(cv::InputArray array, cv::OutputArray result);
  * @brief Collect values indicated by the given mask.
  *
  * @param[in] array
- * @param[out] result
+ * @param[out] collected
  * @param mask
  */
-void collect_masked(cv::InputArray array, cv::OutputArray result, cv::InputArray mask);
+void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputArray mask);
 /**
  * @brief Returns true if all values two matrices are equal.
  *
  * @param[in] a
  * @param[in] b
  */
-bool equals(const cv::Mat& a, const cv::Mat& b);
+bool matrix_equals(const cv::Mat& a, const cv::Mat& b);
 /**
- * @brief Returns true if two matrices refer to the same data.
+ * @brief Returns true if two matrices refer to the same data and are equal.
  *
  * @param[in] a
  * @param[in] b
  */
 bool identical(const cv::Mat& a, const cv::Mat& b);
+
+/**
+ * @brief Returns true if the two matrices refer to the same data.
+ *
+ * @param matrix
+ */
+bool shares_data(const cv::Mat& a, const cv::Mat& b);
+/**
+ * @brief Negates all even indexed values.
+ *
+ * @param[in] vector A row or column vector.
+ * @param[out] result The input vector with the even indexed values negated.
+ */
+void negate_evens(cv::InputArray vector, cv::OutputArray result);
+/**
+ * @brief Negates all odd indexed values.
+ *
+ * @param[in] vector A row or column vector.
+ * @param[out] result The input vector with the odd indexed values negated.
+ */
+void negate_odds(cv::InputArray vector, cv::OutputArray result);
+/**
+ * @brief Returns true if array is cv::noArray()
+ */
+bool is_no_array(cv::InputArray array);
+/**
+ * @brief Joins a range of items into a deliminated string
+ *
+ * @param items
+ * @param delim
+ */
+std::string join_string(const std::ranges::range auto& items, const std::string& delim = ", ");
+
+
+
+double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray());
+
+void patch_nans(cv::InputOutputArray array, double value = 0.0);
+/** @}*/
+
+/**
+ * @name Statistics
+ * @{
+ */
 /**
  * @brief Computes the multichannel median.
  *
@@ -76,36 +124,15 @@ cv::Scalar mad(cv::InputArray data, cv::InputArray mask = cv::noArray());
  * @return cv::Scalar The estimated standard deviation of each channel.
  */
 cv::Scalar mad_stdev(cv::InputArray data);
+/**
+ * @}
+ */
+
 
 /**
- * @brief Negates all even indexed values.
- *
- * @param[in] vector A row or column vector.
- * @param[out] result The input vector with the even indexed values negated.
+ * @name Multichannel Comparison Functions
+ * @{
  */
-void negate_evens(cv::InputArray vector, cv::OutputArray result);
-/**
- * @brief Negates all odd indexed values.
- *
- * @param[in] vector A row or column vector.
- * @param[out] result The input vector with the odd indexed values negated.
- */
-void negate_odds(cv::InputArray vector, cv::OutputArray result);
-/**
- * @brief Returns true if array is cv::noArray()
- */
-bool is_no_array(cv::InputArray array);
-
-/**
- * @brief Joins a range of items into a deliminated string
- *
- * @param items
- * @param delim
- */
-std::string join_string(const std::ranges::range auto& items, const std::string& delim = ", ");
-
-double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray());
-
 void less_than(
     cv::InputArray a,
     cv::InputArray b,
@@ -137,8 +164,8 @@ void compare(
     cv::CmpTypes compare_type,
     cv::InputArray mask = cv::noArray()
 );
+/** @}*/
 
-void patch_nans(cv::InputOutputArray array, double value = 0.0);
 
 
 namespace internal
@@ -200,7 +227,7 @@ struct BindFirst
 };
 
 template <template <typename, typename, int, auto...> class Functor, auto ...TemplateArgs>
-auto dispatch_on_pixel_depths(int type1, int type2, auto&&... args)
+auto dispatch_on_pixel_depths_and_same_channels(int type1, int type2, auto&&... args)
 {
     if (CV_MAT_CN(type1) != CV_MAT_CN(type2)) {
         throw_bad_size(
@@ -212,19 +239,40 @@ auto dispatch_on_pixel_depths(int type1, int type2, auto&&... args)
 
     switch (CV_MAT_DEPTH(type1)) {
         //  32 bit floating point
-        case CV_32F: return dispatch_on_pixel_type<BindFirst<Functor, float>::template type, TemplateArgs...>(type2, std::forward<decltype(args)>(args)...);
+        case CV_32F: return dispatch_on_pixel_type<BindFirst<Functor, float>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
         //  64 bit floating point
-        case CV_64F: return dispatch_on_pixel_type<BindFirst<Functor, double>::template type, TemplateArgs...>(type2, std::forward<decltype(args)>(args)...);
+        case CV_64F: return dispatch_on_pixel_type<BindFirst<Functor, double>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
         //  32 bit signed integer
-        case CV_32S: return dispatch_on_pixel_type<BindFirst<Functor, int>::template type, TemplateArgs...>(type2, std::forward<decltype(args)>(args)...);
+        case CV_32S: return dispatch_on_pixel_type<BindFirst<Functor, int>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
         //  16 bit signed integer
-        case CV_16S: return dispatch_on_pixel_type<BindFirst<Functor, short>::template type, TemplateArgs...>(type2, std::forward<decltype(args)>(args)...);
+        case CV_16S: return dispatch_on_pixel_type<BindFirst<Functor, short>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
         //  16 bit unsigned integer
-        case CV_16U: return dispatch_on_pixel_type<BindFirst<Functor, ushort>::template type, TemplateArgs...>(type2, std::forward<decltype(args)>(args)...);
+        case CV_16U: return dispatch_on_pixel_type<BindFirst<Functor, ushort>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
         //  8 bit signed integer
-        case CV_8S: return dispatch_on_pixel_type<BindFirst<Functor, char>::template type, TemplateArgs...>(type2, std::forward<decltype(args)>(args)...);
+        case CV_8S: return dispatch_on_pixel_type<BindFirst<Functor, char>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
         //  8 bit unsigned integer
-        case CV_8U: return dispatch_on_pixel_type<BindFirst<Functor, uchar>::template type, TemplateArgs...>(type2, std::forward<decltype(args)>(args)...);
+        case CV_8U: return dispatch_on_pixel_type<BindFirst<Functor, uchar>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
     }
 
     throw_not_implemented(
@@ -325,6 +373,59 @@ auto dispatch_on_pixel_depth(std::tuple<ConstructorArgs...>&& constructor_args, 
 
     throw_not_implemented(
         "Dispatch for pixel depth = ", get_type_name(CV_MAT_DEPTH(type)), " is not implemented."
+    );
+}
+
+template <template <typename, typename, auto...> class Functor, typename T1>
+struct BindFirstDepth
+{
+    template <typename T2, auto... Args>
+    using type = Functor<T1, T2, Args...>;
+};
+
+template <template <typename, typename, auto...> class Functor, auto ...TemplateArgs>
+auto dispatch_on_pixel_depths(int type1, int type2, auto&&... args)
+{
+    switch (CV_MAT_DEPTH(type1)) {
+        //  32 bit floating point
+        case CV_32F: return dispatch_on_pixel_depth<BindFirstDepth<Functor, float>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
+        //  64 bit floating point
+        case CV_64F: return dispatch_on_pixel_depth<BindFirstDepth<Functor, double>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
+        //  32 bit signed integer
+        case CV_32S: return dispatch_on_pixel_depth<BindFirstDepth<Functor, int>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
+        //  16 bit signed integer
+        case CV_16S: return dispatch_on_pixel_depth<BindFirstDepth<Functor, short>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
+        //  16 bit unsigned integer
+        case CV_16U: return dispatch_on_pixel_depth<BindFirstDepth<Functor, ushort>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
+        //  8 bit signed integer
+        case CV_8S: return dispatch_on_pixel_depth<BindFirstDepth<Functor, char>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
+        //  8 bit unsigned integer
+        case CV_8U: return dispatch_on_pixel_depth<BindFirstDepth<Functor, uchar>::template type, TemplateArgs...>(
+            type2,
+            std::forward<decltype(args)>(args)...
+        );
+    }
+
+    throw_not_implemented(
+        "Dispatch for pixel type = ", get_type_name(type1), " is not implemented."
     );
 }
 

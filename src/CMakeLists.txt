@@ -34,12 +34,19 @@ target_sources (
         ${CVWT_INCLUDE_DIR}/cvwt/coiflets.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/biorthogonal.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/exception.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/shrink/shrink.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/shrink/bayes.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/shrink/sure.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/shrink/universal.hpp
     PRIVATE
         wavelet.cpp
         filterbank.cpp
         dwt2d.cpp
-        shrinkage.cpp
         utils.cpp
+        shrink/shrink.cpp
+        shrink/bayes.cpp
+        shrink/sure.cpp
+        shrink/universal.cpp
 )
 target_include_directories(
     cvwt

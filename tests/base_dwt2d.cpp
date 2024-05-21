@@ -15,7 +15,8 @@ void PrintTo(const DWT2DTestParam& param, std::ostream* stream)
     *stream << "\nwavelet_name: " << param.wavelet_name
             << "\ninput_name: " << param.input_name
             << "\nlevels: " << param.levels
-            << "\ncoeffs: " << param.coeffs;
+            << "\ncoeffs:\n";
+    PrintTo(param.coeffs, stream);
 }
 
 std::map<std::string, cv::Mat> BaseDWT2DTest::inputs;
@@ -83,7 +84,7 @@ void BaseDWT2DTest::init_test_params()
             .input_name = test_case["input_name"],
             .levels = test_case["levels"],
             .type = double_precision_coeffs.type(),
-            .coeffs = double_precision_coeffs
+            .coeffs = double_precision_coeffs,
         });
         params.push_back({
             .wavelet_name = test_case["wavelet_name"],

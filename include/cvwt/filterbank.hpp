@@ -55,7 +55,7 @@ public:
     bool empty() const { return _lowpass.empty(); }
 
     /**
-     * @see equals()
+     * @see matrix_equals()
      */
     bool operator==(const KernelPair& other) const;
 
@@ -192,8 +192,13 @@ struct FilterBankImpl
     //  FilterBank::finish_*() methods, respectively.
     DecomposeKernels promoted_decompose;
     ReconstructKernels promoted_reconstruct;
+
+    // std::map<int, DecomposeKernels> promoted_decompose;
+    // std::map<int, ReconstructKernels> promoted_decompose;
 };
 } // namespace internal
+
+
 
 
 /**
@@ -281,19 +286,14 @@ public:
      *
      * This is equal to `std::max(decompose_kernels.filter_length(), reconstruct_kernels.filter_length()))`.
      *
-     * @return int
      */
     int filter_length() const { return _p->filter_length; }
     /**
      * @brief The decomposition kernels.
-     *
-     * @return KernelPair
      */
     KernelPair decompose_kernels() const { return _p->decompose_kernels(); }
     /**
      * @brief The reconstruction kernels.
-     *
-     * @return KernelPair
      */
     KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
 
@@ -316,27 +316,6 @@ public:
      * the filter_length() - 1 on all sides, the size of the outputs will
      * generally be larger than half the `image.size()`.
      *
-     * Whenever `image.channels() > 1` or `image.depth() > depth()`
-     * the filter kernels must be converted internally to `image.type()`.
-     * If this function is going to be called repeatedly on inputs of the
-     * same cv::Mat::type(), say in the loop of a multiscale algorithm, the loop
-     * should be sandwiched by prepare_decompose() and finish_decompose().
-     * This will ensure that the filter kernels are only converted once per loop
-     * rather than once per iteration, thereby avoiding the extra overhead.
-     * @code{cpp}
-     * void some_multiscale_algorithm(const cv::Mat& image, const FilterBank& filter_bank) {
-     *     // Prepare to call decompose repeatedly, avoiding potential repeated conversion of the filter kernels.
-     *     filter_bank.prepare_decompose(image.type());
-     *     while (!done) {
-     *         // Repeated calls to decompose() using inputs with types equal to image.type().
-     *         filter_bank.decompose(...);
-     *      }
-     *     // Clean up temporaries.
-     *     filter_bank.finish_decomose();
-     * @endcode
-     * Do **not** put prepare_decompose() and finish_decompose() around a
-     * **single isolated** call.
-     *
      * @param[in] image The image to decompose. This can be any type, single channel or multichannel.
      * @param[out] approx The approximation subband coefficients.
      * @param[out] horizontal_detail The horizontal detail subband coefficients.
@@ -354,32 +333,6 @@ public:
         int border_type=cv::BORDER_DEFAULT,
         const cv::Scalar& border_value=cv::Scalar()
     ) const;
-    /**
-     * @brief Prepare for a block of decompose() calls.
-     *
-     * @see decompose()
-     *
-     * @param type The type of the image to be decomposed.
-     */
-    void prepare_decompose(int type) const;
-    /**
-     * @brief Finish a block of decompose() calls.
-     *
-     * @see decompose()
-     */
-    void finish_decompose() const;
-    /**
-     * @brief Returns true if prepared for a block of decompose() calls.
-     *
-     * @see decompose()
-     *
-     * @param type The type of the image to be decomposed.
-     */
-    bool is_decompose_prepared(int type) const
-    {
-        return !_p->promoted_decompose.empty()
-            && _p->promoted_decompose.type() == promote_type(type);
-    }
 
     /**
      * @brief Reconstruct an image
@@ -398,27 +351,6 @@ public:
      * coefficients because of the unknown integer truncation that occurs when
      * downsampling in decompose().
      *
-     * Whenever `approx.channels() > 1` or `approx.depth() > depth()`
-     * the filter kernels must be converted internally to `approx.type()`.
-     * If this function is going to be called repeatedly on inputs of the
-     * same cv::Mat::type(), say in the loop of a multiscale algorithm, the loop
-     * should be sandwiched by prepare_reconstruct() and finish_reconstruct().
-     * This will ensure that the filter kernels are only converted once per loop
-     * rather than once per iteration, thereby avoiding the extra overhead.
-     * @code{cpp}
-     * void some_multiscale_algorithm(const FilterBank& filter_bank, const cv::Mat& approx, ...) {
-     *     // Prepare to call reconstruct repeatedly, avoiding potential repeated conversion of the filter kernels.
-     *     filter_bank.prepare_reconstruct(approx.type());
-     *     while (!done) {
-     *         // Repeated calls to reconstruct() using inputs with types equal to image.type().
-     *         filter_bank.reconstruct(...);
-     *      }
-     *     // Clean up temporaries.
-     *     filter_bank.finish_reconstruct();
-     * @endcode
-     * Do **not** put prepare_reconstruct() and finish_reconstruct() around a
-     * **single isolated** call.
-     *
      * @param[in] approx The approximation subband coefficients.
      * @param[in] horizontal_detail The horizontal detail subband coefficients.
      * @param[in] vertical_detail The vertical detail subband coefficients.
@@ -436,54 +368,26 @@ public:
         cv::OutputArray output,
         const cv::Size& output_size
     ) const;
-    /**
-     * @brief Prepare for a block of reconstruct() calls.
-     *
-     * @see reconstruct()
-     *
-     * @param type The type of the image to be reconstructed.
-     */
-    void prepare_reconstruct(int type) const;
-    /**
-     * @brief Finish a block of reconstruct() calls.
-     *
-     * @see reconstruct()
-     */
-    void finish_reconstruct() const;
-    /**
-     * @brief Returns true if prepared for a block of reconstruct() calls.
-     *
-     * @see reconstruct()
-     *
-     * @param type The type of the image to be reconstructed.
-     */
-    bool is_reconstruct_prepared(int type) const
-    {
-        return !_p->promoted_reconstruct.empty()
-            && _p->promoted_reconstruct.type() == promote_type(type);
-    }
 
     /**
      * @brief Returns the size of each coefficient subband for the given image size.
      *
      * @param image_size The size of the image.
-     * @return cv::Size
      */
     cv::Size subband_size(const cv::Size& image_size) const;
 
     /**
      * @brief Swaps and flips the decomposition and reconstruction kernels
      *
-     * @return FilterBank
      */
     [[nodiscard]] FilterBank reverse() const;
 
     //  Filter Bank Factories
+    /**@{*/
     /**
      * @brief Create an orthogonal wavelet filter bank.
      *
      * @param reconstruct_lowpass_coeffs
-     * @return FilterBank
      */
     static FilterBank create_orthogonal_filter_bank(
         cv::InputArray reconstruct_lowpass_coeffs
@@ -494,24 +398,18 @@ public:
      *
      * @param reconstruct_lowpass_coeffs
      * @param decompose_lowpass_coeffs
-     * @return FilterBank
      */
     static FilterBank create_biorthogonal_filter_bank(
         cv::InputArray reconstruct_lowpass_coeffs,
         cv::InputArray decompose_lowpass_coeffs
     );
+    /**@}*/
 
+    /**
+     * @private
+     */
     int promote_type(int type) const;
 protected:
-    void promote(
-        cv::InputArray image,
-        cv::OutputArray promoted_image
-    ) const;
-    void promote_kernel(
-        cv::InputArray kernel,
-        cv::OutputArray promoted_kernel,
-        int type
-    ) const;
     void extrapolate_border(
         cv::InputArray image,
         cv::OutputArray output,
