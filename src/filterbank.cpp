@@ -646,9 +646,9 @@ FilterBank FilterBank::create_biorthogonal_filter_bank(
     cv::Mat reconstruct_lowpass = reconstruct_lowpass_coeffs.getMat().clone();
 
     cv::Mat decompose_highpass;
-    negate_evens(reconstruct_lowpass, decompose_highpass);
+    negate_even_indices(reconstruct_lowpass, decompose_highpass);
     cv::Mat reconstruct_highpass;
-    negate_odds(decompose_lowpass, reconstruct_highpass);
+    negate_odd_indicies(decompose_lowpass, reconstruct_highpass);
 
     return FilterBank(
         decompose_lowpass,

@@ -58,14 +58,14 @@ bool shares_data(const cv::Mat& a, const cv::Mat& b);
  * @param[in] vector A row or column vector.
  * @param[out] result The input vector with the even indexed values negated.
  */
-void negate_evens(cv::InputArray vector, cv::OutputArray result);
+void negate_even_indices(cv::InputArray vector, cv::OutputArray result);
 /**
  * @brief Negates all odd indexed values.
  *
  * @param[in] vector A row or column vector.
  * @param[out] result The input vector with the odd indexed values negated.
  */
-void negate_odds(cv::InputArray vector, cv::OutputArray result);
+void negate_odd_indicies(cv::InputArray vector, cv::OutputArray result);
 /**
  * @brief Returns true if array is cv::noArray()
  */

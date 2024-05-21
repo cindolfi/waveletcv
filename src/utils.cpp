@@ -78,19 +78,19 @@ cv::Scalar mad_stdev(cv::InputArray data)
     return mad(data) / 0.675;
 }
 
-void negate_evens(cv::InputArray vector, cv::OutputArray result)
+void negate_even_indices(cv::InputArray vector, cv::OutputArray result)
 {
-    internal::dispatch_on_pixel_type<internal::NegateEveryOther, 0>(
-        vector.type(),
+    internal::dispatch_on_pixel_depth<internal::NegateEveryOther, 0>(
+        vector.depth(),
         vector,
         result
     );
 }
 
-void negate_odds(cv::InputArray vector, cv::OutputArray result)
+void negate_odd_indicies(cv::InputArray vector, cv::OutputArray result)
 {
-    internal::dispatch_on_pixel_type<internal::NegateEveryOther, 1>(
-        vector.type(),
+    internal::dispatch_on_pixel_depth<internal::NegateEveryOther, 1>(
+        vector.depth(),
         vector,
         result
     );
