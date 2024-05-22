@@ -2145,10 +2145,10 @@ TEST_P(DWT2DReconstructTest, Invert)
 {
     if (coeffs.empty()) {
         #if CVWT_ARGUMENT_CHECKING_ENABLED
-        EXPECT_THROW({ coeffs.invert(); }, cv::Exception);
+        EXPECT_THROW({ coeffs.reconstruct(); }, cv::Exception);
         #endif
     } else {
-        auto actual_output = coeffs.invert();
+        auto actual_output = coeffs.reconstruct();
 
         //  Clamping is only for readability of failure messages.  It does not
         //  impact the test because the clamp tolerance is smaller than the

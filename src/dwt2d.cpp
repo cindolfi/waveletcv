@@ -78,12 +78,12 @@ DWT2D DWT2D::Coeffs::dwt() const
     return DWT2D(wavelet(), border_type());
 }
 
-cv::Mat DWT2D::Coeffs::invert() const
+cv::Mat DWT2D::Coeffs::reconstruct() const
 {
     return dwt().reconstruct(*this);
 }
 
-void DWT2D::Coeffs::invert(cv::OutputArray image) const
+void DWT2D::Coeffs::reconstruct(cv::OutputArray image) const
 {
     dwt().reconstruct(*this, image);
 }

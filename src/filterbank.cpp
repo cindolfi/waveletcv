@@ -1,4 +1,5 @@
 #include "cvwt/filterbank.hpp"
+
 #include <functional>
 #include <opencv2/imgproc.hpp>
 #include <ranges>
@@ -282,9 +283,7 @@ cv::Mat as_column_vector(const cv::Mat& vector)
 FilterBankImpl::FilterBankImpl() :
     filter_length(0),
     decompose(),
-    reconstruct(),
-    promoted_decompose(),
-    promoted_reconstruct()
+    reconstruct()
 {
 }
 
@@ -294,9 +293,7 @@ FilterBankImpl::FilterBankImpl(
     const cv::Mat& reconstruct_lowpass,
     const cv::Mat& reconstruct_highpass
 ) :
-    filter_length(std::max(decompose_lowpass.total(), reconstruct_lowpass.total())),
-    promoted_decompose(),
-    promoted_reconstruct()
+    filter_length(std::max(decompose_lowpass.total(), reconstruct_lowpass.total()))
 {
     throw_if_wrong_size(
         reconstruct_lowpass,
@@ -438,7 +435,8 @@ void FilterBankImpl::throw_if_wrong_size(
 bool KernelPair::operator==(const KernelPair& other) const
 {
     return this == &other || (
-        matrix_equals(_lowpass, other._lowpass) && matrix_equals(_highpass, other._highpass)
+        matrix_equals(_lowpass, other._lowpass)
+        && matrix_equals(_highpass, other._highpass)
     );
 }
 
@@ -465,19 +463,6 @@ FilterBank::FilterBank(
             reconstruct_lowpass,
             reconstruct_highpass
         )
-    )
-{
-}
-
-FilterBank::FilterBank(
-    const KernelPair& decompose_kernels,
-    const KernelPair& reconstruct_kernels
-) :
-    FilterBank(
-        decompose_kernels.lowpass(),
-        decompose_kernels.highpass(),
-        reconstruct_kernels.lowpass(),
-        reconstruct_kernels.highpass()
     )
 {
 }
@@ -544,7 +529,12 @@ void FilterBank::reconstruct(
     const cv::Size& output_size
 ) const
 {
-    throw_if_reconstruct_coeffs_are_wrong_size(approx, horizontal_detail, vertical_detail, diagonal_detail);
+    throw_if_reconstruct_coeffs_are_wrong_size(
+        approx,
+        horizontal_detail,
+        vertical_detail,
+        diagonal_detail
+    );
 
     //  Stage 1a
     cv::Mat stage1a_output;
@@ -648,7 +638,7 @@ FilterBank FilterBank::create_biorthogonal_filter_bank(
     cv::Mat decompose_highpass;
     negate_even_indices(reconstruct_lowpass, decompose_highpass);
     cv::Mat reconstruct_highpass;
-    negate_odd_indicies(decompose_lowpass, reconstruct_highpass);
+    negate_odd_indices(decompose_lowpass, reconstruct_highpass);
 
     return FilterBank(
         decompose_lowpass,

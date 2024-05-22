@@ -127,9 +127,9 @@ public:
  * @code{cpp}
  * cv::Mat reconstructed_image = dwt.reconstruct(coeffs);
  * @endcode
- * Alternatively, the image can be reconstructed using DWT2D::Coeffs::invert().
+ * Alternatively, the image can be reconstructed using DWT2D::Coeffs::reconstruct().
  * @code{cpp}
- * cv::Mat reconstructed_image = coeffs.invert();
+ * cv::Mat reconstructed_image = coeffs.reconstruct();
  * @endcode
  * A third option is the functional interface.
  * @code{cpp}
@@ -1346,14 +1346,14 @@ public:
          * @brief Transform from DWT space back to image space.
          *
          */
-        cv::Mat invert() const;
+        cv::Mat reconstruct() const;
 
         /**
          * @brief Transform from DWT space back to image space.
          *
          * @param image
          */
-        void invert(cv::OutputArray image) const;
+        void reconstruct(cv::OutputArray image) const;
         ///@}
 
         //  --------------------------------------------------------------------
@@ -1695,7 +1695,11 @@ public:
      * @param image_size The size of the reconstructed image.
      * @param levels The number of levels.
      */
-    Coeffs create_coeffs(cv::InputArray coeffs_matrix, const cv::Size& image_size, int levels) const;
+    Coeffs create_coeffs(
+        cv::InputArray coeffs_matrix,
+        const cv::Size& image_size,
+        int levels
+    ) const;
 
     /**
      * @brief Create a zero initialized DWT2D::Coeffs object.

@@ -153,7 +153,7 @@ void main_program(const cxxopts::ParseResult& args)
     std::chrono::duration<double, std::milli> shrink_duration = end_time - start_time;
 
     start_time = std::chrono::high_resolution_clock::now();
-    auto denoised_image = shrunk_coeffs.invert();
+    auto denoised_image = shrunk_coeffs.reconstruct();
     end_time = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> reconstruct_duration = end_time - start_time;
 

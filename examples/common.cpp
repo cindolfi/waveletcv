@@ -312,7 +312,7 @@ void verify_common_args(const cxxopts::ParseResult& args)
         throw InvalidOptions("missing wavelet");
 
     auto wavelet = args["wavelet"].as<std::string>();
-    auto available_wavelets = Wavelet::registered_wavelets();
+    auto available_wavelets = Wavelet::available_wavelets();
     if (std::ranges::find(available_wavelets, wavelet) == available_wavelets.end()) {
         throw InvalidOptions(
             "invalid wavelet - must be one of: "
@@ -351,7 +351,7 @@ void set_log_level_from_args(const cxxopts::ParseResult& args)
 void print_available_wavelets()
 {
     std::cout << "Wavelets: ";
-    for (const auto& name : Wavelet::registered_wavelets())
+    for (const auto& name : Wavelet::available_wavelets())
         std::cout << name << " ";
     std::cout << "\n";
 }

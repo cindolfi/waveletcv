@@ -30,7 +30,6 @@ class Wavelet
 public:
     /**
      * @brief Construct a new Wavelet object
-     *
      */
     Wavelet();
     /**
@@ -55,58 +54,66 @@ public:
         const std::string& name,
         const FilterBank& filter_bank
     );
+    /**
+     * @brief Copy Constructor
+     */
+    Wavelet(const Wavelet& other) = default;
+    /**
+     * @brief Move Constructor
+     */
+    Wavelet(Wavelet&& other) = default;
+
+    /**
+     * @brief Copy Assignment
+     */
+    Wavelet& operator=(const Wavelet& other) = default;
+    /**
+     * @brief Move Assignment
+     */
+    Wavelet& operator=(Wavelet&& other) = default;
 
     /**
      * @brief The number of vanishing moments of the wavelet function
-     *
      */
     int vanishing_moments_psi() const { return _p->vanishing_moments_psi; }
 
     /**
      * @brief The number of vanishing moments of the scaling function
-     *
      */
     int vanishing_moments_phi() const { return _p->vanishing_moments_phi; }
 
     /**
      * @brief Returns true if the wavelet is orthogonal
-     *
      */
     bool orthogonal() const { return _p->orthogonal; }
 
     /**
      * @brief Returns true if the wavelet is biorthogonal
-     *
      */
     bool biorthogonal() const { return _p->biorthogonal; }
 
     /**
      * @brief Returns how symmetric the wavelet is
-     *
      */
     Symmetry symmetry() const { return _p->symmetry; }
 
     /**
      * @brief The family name the wavelet belongs to
-     *
      */
     std::string family() const { return _p->family; }
 
     /**
      * @brief The name of the wavelet
-     *
      */
     std::string name() const { return _p->name; }
 
     /**
      * @brief The wavelet filter bank
-     *
      */
     FilterBank filter_bank() const { return _p->filter_bank; }
 
     /**
      * @brief The length of the wavelet's filter kernel
-     *
      */
     int filter_length() const { return _p->filter_bank.filter_length(); }
 
@@ -125,7 +132,7 @@ public:
      * ```cpp
      * Wavelet wavelet = Wavelet::create("db2");
      * ```
-     * Use Wavelet::registered_wavelets() to get available wavelet names.
+     * Use Wavelet::available_wavelets() to get available wavelet names.
      * Use Wavelet::register_factory() to register a factory for custom wavelets.
      *
      * @param name
@@ -136,7 +143,7 @@ public:
      * @brief Returns a collection of wavelet names that can be used with Wavelet::create()
      *
      */
-    static std::vector<std::string> registered_wavelets();
+    static std::vector<std::string> available_wavelets();
 
     /**
      * @brief Register a Wavelet factory used by Wavelet::create()
@@ -215,7 +222,6 @@ std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
  */
 /**
  * @brief Create a Haar Wavelet object
- *
  */
 Wavelet create_haar();
 
@@ -255,7 +261,6 @@ Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi
  * @param vanishing_moments_phi The number of vanishing moments of the scaling function.
  */
 Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
-
 /** @}*/
 
 namespace internal

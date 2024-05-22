@@ -7,7 +7,6 @@
 #include <string>
 #include <opencv2/core.hpp>
 #include <iostream>
-#include "cvwt/utils.hpp"
 
 namespace cvwt
 {

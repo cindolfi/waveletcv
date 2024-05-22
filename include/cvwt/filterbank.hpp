@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <array>
+#include "cvwt/exception.hpp"
 
 namespace cvwt
 {
@@ -35,8 +36,21 @@ public:
         _lowpass(lowpass),
         _highpass(highpass)
     {
+        if (lowpass.size() != highpass.size()) {
+            internal::throw_bad_size(
+                "Kernels must be the same size. ",
+                "Got lowpass.size() = ", lowpass.size(),
+                " and highpass.size() = ", highpass.size(), "."
+            );
+        }
+        if (lowpass.type() != highpass.type()) {
+            internal::throw_bad_arg(
+                "Kernels must be the same type. ",
+                "Got lowpass.type() = ", internal::get_type_name(lowpass.type()),
+                " and highpass.type() = ", internal::get_type_name(highpass.type()), "."
+            );
+        }
     }
-
     /**
      * @brief The lowpass kernel coefficients.
      */
@@ -46,14 +60,9 @@ public:
      */
     cv::Mat highpass() const { return _highpass; }
     /**
-     * @brief The number of coefficients in each kernel.
-     */
-    int filter_length() const { return _lowpass.total(); }
-    /**
-     * @see cv::Mat::empty()
+     * @brief Returns true if both kernels are empty
      */
     bool empty() const { return _lowpass.empty(); }
-
     /**
      * @see matrix_equals()
      */
@@ -87,11 +96,6 @@ struct DecomposeKernels
     bool empty() const { return lowpass.empty(); }
     int type() const { return lowpass.type(); }
     int depth() const { return lowpass.depth(); }
-    void release()
-    {
-        lowpass.release();
-        highpass.release();
-    }
 
     cv::Mat lowpass;
     cv::Mat highpass;
@@ -124,13 +128,6 @@ struct ReconstructKernels
     bool empty() const { return even_lowpass.empty(); }
     int type() const { return even_lowpass.type(); }
     int depth() const { return even_lowpass.depth(); }
-    void release()
-    {
-        even_lowpass.release();
-        odd_lowpass.release();
-        even_highpass.release();
-        odd_highpass.release();
-    }
 
     cv::Mat even_lowpass;
     cv::Mat odd_lowpass;
@@ -185,16 +182,6 @@ struct FilterBankImpl
     int filter_length;
     DecomposeKernels decompose;
     ReconstructKernels reconstruct;
-    //  These are used as temporary caches for promoted kernels to avoid
-    //  converting kernels every time FilterBank::decompose or
-    //  FilterBank::reconstruct is called by multilevel algorithms (e.g. DWT2D).
-    //  The caching and freeing is done by the FilterBank::prepare_*() and
-    //  FilterBank::finish_*() methods, respectively.
-    DecomposeKernels promoted_decompose;
-    ReconstructKernels promoted_reconstruct;
-
-    // std::map<int, DecomposeKernels> promoted_decompose;
-    // std::map<int, ReconstructKernels> promoted_decompose;
 };
 } // namespace internal
 
@@ -231,11 +218,11 @@ class FilterBank
 {
 public:
     /**
-     * @brief Construct an empty Filter Bank object.
+     * @brief Construct an empty filter bank.
      */
     FilterBank();
     /**
-     * @brief Construct a new Filter Bank object.
+     * @brief Construct a new filter bank.
      *
      * @param decompose_lowpass
      * @param decompose_highpass
@@ -247,16 +234,6 @@ public:
         const cv::Mat& decompose_highpass,
         const cv::Mat& reconstruct_lowpass,
         const cv::Mat& reconstruct_highpass
-    );
-    /**
-     * @brief Construct a new Filter Bank object.
-     *
-     * @param decompose_kernels
-     * @param reconstruct_kernels
-     */
-    FilterBank(
-        const KernelPair& decompose_kernels,
-        const KernelPair& reconstruct_kernels
     );
     /**
      * @brief Copy Constructor
@@ -274,10 +251,8 @@ public:
      */
     bool empty() const { return _p->decompose.empty(); }
     /**
-     * @see cv::Mat::type()
-     */
-    int type() const { return _p->decompose.type(); }
-    /**
+     * @brief Returns the filter kernels data type depth.
+     *
      * @see cv::Mat::depth()
      */
     int depth() const { return _p->decompose.depth(); }
@@ -285,7 +260,6 @@ public:
      * @brief Returns maximum number of kernel coefficients.
      *
      * This is equal to `std::max(decompose_kernels.filter_length(), reconstruct_kernels.filter_length()))`.
-     *
      */
     int filter_length() const { return _p->filter_length; }
     /**
@@ -378,7 +352,6 @@ public:
 
     /**
      * @brief Swaps and flips the decomposition and reconstruction kernels
-     *
      */
     [[nodiscard]] FilterBank reverse() const;
 

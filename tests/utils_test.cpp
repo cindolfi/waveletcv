@@ -1063,7 +1063,7 @@ TEST_P(NegateEveryOtherTest, NegateOdds)
                          : -param.negated_at_evens_indices;
 
     cv::Mat actual_output;
-    negate_odd_indicies(param.input, actual_output);
+    negate_odd_indices(param.input, actual_output);
 
     EXPECT_THAT(actual_output, MatrixEq(expected_output));
 }

@@ -57,7 +57,7 @@ Wavelet Wavelet::create(const std::string& name)
     return _wavelet_factories.at(name)();
 }
 
-std::vector<std::string> Wavelet::registered_wavelets()
+std::vector<std::string> Wavelet::available_wavelets()
 {
     std::vector<std::string> keys;
     std::transform(
