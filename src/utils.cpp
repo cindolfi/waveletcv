@@ -195,20 +195,131 @@ struct Compare
         cv::OutputArray output
     ) const
     {
-        throw_if_comparing_different_sizes(input_a, input_b);
-
-        int channels = input_a.channels();
-        output.create(input_a.size(), CV_8UC(channels));
         auto a = input_a.getMat();
         auto b = input_b.getMat();
-        auto result = output.getMat();
 
+        if (is_scalar_for_array(input_b, input_a)) {
+            output.create(a.size(), CV_8UC(a.channels()));
+            auto result = output.getMat();
+            if (b.total() == 1)
+                compare_matrix_to_value(a, b, result);
+            else
+                compare_matrix_to_scalar(a, b, result);
+        } else if (is_scalar_for_array(input_a, input_b)) {
+            output.create(b.size(), CV_8UC(b.channels()));
+            auto result = output.getMat();
+            if (a.total() == 1)
+                compare_value_to_matrix(a, b, result);
+            else
+                compare_scalar_to_matrix(a, b, result);
+        } else {
+            throw_if_comparing_different_sizes(input_a, input_b);
+            output.create(a.size(), CV_8UC(a.channels()));
+            auto result = output.getMat();
+            compare_matrix_to_matrix(a, b, result);
+        }
+    }
+
+    void compare_matrix_to_scalar(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result
+    ) const
+    {
+        int channels = result.channels();
+        auto y = b.ptr<T2>(0);
         cv::parallel_for_(
-            cv::Range(0, a.total()),
+            cv::Range(0, result.total()),
             [&](const cv::Range& range) {
                 for (int index = range.start; index < range.end; ++index) {
-                    int row = index / a.cols;
-                    int col = index % a.cols;
+                    auto [row, col] = unravel_index(result, index);
+                    auto x = a.ptr<T1>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = 255 * compare(x[i], y[i]);
+                }
+            }
+        );
+    }
+
+    void compare_matrix_to_value(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result
+    ) const
+    {
+        int channels = result.channels();
+        auto y = b.at<T2>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto x = a.ptr<T1>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = 255 * compare(x[i], y);
+                }
+            }
+        );
+    }
+
+    void compare_scalar_to_matrix(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result
+    ) const
+    {
+        int channels = result.channels();
+        auto x = a.ptr<T1>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto y = b.ptr<T2>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = 255 * compare(x[i], y[i]);
+                }
+            }
+        );
+    }
+
+    void compare_value_to_matrix(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result
+    ) const
+    {
+        int channels = result.channels();
+        auto x = a.at<T1>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto y = b.ptr<T2>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = 255 * compare(x, y[i]);
+                }
+            }
+        );
+    }
+
+    void compare_matrix_to_matrix(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result
+    ) const
+    {
+        int channels = result.channels();
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
                     auto x = a.ptr<T1>(row, col);
                     auto y = b.ptr<T2>(row, col);
                     auto z = result.ptr<uchar>(row, col);
@@ -226,28 +337,176 @@ struct Compare
         cv::InputArray mask
     ) const
     {
-        throw_if_comparing_different_sizes(input_a, input_b);
-        throw_if_bad_mask_type(mask);
-        throw_if_bad_mask_for_array(input_a, mask, AllowedMaskChannels::SINGLE);
+        throw_if_bad_mask_depth(mask);
 
-        if (mask.size() != input_a.size())
-            throw_bad_size(
-                "Wrong size mask. Got ", mask.size(), ", must be ", input_a.size(), "."
-            );
-
-        int channels = input_a.channels();
-        output.create(input_a.size(), CV_8UC(channels));
         auto a = input_a.getMat();
         auto b = input_b.getMat();
         auto mask_matrix = mask.getMat();
-        auto result = output.getMat();
+        if (is_scalar_for_array(input_b, input_a)) {
+            throw_if_bad_mask_for_array(input_a, mask, AllowedMaskChannels::SINGLE_OR_SAME);
+            output.create(a.size(), CV_8UC(a.channels()));
+            auto result = output.getMat();
+            if (mask.channels() == 1)
+                if (b.total() == 1)
+                    compare_matrix_to_value_using_single_channel_mask(a, b, result, mask_matrix);
+                else
+                    compare_matrix_to_scalar_using_single_channel_mask(a, b, result, mask_matrix);
+            else
+                if (b.total() == 1)
+                    compare_matrix_to_value_using_multi_channel_mask(a, b, result, mask_matrix);
+                else
+                    compare_matrix_to_scalar_using_multi_channel_mask(a, b, result, mask_matrix);
+        } else if (is_scalar_for_array(input_a, input_b)) {
+            throw_if_bad_mask_for_array(input_b, mask, AllowedMaskChannels::SINGLE_OR_SAME);
+            output.create(b.size(), CV_8UC(b.channels()));
+            auto result = output.getMat();
+            if (mask.channels() == 1)
+                if (a.total() == 1)
+                    compare_value_to_matrix_using_single_channel_mask(a, b, result, mask_matrix);
+                else
+                    compare_scalar_to_matrix_using_single_channel_mask(a, b, result, mask_matrix);
+            else
+                if (a.total() == 1)
+                    compare_value_to_matrix_using_multi_channel_mask(a, b, result, mask_matrix);
+                else
+                    compare_scalar_to_matrix_using_multi_channel_mask(a, b, result, mask_matrix);
+        } else {
+            throw_if_comparing_different_sizes(input_a, input_b);
+            throw_if_bad_mask_for_array(input_a, mask, AllowedMaskChannels::SINGLE_OR_SAME);
+            output.create(a.size(), CV_8UC(a.channels()));
+            auto result = output.getMat();
+            if (mask.channels() == 1)
+                compare_matrix_to_matrix_using_single_channel_mask(a, b, result, mask_matrix);
+            else
+                compare_matrix_to_matrix_using_multi_channel_mask(a, b, result, mask_matrix);
+        }
+    }
 
+    void compare_matrix_to_scalar_using_single_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        auto y = b.ptr<T2>(0);
         cv::parallel_for_(
-            cv::Range(0, a.total()),
+            cv::Range(0, result.total()),
             [&](const cv::Range& range) {
                 for (int index = range.start; index < range.end; ++index) {
-                    int row = index / a.cols;
-                    int col = index % a.cols;
+                    auto [row, col] = unravel_index(result, index);
+                    auto z = result.ptr<uchar>(row, col);
+                    if (mask_matrix.at<uchar>(row, col)) {
+                        auto x = a.ptr<T1>(row, col);
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 255 * compare(x[i], y[i]);
+                    } else {
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 0;
+                    }
+                }
+            }
+        );
+    }
+
+    void compare_matrix_to_value_using_single_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        auto y = b.at<T2>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto z = result.ptr<uchar>(row, col);
+                    if (mask_matrix.at<uchar>(row, col)) {
+                        auto x = a.ptr<T1>(row, col);
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 255 * compare(x[i], y);
+                    } else {
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 0;
+                    }
+                }
+            }
+        );
+    }
+
+    void compare_scalar_to_matrix_using_single_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        auto x = a.ptr<T1>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto z = result.ptr<uchar>(row, col);
+                    if (mask_matrix.at<uchar>(row, col)) {
+                        auto y = b.ptr<T2>(row, col);
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 255 * compare(x[i], y[i]);
+                    } else {
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 0;
+                    }
+                }
+            }
+        );
+    }
+
+    void compare_value_to_matrix_using_single_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        auto x = a.at<T1>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto z = result.ptr<uchar>(row, col);
+                    if (mask_matrix.at<uchar>(row, col)) {
+                        auto y = b.ptr<T2>(row, col);
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 255 * compare(x, y[i]);
+                    } else {
+                        for (int i = 0; i < channels; ++i)
+                            z[i] = 0;
+                    }
+                }
+            }
+        );
+    }
+
+    void compare_matrix_to_matrix_using_single_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
                     auto z = result.ptr<uchar>(row, col);
                     if (mask_matrix.at<uchar>(row, col)) {
                         auto x = a.ptr<T1>(row, col);
@@ -258,6 +517,126 @@ struct Compare
                         for (int i = 0; i < channels; ++i)
                             z[i] = 0;
                     }
+                }
+            }
+        );
+    }
+
+    void compare_matrix_to_scalar_using_multi_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        auto y = b.ptr<T2>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto x = a.ptr<T1>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    auto m = mask_matrix.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = m[i] ? 255 * compare(x[i], y[i]) : 0;
+                }
+            }
+        );
+    }
+
+    void compare_matrix_to_value_using_multi_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        auto y = b.at<T2>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto x = a.ptr<T1>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    auto m = mask_matrix.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = m[i] ? 255 * compare(x[i], y) : 0;
+                }
+            }
+        );
+    }
+
+    void compare_scalar_to_matrix_using_multi_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        auto x = a.ptr<T1>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto y = b.ptr<T2>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    auto m = mask_matrix.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = m[i] ? 255 * compare(x[i], y[i]) : 0;
+                }
+            }
+        );
+    }
+
+    void compare_value_to_matrix_using_multi_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        auto x = a.at<T1>(0);
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto y = b.ptr<T2>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    auto m = mask_matrix.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = m[i] ? 255 * compare(x, y[i]) : 0;
+                }
+            }
+        );
+    }
+
+    void compare_matrix_to_matrix_using_multi_channel_mask(
+        const cv::Mat& a,
+        const cv::Mat& b,
+        cv::Mat& result,
+        const cv::Mat& mask_matrix
+    ) const
+    {
+        int channels = result.channels();
+        cv::parallel_for_(
+            cv::Range(0, result.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(result, index);
+                    auto x = a.ptr<T1>(row, col);
+                    auto y = b.ptr<T2>(row, col);
+                    auto z = result.ptr<uchar>(row, col);
+                    auto m = mask_matrix.ptr<uchar>(row, col);
+                    for (int i = 0; i < channels; ++i)
+                        z[i] = m[i] ? 255 * compare(x[i], y[i]) : 0;
                 }
             }
         );
@@ -281,13 +660,6 @@ struct Compare
     }
 };
 }   // namespace internal
-
-
-void flatten(cv::InputArray array, cv::OutputArray result)
-{
-    array.copyTo(result);
-    result.assign(result.getMat().reshape(0, array.total()));
-}
 
 void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputArray mask)
 {
@@ -387,6 +759,22 @@ void patch_nans(cv::InputOutputArray array, double value)
     }
 }
 
+bool is_scalar_for_array(cv::InputArray scalar, cv::InputArray array)
+{
+    //  This is adapted from checkScalar in OpenCV source code.
+    if (scalar.dims() > 2 || !scalar.isContinuous())
+        return false;
+
+    int channels = array.channels();
+
+    return scalar.isVector()
+        && (
+            (scalar.total() == channels || scalar.total() == 1)
+            || (scalar.size() == cv::Size(1, 4) && scalar.type() == CV_64F && channels <= 4)
+        );
+}
+
+
 double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
 {
     internal::throw_if_empty(array, "Input is empty.");
@@ -459,131 +847,131 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
 void less_than(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask
 )
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
-            a.depth(), b.depth(), a, b, output
+            a.depth(), b.depth(), a, b, result
         );
     else
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
-            a.depth(), b.depth(), a, b, output, mask
+            a.depth(), b.depth(), a, b, result, mask
         );
 }
 
 void less_than_or_equal(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask
 )
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
-            a.depth(), b.depth(), a, b, output
+            a.depth(), b.depth(), a, b, result
         );
     else
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
-            a.depth(), b.depth(), a, b, output, mask
+            a.depth(), b.depth(), a, b, result, mask
         );
 }
 
 void greater_than(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask
 )
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
-            a.depth(), b.depth(), a, b, output
+            a.depth(), b.depth(), a, b, result
         );
     else
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
-            a.depth(), b.depth(), a, b, output, mask
+            a.depth(), b.depth(), a, b, result, mask
         );
 }
 
 void greater_than_or_equal(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask
 )
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
-            a.depth(), b.depth(), a, b, output
+            a.depth(), b.depth(), a, b, result
         );
     else
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
-            a.depth(), b.depth(), a, b, output, mask
+            a.depth(), b.depth(), a, b, result, mask
         );
 }
 
 void equal(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask
 )
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_EQ>(
-            a.depth(), b.depth(), a, b, output
+            a.depth(), b.depth(), a, b, result
         );
     else
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_EQ>(
-            a.depth(), b.depth(), a, b, output, mask
+            a.depth(), b.depth(), a, b, result, mask
         );
 }
 
 void not_equal(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask
 )
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_NE>(
-            a.depth(), b.depth(), a, b, output
+            a.depth(), b.depth(), a, b, result
         );
     else
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_NE>(
-            a.depth(), b.depth(), a, b, output, mask
+            a.depth(), b.depth(), a, b, result, mask
         );
 }
 
 void compare(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::CmpTypes compare_type,
     cv::InputArray mask
 )
 {
     switch (compare_type) {
     case cv::CMP_LT:
-        less_than(a, b, output, mask);
+        less_than(a, b, result, mask);
         break;
     case cv::CMP_LE:
-        less_than_or_equal(a, b, output, mask);
+        less_than_or_equal(a, b, result, mask);
         break;
     case cv::CMP_GT:
-        greater_than(a, b, output, mask);
+        greater_than(a, b, result, mask);
         break;
     case cv::CMP_GE:
-        greater_than_or_equal(a, b, output, mask);
+        greater_than_or_equal(a, b, result, mask);
         break;
     case cv::CMP_EQ:
-        equal(a, b, output, mask);
+        equal(a, b, result, mask);
         break;
     case cv::CMP_NE:
-        not_equal(a, b, output, mask);
+        not_equal(a, b, result, mask);
         break;
     }
 }

@@ -17,20 +17,14 @@ namespace cvwt
  * @{
  */
 /**
- * @brief Flatten an array.
- *
- * @param[in] array
- * @param[out] result
- */
-void flatten(cv::InputArray array, cv::OutputArray result);
-/**
  * @brief Collect values indicated by the given mask.
  *
  * @param[in] array
  * @param[out] collected
- * @param mask
+ * @param[in] mask
  */
 void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputArray mask);
+
 /**
  * @brief Returns true if all values two matrices are equal.
  *
@@ -38,6 +32,7 @@ void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputAr
  * @param[in] b
  */
 bool matrix_equals(const cv::Mat& a, const cv::Mat& b);
+
 /**
  * @brief Returns true if two matrices refer to the same data and are equal.
  *
@@ -53,6 +48,7 @@ bool identical(const cv::Mat& a, const cv::Mat& b);
  * @param[in] b
  */
 bool shares_data(const cv::Mat& a, const cv::Mat& b);
+
 /**
  * @brief Negates all even indexed values.
  *
@@ -60,6 +56,7 @@ bool shares_data(const cv::Mat& a, const cv::Mat& b);
  * @param[out] result The input vector with the even indexed values negated.
  */
 void negate_even_indices(cv::InputArray vector, cv::OutputArray result);
+
 /**
  * @brief Negates all odd indexed values.
  *
@@ -67,15 +64,24 @@ void negate_even_indices(cv::InputArray vector, cv::OutputArray result);
  * @param[out] result The input vector with the odd indexed values negated.
  */
 void negate_odd_indices(cv::InputArray vector, cv::OutputArray result);
+
 /**
- * @brief Returns true if array is cv::noArray()
+ * @brief Returns true if array is cv::noArray().
+ *
+ * @param[in] array
  */
 bool is_no_array(cv::InputArray array);
 
+/**
+ * @brief Returns the maximum absolute value over all channels.
+ *
+ * @param[in] array
+ * @param[in] mask
+ */
 double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray());
 
 /**
- * @brief Replace all NaN values
+ * @brief Replace all NaN values.
  *
  * This is a version of cv::patch_nans() that accepts arrays of any depth, not
  * just CV_32F.
@@ -84,6 +90,9 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray
  * @param[in] value The value used to replace NaN.
  */
 void patch_nans(cv::InputOutputArray array, double value = 0.0);
+
+bool is_scalar_for_array(cv::InputArray scalar, cv::InputArray array);
+
 /** @}*/
 
 /**
@@ -96,7 +105,6 @@ void patch_nans(cv::InputOutputArray array, double value = 0.0);
  * @param[in] array
  * @param[in] mask A single channel matrix of type CV_8UC1 or CV_8SC1 where
  *                 nonzero entries indicate which array elements are used.
- * @return cv::Scalar
  */
 cv::Scalar median(cv::InputArray array, cv::InputArray mask = cv::noArray());
 
@@ -109,8 +117,8 @@ cv::Scalar median(cv::InputArray array, cv::InputArray mask = cv::noArray());
  * \f}
  * where the median is taken over locations where the mask is nonzero.
  *
- * @param array The multichannel array.
- * @param mask A single channel matrix of type CV_8UC1 or CV_8SC1 where nonzero
+ * @param[in] array The multichannel array.
+ * @param[in] mask A single channel matrix of type CV_8UC1 or CV_8SC1 where nonzero
  *             entries indicate which array elements are used.
  */
 cv::Scalar mad(cv::InputArray array, cv::InputArray mask = cv::noArray());
@@ -128,46 +136,90 @@ cv::Scalar mad(cv::InputArray array, cv::InputArray mask = cv::noArray());
  *     \hat{\sigma_k} = \frac{\mad(x_k)}{0.675}
  * \f}
  *
- * @param array The data samples.  This can a multichannel with up to 4 channels.
+ * @param[in] array The data samples.  This can a multichannel with up to 4 channels.
  */
 cv::Scalar mad_stdev(cv::InputArray array);
-/**
- * @}
- */
+/** @}*/
 
 
 /**
  * @name Multichannel Comparison Functions
  * @{
  */
+/**
+ * @brief Returns a multichannel mask indicating which elements of a matrix are
+ *        less than the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] mask
+ */
 void less_than(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask = cv::noArray()
 );
+/**
+ * @brief Returns a multichannel mask indicating which elements of a matrix are
+ *        less than or equal to the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] mask
+ */
 void less_than_or_equal(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask = cv::noArray()
 );
+/**
+ * @brief Returns a multichannel mask indicating which elements of a matrix are
+ *        greater than the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] mask
+ */
 void greater_than(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask = cv::noArray()
 );
+/**
+ * @brief Returns a multichannel mask indicating which elements of a matrix are
+ *        greater than or equal to the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] mask
+ */
 void greater_than_or_equal(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::InputArray mask = cv::noArray()
 );
+/**
+ * @brief Returns a multichannel mask indicating how the elements of a matrix
+ *        compare to the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] compare_type
+ * @param[in] mask
+ */
 void compare(
     cv::InputArray a,
     cv::InputArray b,
-    cv::OutputArray output,
+    cv::OutputArray result,
     cv::CmpTypes compare_type,
     cv::InputArray mask = cv::noArray()
 );
@@ -179,6 +231,17 @@ namespace internal
 {
 std::string get_type_name(int type);
 cv::Scalar set_unused_channels(const cv::Scalar& scalar, int channels, double value = 0.0);
+struct Index {
+    int row;
+    int col;
+};
+inline Index unravel_index(const cv::Mat& array, int flat_index)
+{
+    return {
+        .row = flat_index / array.cols,
+        .col = flat_index % array.cols
+    };
+}
 
 template <template <typename T, int CHANNELS, auto ...> typename Functor, auto ...TemplateArgs>
 auto dispatch_on_pixel_type(int type, auto&&... args)
