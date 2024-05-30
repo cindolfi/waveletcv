@@ -73,6 +73,25 @@ void DWT2D::Coeffs::reset(
     _p->build_diagonal_subband_rects(subband_sizes);
 }
 
+CoeffsExpr DWT2D::Coeffs::mul(cv::InputArray matrix, double scale) const
+{
+    return CoeffsExpr(*this, _p->coeff_matrix.mul(matrix, scale));
+}
+
+CoeffsExpr DWT2D::Coeffs::mul(const CoeffsExpr& expression, double scale) const
+{
+    return expression.mul(*this, scale);
+}
+
+CoeffsExpr DWT2D::Coeffs::mul(const Coeffs& coeffs, double scale) const
+{
+    return CoeffsExpr(
+        *this,
+        coeffs,
+        _p->coeff_matrix.mul(coeffs._p->coeff_matrix, scale)
+    );
+}
+
 DWT2D DWT2D::Coeffs::dwt() const
 {
     return DWT2D(wavelet(), border_type());
@@ -112,32 +131,17 @@ DWT2D::Coeffs DWT2D::Coeffs::empty_clone() const
     );
 }
 
-DWT2D::Coeffs& DWT2D::Coeffs::operator=(const cv::Mat& matrix)
+DWT2D::Coeffs DWT2D::Coeffs::clone_and_assign(cv::InputArray coeff_matrix) const
 {
-    throw_if_wrong_size_for_assignment(matrix);
-
-    if (matrix.type() != type()) {
-        cv::Mat converted;
-        matrix.convertTo(converted, type());
-        converted.copyTo(_p->coeff_matrix);
-    } else {
-        matrix.copyTo(_p->coeff_matrix);
-    }
-
-    return *this;
-}
-
-DWT2D::Coeffs& DWT2D::Coeffs::operator=(const cv::MatExpr& matrix)
-{
-    throw_if_wrong_size_for_assignment(matrix);
-    _p->coeff_matrix = matrix;
-    return *this;
-}
-
-DWT2D::Coeffs& DWT2D::Coeffs::operator=(const cv::Scalar& scalar)
-{
-    _p->coeff_matrix = scalar;
-    return *this;
+    throw_if_wrong_size_for_assignment(coeff_matrix);
+    return DWT2D::Coeffs(
+        coeff_matrix.getMat(),
+        _p->levels,
+        _p->image_size,
+        _p->diagonal_subband_rects,
+        _p->wavelet,
+        _p->border_type
+    );
 }
 
 std::vector<cv::Mat> DWT2D::Coeffs::collect_details(int subband) const
@@ -280,7 +284,7 @@ cv::Mat DWT2D::Coeffs::invalid_detail_mask() const
 int DWT2D::Coeffs::total_valid() const
 {
     cv::Rect approx_rect = this->approx_rect();
-    return total_details() + approx_rect.width * approx_rect.height;
+    return total_details() + approx_rect.area();
 }
 
 int DWT2D::Coeffs::total_details() const
@@ -288,7 +292,7 @@ int DWT2D::Coeffs::total_details() const
     int result = 0;
     for (int level = 0; level < levels(); ++level) {
         auto subband_rect = diagonal_detail_rect(level);
-        result += 3 * (subband_rect.width * subband_rect.height);
+        result += 3 * subband_rect.area();
     }
 
     return result;
@@ -408,22 +412,23 @@ DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
     cv::InputArray write_mask
 ) const
 {
-    DWT2D::Coeffs normalized_coeffs;
-    map_details_to_unit_interval(normalized_coeffs, read_mask, write_mask);
-    return normalized_coeffs;
+    double dummy;
+    return map_details_to_unit_interval(dummy, read_mask, write_mask);
 }
 
-double DWT2D::Coeffs::map_details_to_unit_interval(
-    DWT2D::Coeffs& normalized_coeffs,
+DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
+    double& scale_output,
     cv::InputArray read_mask,
     cv::InputArray write_mask
 ) const
 {
+    DWT2D::Coeffs normalized_coeffs;
+
     internal::throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
     throw_if_bad_mask_for_normalize(write_mask, "write");
 
-    double alpha = map_detail_to_unit_interval_scale(read_mask);
-    cv::Mat normalized_coeffs_matrix = alpha * _p->coeff_matrix + 0.5;
+    scale_output = map_detail_to_unit_interval_scale(read_mask);
+    cv::Mat normalized_coeffs_matrix = scale_output * _p->coeff_matrix + 0.5;
     if (is_no_array(write_mask)) {
         normalized_coeffs = empty_clone();
         normalized_coeffs._p->coeff_matrix = normalized_coeffs_matrix;
@@ -438,8 +443,47 @@ double DWT2D::Coeffs::map_details_to_unit_interval(
         normalized_coeffs.set_approx(approx());
     }
 
-    return alpha;
+    return normalized_coeffs;
 }
+
+
+// DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
+//     cv::InputArray read_mask,
+//     cv::InputArray write_mask
+// ) const
+// {
+//     DWT2D::Coeffs normalized_coeffs;
+//     map_details_to_unit_interval(normalized_coeffs, read_mask, write_mask);
+//     return normalized_coeffs;
+// }
+
+// double DWT2D::Coeffs::map_details_to_unit_interval(
+//     DWT2D::Coeffs& normalized_coeffs,
+//     cv::InputArray read_mask,
+//     cv::InputArray write_mask
+// ) const
+// {
+//     internal::throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
+//     throw_if_bad_mask_for_normalize(write_mask, "write");
+
+//     double alpha = map_detail_to_unit_interval_scale(read_mask);
+//     cv::Mat normalized_coeffs_matrix = alpha * _p->coeff_matrix + 0.5;
+//     if (is_no_array(write_mask)) {
+//         normalized_coeffs = empty_clone();
+//         normalized_coeffs._p->coeff_matrix = normalized_coeffs_matrix;
+//         normalized_coeffs.set_approx(approx());
+//     } else {
+//         //  Make sure to include any unused half rows/columns resulting from
+//         //  odd image size or kernel lengths.
+//         auto write_mask_matrix = write_mask.getMat() | invalid_detail_mask();
+
+//         normalized_coeffs = clone();
+//         normalized_coeffs_matrix.copyTo(normalized_coeffs, write_mask_matrix);
+//         normalized_coeffs.set_approx(approx());
+//     }
+
+//     return alpha;
+// }
 
 DWT2D::Coeffs DWT2D::Coeffs::map_details_from_unit_interval(
     double scale,
@@ -482,23 +526,32 @@ double DWT2D::Coeffs::map_detail_to_unit_interval_scale(cv::InputArray read_mask
     return 0.5 / max_value;
 }
 
-void DWT2D::Coeffs::convert_and_copy(const cv::Mat& source, const cv::Mat& destination)
+template <typename Matrix>
+requires std::same_as<std::remove_cvref_t<Matrix>, cv::Mat>
+void DWT2D::Coeffs::convert_and_copy(
+    cv::InputArray source,
+    Matrix&& destination,
+    cv::InputArray mask
+)
 {
-    assert(source.channels() == destination.channels());
-    assert(source.size() == destination.size());
     assert(destination.type() == type());
 
-    if (source.type() != destination.type()) {
+    if (is_scalar(source)) {
+        destination.setTo(source, mask);
+    } else if (source.type() != destination.type()) {
         cv::Mat converted;
-        source.convertTo(converted, type());
-        converted.copyTo(destination);
+        source.getMat().convertTo(converted, type());
+        converted.copyTo(destination, mask);
     } else {
-        source.copyTo(destination);
+        source.copyTo(destination, mask);
     }
 }
 
 #if CVWT_ARGUMENT_CHECKING_ENABLED
-void DWT2D::Coeffs::throw_if_bad_mask_for_normalize(cv::InputArray mask, const std::string mask_name) const
+void DWT2D::Coeffs::throw_if_bad_mask_for_normalize(
+    cv::InputArray mask,
+    const std::string mask_name
+) const
 {
     if (is_no_array(mask))
         return;
@@ -520,6 +573,22 @@ void DWT2D::Coeffs::throw_if_bad_mask_for_normalize(cv::InputArray mask, const s
 
 void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(cv::InputArray matrix) const
 {
+    if (empty()) {
+        if (!is_scalar(matrix) && matrix.size() == level_size(0))
+            return;
+    } else {
+        if (is_scalar(matrix) || (matrix.size() == size() && matrix.channels() == channels()))
+            return;
+
+        if (matrix.channels() != channels()) {
+            internal::throw_bad_size(
+                "DWT2D::Coeffs: Cannot assign matrix to this.  ",
+                "The number of channels of matrix must be ", channels(), "), ",
+                "got matrix.channels() = ", matrix.channels(), "."
+            );
+        }
+    }
+
     auto required_size = empty() ? level_size(0) : size();
     if (matrix.size() != required_size) {
         internal::throw_bad_size(
@@ -528,72 +597,69 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(cv::InputArray matrix) co
             "got matrix.size() = ", matrix.size(), "."
         );
     }
-
-    if (!empty() && matrix.channels() != channels()) {
-        internal::throw_bad_size(
-            "DWT2D::Coeffs: Cannot assign matrix to this.  ",
-            "The number of channels of matrix must be ", channels(), "), ",
-            "got matrix.channels() = ", matrix.channels(), "."
-        );
-    }
 }
 
-void DWT2D::Coeffs::throw_if_wrong_size_for_set_level(const cv::Mat& matrix, int level) const
+void DWT2D::Coeffs::throw_if_wrong_size_for_set_level(cv::InputArray matrix, int level) const
 {
-    if (matrix.size() != level_size(level)) {
-        internal::throw_bad_size(
-            "DWT2D::Coeffs: Cannot set the coeffs at level ", level, ".  "
-            "The size of the matrix must be ", level_size(level), ", ",
-            "got size = ", matrix.size(), "."
-        );
-    }
+    if (is_scalar(matrix) || matrix.size() == level_size(level))
+        return;
+
+    internal::throw_bad_size(
+        "DWT2D::Coeffs: Cannot set the coeffs at level ", level, ".  "
+        "The size of the matrix must be ", level_size(level), ", ",
+        "got size = ", matrix.size(), "."
+    );
 }
 
 void DWT2D::Coeffs::throw_if_wrong_size_for_set_detail(
-    const cv::Mat& matrix,
+    cv::InputArray matrix,
     int level,
     int subband
 ) const
 {
-    if (matrix.size() != detail_size(level) || matrix.channels() != channels()) {
-        std::string subband_name;
-        switch (subband) {
-            case HORIZONTAL:
-                subband_name = "horizontal";
-                break;
-            case VERTICAL:
-                subband_name = "vertical";
-                break;
-            case DIAGONAL:
-                subband_name = "diagonal";
-                break;
-            default:
-                assert("Unknown subband identifier");
-        }
+    if (is_scalar(matrix)
+        || (matrix.size() == detail_size(level) && matrix.channels() == channels()))
+        return;
 
-        if (matrix.size() != detail_size(level)) {
-            internal::throw_bad_size(
-                "DWT2D::Coeffs: Cannot set the ", subband_name, " detail coefficients at level ", level, ".  ",
-                "The size of the matrix must be ", detail_size(level), ", "
-                "got size = ", matrix.size(), "."
-            );
-        }
+    std::string subband_name;
+    switch (subband) {
+        case HORIZONTAL:
+            subband_name = "horizontal";
+            break;
+        case VERTICAL:
+            subband_name = "vertical";
+            break;
+        case DIAGONAL:
+            subband_name = "diagonal";
+            break;
+        default:
+            assert("Unknown subband identifier");
+    }
 
-        if (matrix.channels() != channels()) {
-            internal::throw_bad_size(
-                "DWT2D::Coeffs: Cannot set the ", subband_name, " detail coefficients at level ", level, ".  ",
-                "The number of channels must be ", channels(), ", "
-                "got channels = ", matrix.channels(), "."
-            );
-        }
+    if (matrix.size() != detail_size(level)) {
+        internal::throw_bad_size(
+            "DWT2D::Coeffs: Cannot set the ", subband_name, " detail coefficients at level ", level, ".  ",
+            "The size of the matrix must be ", detail_size(level), ", "
+            "got size = ", matrix.size(), "."
+        );
+    }
+
+    if (matrix.channels() != channels()) {
+        internal::throw_bad_size(
+            "DWT2D::Coeffs: Cannot set the ", subband_name, " detail coefficients at level ", level, ".  ",
+            "The number of channels must be ", channels(), ", "
+            "got channels = ", matrix.channels(), "."
+        );
     }
 }
 
 void DWT2D::Coeffs::throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const
 {
+    if (is_scalar(matrix) || (matrix.size() == size() && matrix.channels() == channels()))
+        return;
+
     if (matrix.size() != size()) {
         std::string subband_name;
-
         internal::throw_bad_size(
             "DWT2D::Coeffs: Cannot set all the detail coefficients. ",
             "The size of the matrix must be ", size(), ", "
@@ -611,15 +677,16 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray
     }
 }
 
-void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(const cv::Mat& matrix) const
+void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(cv::InputArray matrix) const
 {
-    if (matrix.size() != detail_size(levels() - 1)) {
-        internal::throw_bad_size(
-            "DWT2D::Coeffs: Cannot set the approx coefficients.  "
-            "The size of the matrix must be ", detail_size(levels() - 1), ", ",
-            "got size = ", matrix.size(), "."
-        );
-    }
+    if (is_scalar(matrix) || matrix.size() == detail_size(levels() - 1))
+        return;
+
+    internal::throw_bad_size(
+        "DWT2D::Coeffs: Cannot set the approx coefficients.  "
+        "The matrix must be a scalar or its size must be ", detail_size(levels() - 1), ", ",
+        "got size = ", matrix.size(), "."
+    );
 }
 
 void DWT2D::Coeffs::throw_if_level_out_of_range(int level) const
@@ -740,11 +807,11 @@ DWT2D::DWT2D(const Wavelet& wavelet, cv::BorderTypes border_type) :
 {
 }
 
-void DWT2D::decompose(cv::InputArray image, DWT2D::Coeffs& output, int levels) const
+void DWT2D::decompose(cv::InputArray image, DWT2D::Coeffs& coeffs, int levels) const
 {
     throw_if_levels_out_of_range(levels);
     warn_if_border_effects_will_occur(levels, image);
-    output.reset(
+    coeffs.reset(
         coeffs_size_for_image(image, levels),
         wavelet.filter_bank().promote_type(image.type()),
         levels,
@@ -758,7 +825,7 @@ void DWT2D::decompose(cv::InputArray image, DWT2D::Coeffs& output, int levels) c
     //  Whenever there is an odd subband width/height there is a half row/column
     //  of unused horizontal/vertical detail elements that need to be forced to
     //  zero.
-    output = 0.0;
+    coeffs = 0.0;
 
     auto running_approx = image.getMat();
     for (int level = 0; level < levels; ++level) {
@@ -775,15 +842,15 @@ void DWT2D::decompose(cv::InputArray image, DWT2D::Coeffs& output, int levels) c
         );
 
         running_approx = approx;
-        output.set_horizontal_detail(level, horizontal_detail);
-        output.set_vertical_detail(level, vertical_detail);
-        output.set_diagonal_detail(level, diagonal_detail);
+        coeffs.set_horizontal_detail(level, horizontal_detail);
+        coeffs.set_vertical_detail(level, vertical_detail);
+        coeffs.set_diagonal_detail(level, diagonal_detail);
     }
 
-    output.set_approx(running_approx);
+    coeffs.set_approx(running_approx);
 }
 
-void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray output) const
+void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray image) const
 {
     warn_if_border_effects_will_occur(coeffs);
 
@@ -801,10 +868,10 @@ void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray output) con
         approx = result;
     }
 
-    if (output.isContinuous())
-        output.assign(approx);
+    if (image.isContinuous())
+        image.assign(approx);
     else
-        approx.copyTo(output);
+        approx.copyTo(image);
 }
 
 DWT2D::Coeffs DWT2D::create_coeffs(
@@ -818,6 +885,23 @@ DWT2D::Coeffs DWT2D::create_coeffs(
 
     return Coeffs(
         coeffs_matrix.getMat(),
+        levels,
+        image_size,
+        calc_subband_sizes(image_size, levels),
+        wavelet,
+        border_type
+    );
+}
+
+DWT2D::Coeffs DWT2D::create_empty_coeffs(
+    const cv::Size& image_size,
+    int levels
+) const
+{
+    throw_if_levels_out_of_range(levels);
+
+    return Coeffs(
+        cv::Mat(0, 0, wavelet.filter_bank().depth()),
         levels,
         image_size,
         calc_subband_sizes(image_size, levels),
@@ -860,7 +944,7 @@ cv::Size DWT2D::coeffs_size_for_image(const cv::Size& image_size, int levels) co
         accumulator += level_subband_size;
     }
 
-    //  add once more to account for approximation coeffcients
+    //  add once more to account for approximation coefficients
     accumulator += level_subband_size;
 
     return accumulator;
@@ -983,64 +1067,44 @@ DWT2D::Coeffs dwt2d(
 
 void dwt2d(
     cv::InputArray image,
-    DWT2D::Coeffs& output,
+    DWT2D::Coeffs& coeffs,
     const Wavelet& wavelet,
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).decompose(image, output);
+    return DWT2D(wavelet, border_type).decompose(image, coeffs);
 }
 
 void dwt2d(
     cv::InputArray image,
-    DWT2D::Coeffs& output,
+    DWT2D::Coeffs& coeffs,
     const std::string& wavelet,
     cv::BorderTypes border_type
 )
 {
-    dwt2d(image, output, Wavelet::create(wavelet), border_type);
+    dwt2d(image, coeffs, Wavelet::create(wavelet), border_type);
 }
 
 void dwt2d(
     cv::InputArray image,
-    DWT2D::Coeffs& output,
+    DWT2D::Coeffs& coeffs,
     const Wavelet& wavelet,
     int levels,
     cv::BorderTypes border_type
 )
 {
-    return DWT2D(wavelet, border_type).decompose(image, output, levels);
+    return DWT2D(wavelet, border_type).decompose(image, coeffs, levels);
 }
 
 void dwt2d(
     cv::InputArray image,
-    DWT2D::Coeffs& output,
+    DWT2D::Coeffs& coeffs,
     const std::string& wavelet,
     int levels,
     cv::BorderTypes border_type
 )
 {
-    dwt2d(image, output, Wavelet::create(wavelet), levels, border_type);
-}
-
-void idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    cv::OutputArray output,
-    const Wavelet& wavelet,
-    cv::BorderTypes border_type
-)
-{
-    DWT2D(wavelet, border_type).reconstruct(coeffs, output);
-}
-
-void idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    cv::OutputArray output,
-    const std::string& wavelet,
-    cv::BorderTypes border_type
-)
-{
-    idwt2d(coeffs, output, Wavelet::create(wavelet), border_type);
+    dwt2d(image, coeffs, Wavelet::create(wavelet), levels, border_type);
 }
 
 cv::Mat idwt2d(
@@ -1059,6 +1123,26 @@ cv::Mat idwt2d(
 )
 {
     return idwt2d(coeffs, Wavelet::create(wavelet), border_type);
+}
+
+void idwt2d(
+    const DWT2D::Coeffs& coeffs,
+    cv::OutputArray image,
+    const Wavelet& wavelet,
+    cv::BorderTypes border_type
+)
+{
+    DWT2D(wavelet, border_type).reconstruct(coeffs, image);
+}
+
+void idwt2d(
+    const DWT2D::Coeffs& coeffs,
+    cv::OutputArray image,
+    const std::string& wavelet,
+    cv::BorderTypes border_type
+)
+{
+    idwt2d(coeffs, image, Wavelet::create(wavelet), border_type);
 }
 
 } // namespace cvwt

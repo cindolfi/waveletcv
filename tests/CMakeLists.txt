@@ -29,6 +29,7 @@ add_executable(
     wavelet_test.cpp
     filterbank_test.cpp
     dwt2d_test.cpp
+    dwt2d_coeffsexpr_test.cpp
     shrinkage_test.cpp
 )
 

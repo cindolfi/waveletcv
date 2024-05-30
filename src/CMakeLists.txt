@@ -42,6 +42,7 @@ target_sources (
         wavelet.cpp
         filterbank.cpp
         dwt2d.cpp
+        dwt2d_coeffsexpr.cpp
         utils.cpp
         shrink/shrink.cpp
         shrink/bayes.cpp
