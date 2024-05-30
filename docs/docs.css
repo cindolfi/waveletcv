@@ -6,6 +6,12 @@
     vertical-align: middle;
 }
 
+table.params ul {
+    margin-block-start: 0.2em;
+    margin-block-end: 0;
+    padding-inline-start: 2em;
+}
+
 div.contents {
     max-width: 1200px;
     margin: 0 auto;
@@ -14,6 +20,54 @@ div.contents {
     border: 1px solid rgb(10, 80, 122);
     /* background-color: #fff; */
 }
+
+:root {
+    --shaded-bg-color: gray;
+}
+
+div.shade.A .A {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.H0 .H0 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.H1 .H1 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.H2 .H2 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.H3 .H3 {
+    background-color: var(--shaded-bg-color);
+}
+
+div.shade.V0 .V0 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.V1 .V1 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.V2 .V2 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.V3 .V3 {
+    background-color: var(--shaded-bg-color);
+}
+
+div.shade.D0 .D0 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.D1 .D1 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.D2 .D2 {
+    background-color: var(--shaded-bg-color);
+}
+div.shade.D3 .D3 {
+    background-color: var(--shaded-bg-color);
+}
+
+
 
 /* code {
     font-size: 85%;

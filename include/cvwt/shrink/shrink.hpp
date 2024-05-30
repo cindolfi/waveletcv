@@ -13,6 +13,10 @@ namespace cvwt
 /** @addtogroup shrinkage Shrink DWT Coefficients
  *  @{
  */
+
+/**
+ * @brief A function that shrinks matrix elements towards zero.
+ */
 using ShrinkFunction = std::function<
     void(
         cv::InputArray, // input
@@ -21,8 +25,16 @@ using ShrinkFunction = std::function<
         cv::InputArray // mask
     )
 >;
+
+/**
+ * @brief A function that shrinks primitive values towards zero.
+ */
 template <typename Value, typename Threshold>
 using PrimitiveShrinkFunction = std::function<Value(Value, Threshold)>;
+
+/**
+ * @brief A function that estimates the population standard deviation from samples.
+ */
 using StdDevFunction = std::function<cv::Scalar(cv::InputArray)>;
 
 namespace internal
@@ -146,7 +158,7 @@ struct WrappedThreshold : public Threshold<T, N, WrappedThresholdFunctor<T, W>>
 //  Thresholding
 //  ----------------------------------------------------------------------------
 /**
- * @brief Multichannel masked soft threshold
+ * @brief Multichannel masked soft threshold.
  *
  * Given input \f$x\f$, mask \f$m\f$, and threshold \f$\lambda\f$ the output at
  * row \f$i\f$, column \f$j\f$, and channel \f$k\f$ is
@@ -158,22 +170,22 @@ struct WrappedThreshold : public Threshold<T, N, WrappedThresholdFunctor<T, W>>
  *     \end{cases}
  * \f}
  *
- * @param input
- * @param output
- * @param threshold
- * @param mask A single channel matrix of type CV_8U where nonzero entries
+ * @param[in] array
+ * @param[out] result
+ * @param[in] threshold
+ * @param[in] mask A single channel matrix of type CV_8U where nonzero entries
  *             indicate which input locations are thresholded.  The identity
  *             function is applied to inputs at corresponding zero entries.
  */
 void soft_threshold(
-    cv::InputArray input,
-    cv::OutputArray output,
+    cv::InputArray array,
+    cv::OutputArray result,
     cv::Scalar threshold,
     cv::InputArray mask = cv::noArray()
 );
 
 /**
- * @brief Multichannel masked hard threshold
+ * @brief Multichannel masked hard threshold.
  *
  * Given input \f$x\f$, mask \f$m\f$, and threshold \f$\lambda\f$ the output at
  * row \f$i\f$, column \f$j\f$, and channel \f$k\f$ is
@@ -186,31 +198,31 @@ void soft_threshold(
  * \f}
  * where \f$i\f$ is the row, \f$j\f$ is the column and \f$k\f$ is the channel.
  *
- * @param input
- * @param output
- * @param threshold
- * @param mask A single channel matrix of type CV_8U where nonzero entries
+ * @param[in] array
+ * @param[out] result
+ * @param[in] threshold
+ * @param[in] mask A single channel matrix of type CV_8U where nonzero entries
  *             indicate which input locations are thresholded.  The identity
  *             function is applied to inputs at corresponding zero entries.
  */
 void hard_threshold(
-    cv::InputArray input,
-    cv::OutputArray output,
+    cv::InputArray array,
+    cv::OutputArray result,
     cv::Scalar threshold,
     cv::InputArray mask = cv::noArray()
 );
 
 /**
- * @brief Create a multichannel threshold function from a primitive functor.
+ * @brief Creates a multichannel shrink function from a primitive shrink functor.
  *
  * @code{cpp}
- * struct MyThresholdFunctor
+ * struct MyPrimitiveShrinkFunctor
  * {
  *     template <typename T, typename W>
- *     constexpr T operator(T value, W threshold);
+ *     T operator(T value, W threshold);
  * };
  *
- * auto my_shrink_function = make_shrink_function<MyThresholdFunctor>();
+ * auto my_shrink_function = make_shrink_function<MyPrimitiveShrinkFunctor>();
  *
  * cv::Mat image = ...;
  * cv::Mat thresholded_image;
@@ -220,20 +232,20 @@ void hard_threshold(
  *
  * @tparam ThresholdFunctor
  */
-template <typename ShrinkFunctor>
+template <typename PrimitiveShrinkFunctor>
 ShrinkFunction make_shrink_function()
 {
     return [](
-        cv::InputArray input,
-        cv::OutputArray output,
+        cv::InputArray array,
+        cv::OutputArray result,
         cv::Scalar threshold,
         cv::InputArray mask = cv::noArray()
     )
     {
-        internal::dispatch_on_pixel_depth<internal::Threshold, ShrinkFunctor>(
-            input.type(),
-            input,
-            output,
+        internal::dispatch_on_pixel_depth<internal::Threshold, PrimitiveShrinkFunctor>(
+            array.type(),
+            array,
+            result,
             threshold,
             mask
         );
@@ -241,7 +253,7 @@ ShrinkFunction make_shrink_function()
 }
 
 /**
- * @brief Create a multichannel threshold function from a primitive function.
+ * @brief Creates a multichannel shrink function from a primitive shrink function.
  *
  * @code{cpp}
  * template <typename T, typename W>
@@ -257,7 +269,7 @@ ShrinkFunction make_shrink_function()
  *
  * @tparam T The primitive value type.
  * @tparam W The primitive threshold type.
- * @param shrink_function The threshold function that acts on primitive types.
+ * @param[in] shrink_function The threshold function that acts on primitive types.
  */
 template <typename T, typename W = T>
 ShrinkFunction make_shrink_function(
@@ -265,17 +277,17 @@ ShrinkFunction make_shrink_function(
 )
 {
     return [&](
-        cv::InputArray input,
-        cv::OutputArray output,
+        cv::InputArray array,
+        cv::OutputArray result,
         cv::Scalar threshold,
         cv::InputArray mask
     )
     {
         internal::dispatch_on_pixel_depth<internal::WrappedThreshold, W>(
             std::make_tuple(shrink_function),
-            input.type(),
-            input,
-            output,
+            array.type(),
+            array,
+            result,
             threshold,
             mask
         );
@@ -286,7 +298,7 @@ ShrinkFunction make_shrink_function(
 //  Shrink
 //  ----------------------------------------------------------------------------
 /**
- * @brief %Shrink DWT detail coefficients using a single threshold.
+ * @brief Shrinks DWT detail coefficients using a single threshold.
  *
  * The coefficients are shrunk in place.
  *
@@ -305,7 +317,7 @@ void shrink_globally(
 );
 
 /**
- * @brief %Shrink DWT coefficients using separate thresholds for each decomposition level.
+ * @brief Shrinks DWT coefficients using separate thresholds for each decomposition level.
  *
  * The coefficients are shrunk in place.
  *
@@ -336,7 +348,7 @@ void shrink_levels(
 );
 
 /**
- * @brief %Shrink DWT coefficients using separate thresholds for each decomposition subband.
+ * @brief Shrinks DWT coefficients using separate thresholds for each decomposition subband.
  *
  * The coefficients are shrunk in place.
  *
@@ -378,7 +390,7 @@ void shrink_subbands(
 //  High Level API
 //  ============================================================================
 /**
- * @brief Base class for DWT coefficient shrinkage algorithms
+ * @brief Base class for DWT coefficient shrinkage algorithms.
  *
  * The DWT coefficients are partitioned into disjoint subsets and each subset
  * is shrunk toward zero by a shrink_function().
@@ -535,7 +547,7 @@ public:
 
     /**
      * @private
-     * @brief Uses RAII to acquire a lock and call start_partitioning() and finish_partitioning()
+     * @brief Uses RAII to acquire a lock and call start_partitioning() and finish_partitioning().
      *
      * The purpose of this class is to ensure that finish_partitioning() is called when
      * shrink() and compute_thresholds() terminates normally as well as when an
@@ -591,7 +603,7 @@ public:
      */
     Shrink() = delete;
     /**
-     * @brief Copy constructor.
+     * @brief Copy Constructor.
      */
     Shrink(const Shrink& other) :
         _partition(other._partition),
@@ -599,7 +611,7 @@ public:
         _stdev_function(other._stdev_function)
     {}
     /**
-     * @brief Move constructor.
+     * @brief Move Constructor.
      */
     Shrink(Shrink&& other) = default;
 
@@ -620,9 +632,8 @@ public:
 
     //  ------------------------------------------------------------------------
     //  Shrink
-    //  all levels
     /**
-     * @brief This is an overloaded function provided for convenience.
+     * @brief Shrinks DWT coefficients.
      *
      * @note Use this overload when the coefficient noise must be *estimated*
      *       from the coefficients.  If the noise is *known* use
@@ -647,7 +658,33 @@ public:
     }
 
     /**
-     * @brief This is an overloaded function provided for convenience.
+     * @overload
+     *
+     * @note Use this overload when the coefficient noise must be *estimated*
+     *       from the coefficients.  If the noise is *known* use
+     *       shrink(const DWT2D::Coeffs&, DWT2D::Coeffs&, const cv::Scalar&, cv::OutputArray) const
+     *       instead.
+     *
+     * This is equivalent to:
+     * @code{cpp}
+     * shrink(coeffs, shrunk_coeffs, cv::Range::all(), compute_noise_stdev(coeffs), thresholds);
+     * @endcode
+     *
+     * @param[in] coeffs The DWT coefficients.
+     * @param[out] shrunk_coeffs The shrunken DWT coefficients.
+     * @param[out] thresholds The computed thresholds.
+     */
+    void shrink(
+        const DWT2D::Coeffs& coeffs,
+        DWT2D::Coeffs& shrunk_coeffs,
+        cv::OutputArray thresholds = cv::noArray()
+    ) const
+    {
+        shrink(coeffs, shrunk_coeffs, cv::Range::all(), compute_noise_stdev(coeffs), thresholds);
+    }
+
+    /**
+     * @overload
      *
      * @note Use this overload when the coefficient noise is *known*.  If the
      *       noise must be *estimated* from the coefficients use
@@ -674,33 +711,7 @@ public:
     }
 
     /**
-     * @brief This is an overloaded function provided for convenience.
-     *
-     * @note Use this overload when the coefficient noise must be *estimated*
-     *       from the coefficients.  If the noise is *known* use
-     *       shrink(const DWT2D::Coeffs&, DWT2D::Coeffs&, const cv::Scalar&, cv::OutputArray) const
-     *       instead.
-     *
-     * This is equivalent to:
-     * @code{cpp}
-     * shrink(coeffs, shrunk_coeffs, cv::Range::all(), compute_noise_stdev(coeffs), thresholds);
-     * @endcode
-     *
-     * @param[in] coeffs The DWT coefficients.
-     * @param[in] shrunk_coeffs The shrunken DWT coefficients.
-     * @param[out] thresholds The computed thresholds.
-     */
-    void shrink(
-        const DWT2D::Coeffs& coeffs,
-        DWT2D::Coeffs& shrunk_coeffs,
-        cv::OutputArray thresholds = cv::noArray()
-    ) const
-    {
-        shrink(coeffs, shrunk_coeffs, cv::Range::all(), compute_noise_stdev(coeffs), thresholds);
-    }
-
-    /**
-     * @brief This is an overloaded function provided for convenience.
+     * @overload
      *
      * @note Use this overload when the coefficient noise is *known*.  If the
      *       noise must be *estimated* from the coefficients use
@@ -713,7 +724,7 @@ public:
      * @endcode
      *
      * @param[in] coeffs The DWT coefficients.
-     * @param[in] shrunk_coeffs The shrunken DWT coefficients.
+     * @param[out] shrunk_coeffs The shrunken DWT coefficients.
      * @param[in] stdev The standard deviation of the coefficient noise.
      * @param[out] thresholds The computed thresholds.
      */
@@ -727,9 +738,9 @@ public:
         shrink(coeffs, shrunk_coeffs, cv::Range::all(), stdev, thresholds);
     }
 
-    //  int levels
+    //  ------------------------------------------------------------------------
     /**
-     * @brief This is an overloaded function provided for convenience.
+     * @brief Shrinks DWT coefficients for a subset of levels.
      *
      * @note Use this overload when the coefficient noise must be *estimated*
      *       from the coefficients.  If the noise is *known* use
@@ -756,7 +767,35 @@ public:
     }
 
     /**
-     * @brief This is an overloaded function provided for convenience.
+     * @overload
+     *
+     * @note Use this overload when the coefficient noise must be *estimated*
+     *       from the coefficients.  If the noise is *known* use
+     *       shrink(const DWT2D::Coeffs&, DWT2D::Coeffs&, const cv::Scalar&, cv::OutputArray) const
+     *       instead.
+     *
+     * This is equivalent to:
+     * @code{cpp}
+     * shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), compute_noise_stdev(coeffs), thresholds);
+     * @endcode
+     *
+     * @param[in] coeffs The DWT coefficients.
+     * @param[out] shrunk_coeffs The shrunken DWT coefficients.
+     * @param[in] levels The subset of levels to shrink.
+     * @param[out] thresholds The computed thresholds.
+     */
+    void shrink(
+        const DWT2D::Coeffs& coeffs,
+        DWT2D::Coeffs& shrunk_coeffs,
+        int levels,
+        cv::OutputArray thresholds = cv::noArray()
+    ) const
+    {
+        shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), compute_noise_stdev(coeffs), thresholds);
+    }
+
+    /**
+     * @overload
      *
      * @note Use this overload when the coefficient noise is *known*.  If the
      *       noise must be *estimated* from the coefficients use
@@ -785,35 +824,7 @@ public:
     }
 
     /**
-     * @brief This is an overloaded function provided for convenience.
-     *
-     * @note Use this overload when the coefficient noise must be *estimated*
-     *       from the coefficients.  If the noise is *known* use
-     *       shrink(const DWT2D::Coeffs&, DWT2D::Coeffs&, const cv::Scalar&, cv::OutputArray) const
-     *       instead.
-     *
-     * This is equivalent to:
-     * @code{cpp}
-     * shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), compute_noise_stdev(coeffs), thresholds);
-     * @endcode
-     *
-     * @param[in] coeffs The DWT coefficients.
-     * @param[in] shrunk_coeffs The shrunken DWT coefficients.
-     * @param[in] levels The subset of levels to shrink.
-     * @param[out] thresholds The computed thresholds.
-     */
-    void shrink(
-        const DWT2D::Coeffs& coeffs,
-        DWT2D::Coeffs& shrunk_coeffs,
-        int levels,
-        cv::OutputArray thresholds = cv::noArray()
-    ) const
-    {
-        shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), compute_noise_stdev(coeffs), thresholds);
-    }
-
-    /**
-     * @brief This is an overloaded function provided for convenience.
+     * @overload
      *
      * @note Use this overload when the coefficient noise is *known*.  If the
      *       noise must be *estimated* from the coefficients use
@@ -826,7 +837,7 @@ public:
      * @endcode
      *
      * @param[in] coeffs The DWT coefficients.
-     * @param[in] shrunk_coeffs The shrunken DWT coefficients.
+     * @param[out] shrunk_coeffs The shrunken DWT coefficients.
      * @param[in] levels The subset of levels to shrink.
      * @param[in] stdev The standard deviation of the coefficient noise.
      * @param[out] thresholds The computed thresholds.
@@ -842,9 +853,9 @@ public:
         shrink(coeffs, shrunk_coeffs, cv::Range(0, levels), stdev, thresholds);
     }
 
-    //  cv::Range levels
+    //  ------------------------------------------------------------------------
     /**
-     * @brief This is an overloaded function provided for convenience.
+     * @overload
      *
      * @note Use this overload when the coefficient noise must be *estimated*
      *       from the coefficients.  If the noise is *known* use
@@ -871,7 +882,35 @@ public:
     }
 
     /**
-     * @brief %Shrink DWT coefficients.
+     * @overload
+     *
+     * @note Use this overload when the coefficient noise must be *estimated*
+     *       from the coefficients.  If the noise is *known* use
+     *       shrink(const DWT2D::Coeffs&, const DWT2D::Coeffs&, const cv::Range&, const cv::Scalar&, cv::OutputArray) const
+     *       instead.
+     *
+     * This is equivalent to:
+     * @code{cpp}
+     * shrink(coeffs, shrunk_coeffs, levels, compute_noise_stdev(coeffs), thresholds);
+     * @endcode
+     *
+     * @param[in] coeffs The DWT coefficients.
+     * @param[out] shrunk_coeffs The shrunken DWT coefficients.
+     * @param[in] levels The subset of levels to shrink.
+     * @param[out] thresholds The computed thresholds.
+     */
+    void shrink(
+        const DWT2D::Coeffs& coeffs,
+        DWT2D::Coeffs& shrunk_coeffs,
+        const cv::Range& levels,
+        cv::OutputArray thresholds = cv::noArray()
+    ) const
+    {
+        shrink(coeffs, shrunk_coeffs, levels, compute_noise_stdev(coeffs), thresholds);
+    }
+
+    /**
+     * @overload
      *
      * @note Use this overload when the coefficient noise must be *estimated*
      *       from the coefficients.  If the noise is *known* use
@@ -898,35 +937,7 @@ public:
     }
 
     /**
-     * @brief This is an overloaded function provided for convenience.
-     *
-     * @note Use this overload when the coefficient noise must be *estimated*
-     *       from the coefficients.  If the noise is *known* use
-     *       shrink(const DWT2D::Coeffs&, const DWT2D::Coeffs&, const cv::Range&, const cv::Scalar&, cv::OutputArray) const
-     *       instead.
-     *
-     * This is equivalent to:
-     * @code{cpp}
-     * shrink(coeffs, shrunk_coeffs, levels, compute_noise_stdev(coeffs), thresholds);
-     * @endcode
-     *
-     * @param[in] coeffs The DWT coefficients.
-     * @param[in] shrunk_coeffs The shrunken DWT coefficients.
-     * @param[in] levels The subset of levels to shrink.
-     * @param[out] thresholds The computed thresholds.
-     */
-    void shrink(
-        const DWT2D::Coeffs& coeffs,
-        DWT2D::Coeffs& shrunk_coeffs,
-        const cv::Range& levels,
-        cv::OutputArray thresholds = cv::noArray()
-    ) const
-    {
-        shrink(coeffs, shrunk_coeffs, levels, compute_noise_stdev(coeffs), thresholds);
-    }
-
-    /**
-     * @brief %Shrink DWT coefficients.
+     * @overload
      *
      * @note Use this overload when the coefficient noise is *known*.  If the
      *       noise must be *estimated* from the coefficients use
@@ -934,7 +945,7 @@ public:
      *       instead.
      *
      * @param[in] coeffs The DWT coefficients.
-     * @param[in] shrunk_coeffs The shrunken DWT coefficients.
+     * @param[out] shrunk_coeffs The shrunken DWT coefficients.
      * @param[in] levels The subset of levels to shrink.
      * @param[in] stdev The standard deviation of the coefficient noise.
      * @param[out] thresholds The computed thresholds.
@@ -948,100 +959,20 @@ public:
     ) const;
 
     //  ------------------------------------------------------------------------
+    //  Functor Interface
+    /**
+     * @brief Alias of shrink().
+     */
+    [[nodiscard]]
+    auto operator()(auto&&... args) const
+    {
+        return shrink(std::forward<decltype(args)>(args)...);
+    }
+
+    //  ------------------------------------------------------------------------
     //  Compute Thresholds
     /**
-     * @brief This is an overloaded function provided for convenience.
-     *
-     * @note Use this overload when the coefficient noise must be *estimated*
-     *       from the coefficients.  If the noise is *known* use
-     *       compute_thresholds(const DWT2D::Coeffs&, const cv::Scalar&) const
-     *       instead.
-     *
-     * This is equivalent to:
-     * @code{cpp}
-     * compute_thresholds(coeffs, cv::Range::all(), compute_noise_stdev(coeffs));
-     * @endcode
-     *
-     * @param coeffs The DWT coefficients.
-     */
-    cv::Mat4d compute_thresholds(const DWT2D::Coeffs& coeffs) const
-    {
-        return compute_thresholds(coeffs, cv::Range::all(), compute_noise_stdev(coeffs));
-    }
-
-    /**
-     * @brief This is an overloaded function provided for convenience.
-     *
-     * @note Use this overload when the coefficient noise is *known*.  If the
-     *       noise must be *estimated* from the coefficients use
-     *       compute_thresholds(const DWT2D::Coeffs&) const
-     *       instead.
-     *
-     * This is equivalent to:
-     * @code{cpp}
-     * compute_thresholds(coeffs, cv::Range::all(), stdev);
-     * @endcode
-     *
-     * @param coeffs The DWT coefficients.
-     * @param stdev The standard deviation of the coefficient noise.
-     */
-    cv::Mat4d compute_thresholds(
-        const DWT2D::Coeffs& coeffs,
-        const cv::Scalar& stdev
-    ) const
-    {
-        return compute_thresholds(coeffs, cv::Range::all(), stdev);
-    }
-
-    /**
-     * @brief This is an overloaded function provided for convenience.
-     *
-     * @note Use this overload when the coefficient noise must be *estimated*
-     *       from the coefficients.  If the noise is *known* use
-     *       compute_thresholds(const DWT2D::Coeffs&, int, const cv::Scalar&) const
-     *       instead.
-     *
-     * This is equivalent to:
-     * @code{cpp}
-     * compute_thresholds(coeffs, cv::Range(0, levels), compute_noise_stdev(coeffs));
-     * @endcode
-     *
-     * @param coeffs The DWT coefficients.
-     * @param levels The subset of levels to compute thresholds for.
-     */
-    cv::Mat4d compute_thresholds(const DWT2D::Coeffs& coeffs, int levels) const
-    {
-        return compute_thresholds(coeffs, cv::Range(0, levels), compute_noise_stdev(coeffs));
-    }
-
-    /**
-     * @brief This is an overloaded function provided for convenience.
-     *
-     * @note Use this overload when the coefficient noise is *known*.  If the
-     *       noise must be *estimated* from the coefficients use
-     *       compute_thresholds(const DWT2D::Coeffs&, int) const
-     *       instead.
-     *
-     * This is equivalent to:
-     * @code{cpp}
-     * compute_thresholds(coeffs, cv::Range(0, levels), stdev);
-     * @endcode
-     *
-     * @param coeffs The DWT coefficients.
-     * @param levels The subset of levels to compute thresholds for.
-     * @param stdev The standard deviation of the coefficient noise.
-     */
-    cv::Mat4d compute_thresholds(
-        const DWT2D::Coeffs& coeffs,
-        int levels,
-        const cv::Scalar& stdev
-    ) const
-    {
-        return compute_thresholds(coeffs, cv::Range(0, levels), stdev);
-    }
-
-    /**
-     * @brief This is an overloaded function provided for convenience.
+     * @brief Computes the threshold for each of the partitioned subsets.
      *
      * @note Use this overload when the coefficient noise must be *estimated*
      *       from the coefficients.  If the noise is *known* use
@@ -1053,8 +984,8 @@ public:
      * compute_thresholds(coeffs, levels, compute_noise_stdev(coeffs));
      * @endcode
      *
-     * @param coeffs The DWT coefficients.
-     * @param levels The subset of levels to compute thresholds for.
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] levels The subset of levels to compute thresholds for.
      */
     cv::Mat4d compute_thresholds(const DWT2D::Coeffs& coeffs, const cv::Range& levels) const
     {
@@ -1062,16 +993,16 @@ public:
     }
 
     /**
-     * @brief Computes the threshold for each of the partitioned subsets
+     * @overload
      *
      * @note Use this overload when the coefficient noise is *known*.  If the
      *       noise must be *estimated* from the coefficients use
      *       compute_thresholds(const DWT2D::Coeffs&, const cv::Range&) const
      *       instead.
      *
-     * @param coeffs The DWT coefficients.
-     * @param levels The subset of levels to compute thresholds for.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] levels The subset of levels to compute thresholds for.
+     * @param[in] stdev The standard deviation of the coefficient noise.
      */
     cv::Mat4d compute_thresholds(
         const DWT2D::Coeffs& coeffs,
@@ -1079,38 +1010,152 @@ public:
         const cv::Scalar& stdev
     ) const;
 
-    //  ------------------------------------------------------------------------
-    //  Expand Thresholds
     /**
-     * @brief Returns a matrix of thresholds corresponding to the given coefficients
+     * @overload
+     *
+     * @note Use this overload when the coefficient noise must be *estimated*
+     *       from the coefficients.  If the noise is *known* use
+     *       compute_thresholds(const DWT2D::Coeffs&, int, const cv::Scalar&) const
+     *       instead.
      *
      * This is equivalent to:
      * @code{cpp}
-     * expand_thresholds(coeffs, thresholds, cv::Range::all());
+     * compute_thresholds(coeffs, cv::Range(0, levels), compute_noise_stdev(coeffs));
      * @endcode
      *
-     * @param coeffs
-     * @param subset_thresholds
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] levels The subset of levels to compute thresholds for.
      */
-    cv::Mat expand_thresholds(
-        const DWT2D::Coeffs& coeffs,
-        const cv::Mat4d& subset_thresholds
-    ) const
+    cv::Mat4d compute_thresholds(const DWT2D::Coeffs& coeffs, int levels) const
     {
-        return expand_thresholds(coeffs, subset_thresholds, cv::Range::all());
+        return compute_thresholds(coeffs, cv::Range(0, levels), compute_noise_stdev(coeffs));
     }
 
     /**
-     * @brief Returns a matrix of thresholds corresponding to the given coefficients
+     * @overload
+     *
+     * @note Use this overload when the coefficient noise is *known*.  If the
+     *       noise must be *estimated* from the coefficients use
+     *       compute_thresholds(const DWT2D::Coeffs&, int) const
+     *       instead.
+     *
+     * This is equivalent to:
+     * @code{cpp}
+     * compute_thresholds(coeffs, cv::Range(0, levels), stdev);
+     * @endcode
+     *
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] levels The subset of levels to compute thresholds for.
+     * @param[in] stdev The standard deviation of the coefficient noise.
+     */
+    cv::Mat4d compute_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        int levels,
+        const cv::Scalar& stdev
+    ) const
+    {
+        return compute_thresholds(coeffs, cv::Range(0, levels), stdev);
+    }
+
+    /**
+     * @overload
+     *
+     * @note Use this overload when the coefficient noise must be *estimated*
+     *       from the coefficients.  If the noise is *known* use
+     *       compute_thresholds(const DWT2D::Coeffs&, const cv::Scalar&) const
+     *       instead.
+     *
+     * This is equivalent to:
+     * @code{cpp}
+     * compute_thresholds(coeffs, cv::Range::all(), compute_noise_stdev(coeffs));
+     * @endcode
+     *
+     * @param[in] coeffs The DWT coefficients.
+     */
+    cv::Mat4d compute_thresholds(const DWT2D::Coeffs& coeffs) const
+    {
+        return compute_thresholds(coeffs, cv::Range::all(), compute_noise_stdev(coeffs));
+    }
+
+    /**
+     * @overload
+     *
+     * @note Use this overload when the coefficient noise is *known*.  If the
+     *       noise must be *estimated* from the coefficients use
+     *       compute_thresholds(const DWT2D::Coeffs&) const
+     *       instead.
+     *
+     * This is equivalent to:
+     * @code{cpp}
+     * compute_thresholds(coeffs, cv::Range::all(), stdev);
+     * @endcode
+     *
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] stdev The standard deviation of the coefficient noise.
+     */
+    cv::Mat4d compute_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        const cv::Scalar& stdev
+    ) const
+    {
+        return compute_thresholds(coeffs, cv::Range::all(), stdev);
+    }
+
+    //  ------------------------------------------------------------------------
+    //  Expand Thresholds
+    /**
+     * @brief Expands the subset thresholds to a threshold matrix of the same size as the given coefficients.
+     *
+     * This function expands the matrix of subset thresholds to a matrix that
+     * is the same size as `coeffs` where each entry is the threshold for
+     * the corresponding coefficient.
+     *
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] subset_thresholds The thresholds returned by compute_threshold().
+     * @param[in] levels The subset of levels to compute thresholds for.
+     */
+    cv::Mat expand_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        const cv::Mat4d& subset_thresholds,
+        const cv::Range& levels
+    ) const
+    {
+        cv::Mat expanded_thresholds;
+        expand_thresholds(coeffs, subset_thresholds, expanded_thresholds, levels);
+
+        return expanded_thresholds;
+    }
+
+    /**
+     * @overload
+     *
+     * This function expands the matrix of subset thresholds to a matrix that
+     * is the same size as `coeffs` where each entry is the threshold for
+     * the corresponding coefficient.
+     *
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] subset_thresholds The thresholds returned by compute_threshold().
+     * @param[out] expanded_thresholds
+     * @param[in] levels The subset of levels to compute thresholds for.
+     */
+    void expand_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        const cv::Mat4d& subset_thresholds,
+        cv::OutputArray expanded_thresholds,
+        const cv::Range& levels
+    ) const;
+
+    /**
+     * @overload
      *
      * This is equivalent to:
      * @code{cpp}
      * expand_thresholds(coeffs, thresholds, cv::Range(0, levels));
      * @endcode
      *
-     * @param coeffs
-     * @param subset_thresholds
-     * @param levels
+     * @param[in] coeffs
+     * @param[in] subset_thresholds
+     * @param[in] levels
      */
     cv::Mat expand_thresholds(
         const DWT2D::Coeffs& coeffs,
@@ -1122,21 +1167,67 @@ public:
     }
 
     /**
-     * @brief Returns a matrix of thresholds corresponding to the given coefficients
+     * @overload
      *
-     * This function expands the matrix of subset thresholds to a matrix that
-     * is the same size as `coeffs` where each entry is the threshold for
-     * the corresponding coefficient.
+     * This is equivalent to:
+     * @code{cpp}
+     * expand_thresholds(coeffs, thresholds, cv::Range(0, levels));
+     * @endcode
      *
-     * @param coeffs The DWT coefficients.
-     * @param subset_thresholds The thresholds returned by compute_threshold().
-     * @param levels The subset of levels to compute thresholds for.
+     * @param[in] coeffs
+     * @param[in] subset_thresholds
+     * @param[out] expanded_thresholds
+     * @param[in] levels
+     */
+    void expand_thresholds(
+        const DWT2D::Coeffs& coeffs,
+        cv::OutputArray expanded_thresholds,
+        const cv::Mat4d& subset_thresholds,
+        int levels
+    ) const
+    {
+        expand_thresholds(coeffs, subset_thresholds, expanded_thresholds, cv::Range(0, levels));
+    }
+
+    /**
+     * @overload
+     *
+     * This is equivalent to:
+     * @code{cpp}
+     * expand_thresholds(coeffs, thresholds, cv::Range::all());
+     * @endcode
+     *
+     * @param[in] coeffs
+     * @param[in] subset_thresholds
      */
     cv::Mat expand_thresholds(
         const DWT2D::Coeffs& coeffs,
+        const cv::Mat4d& subset_thresholds
+    ) const
+    {
+        return expand_thresholds(coeffs, subset_thresholds, cv::Range::all());
+    }
+
+    /**
+     * @overload
+     *
+     * This is equivalent to:
+     * @code{cpp}
+     * expand_thresholds(coeffs, thresholds, cv::Range::all());
+     * @endcode
+     *
+     * @param[in] coeffs
+     * @param[in] subset_thresholds
+     * @param[out] expanded_thresholds
+     */
+    void expand_thresholds(
+        const DWT2D::Coeffs& coeffs,
         const cv::Mat4d& subset_thresholds,
-        const cv::Range& levels
-    ) const;
+        cv::OutputArray expanded_thresholds
+    ) const
+    {
+        expand_thresholds(coeffs, subset_thresholds, expanded_thresholds, cv::Range::all());
+    }
 
     //  ------------------------------------------------------------------------
     //  Compute Standard Deviation
@@ -1154,53 +1245,20 @@ public:
      * should change the standard deviation estimator by passing a different
      * estimator to this class's constructor.
      *
-     * @param coeffs The entire set of DWT coefficients.
+     * @param[in] coeffs The entire set of DWT coefficients.
      */
     virtual cv::Scalar compute_noise_stdev(const DWT2D::Coeffs& coeffs) const
     {
         return compute_stdev(coeffs.diagonal_detail());
     }
 
-    //  ------------------------------------------------------------------------
-    //  Functor Interface
-    /**
-     * @brief Alias of shrink()
-     *
-     * @param[in] coeffs The DWT coefficients.
-     * @param[in] args The arguments forwarded to shrink().
-     */
-    [[nodiscard]]
-    DWT2D::Coeffs operator()(
-        const DWT2D::Coeffs& coeffs,
-        auto&&... args
-    ) const
-    {
-        return shrink(coeffs, std::forward<decltype(args)>(args)...);
-    }
-
-    /**
-     * @brief Alias of shrink()
-     *
-     * @param[in] coeffs The DWT coefficients.
-     * @param[out] shrunk_coeffs The shrunken DWT coefficients
-     * @param[in] args The arguments forwarded to shrink().
-     */
-    void operator()(
-        const DWT2D::Coeffs& coeffs,
-        DWT2D::Coeffs& shrunk_coeffs,
-        auto&&... args
-    ) const
-    {
-        shrink(coeffs, shrunk_coeffs, std::forward<decltype(args)>(args)...);
-    }
-
 protected:
     /**
-     * @brief Construct a new Shrink object
+     * @brief Construct a new Shrink object.
      *
-     * @param partition The scheme used to partition the coefficients.
-     * @param shrink_function The function used to shrink coefficients.
-     * @param stdev_function The function used to compute an estimate of the
+     * @param[in] partition The scheme used to partition the coefficients.
+     * @param[in] shrink_function The function used to shrink coefficients.
+     * @param[in] stdev_function The function used to compute an estimate of the
      *                       standard deviation of coefficient noise.
      */
     Shrink(
@@ -1214,15 +1272,15 @@ protected:
     {}
 
     /**
-     * @brief This is an overloaded constructor provided for your convenience.
+     * @overload
      *
      * This is equivalent to:
      * @code{cpp}
      * Shrink(partition, shrink_function, mad_stdev)
      * @endcode
      *
-     * @param partition The scheme used to partition the coefficients.
-     * @param shrink_function The function used to shrink coefficients.
+     * @param[in] partition The scheme used to partition the coefficients.
+     * @param[in] shrink_function The function used to shrink coefficients.
      */
     Shrink(
         Shrink::Partition partition,
@@ -1236,7 +1294,7 @@ protected:
     {}
 
     /**
-     * @brief This is an overloaded constructor provided for your convenience.
+     * @overload
      *
      * This is equivalent to:
      * @code{cpp}
@@ -1245,9 +1303,9 @@ protected:
      *
      * @tparam T
      * @tparam W
-     * @param partition The scheme used to partition the coefficients.
-     * @param shrink_function The function used to shrink coefficients.
-     * @param stdev_function The function used to compute an estimate of the
+     * @param[in] partition The scheme used to partition the coefficients.
+     * @param[in] shrink_function The function used to shrink coefficients.
+     * @param[in] stdev_function The function used to compute an estimate of the
      *                       standard deviation of coefficient noise.
      */
     template <typename T, typename W>
@@ -1264,7 +1322,7 @@ protected:
     {}
 
     /**
-     * @brief This is an overloaded constructor provided for your convenience.
+     * @overload
      *
      * This is equivalent to:
      * @code{cpp}
@@ -1273,8 +1331,8 @@ protected:
      *
      * @tparam T
      * @tparam W
-     * @param partition The scheme used to partition the coefficients.
-     * @param shrink_function The function used to shrink coefficients.
+     * @param[in] partition The scheme used to partition the coefficients.
+     * @param[in] shrink_function The function used to shrink coefficients.
      */
     template <typename T, typename W>
     Shrink(
@@ -1291,7 +1349,7 @@ protected:
     //  ------------------------------------------------------------------------
     //  Subclass API
     /**
-     * @brief Prepare for a call to shrink() or compute_thresholds()
+     * @brief Prepare for a call to shrink() or compute_thresholds().
      *
      * Most subclasses do **not** need to override this function.
      *
@@ -1314,9 +1372,9 @@ protected:
      *
      * @see finish_partitioning()
      *
-     * @param coeffs The DWT coefficients.
-     * @param levels The subset of levels to compute thresholds for.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] levels The subset of levels to compute thresholds for.
+     * @param[in] stdev The standard deviation of the coefficient noise.
      */
     virtual void start_partitioning(
         const DWT2D::Coeffs& coeffs,
@@ -1326,7 +1384,7 @@ protected:
     {}
 
     /**
-     * @brief Finish a call to shrink() or compute_thresholds()
+     * @brief Finish a call to shrink() or compute_thresholds().
      *
      * Cleanup temporary data members created in start_partitioning().  This function
      * is guaranteed to be called by shrink() and compute_thresholds()
@@ -1355,12 +1413,12 @@ protected:
      *
      * @see start_partitioning()
      *
-     * @param coeffs The DWT coefficients.
-     * @param levels The subset of levels to compute thresholds for.
-     * @param stdev The standard deviation of the coefficient noise.
-     * @param shrunk_coeffs The shrunken DWT coefficients.  This is empty when
+     * @param[in] coeffs The DWT coefficients.
+     * @param[in] levels The subset of levels to compute thresholds for.
+     * @param[in] stdev The standard deviation of the coefficient noise.
+     * @param[in] shrunk_coeffs The shrunken DWT coefficients.  This is empty when
      *                      called from compute_thresholds().
-     * @param thresholds The computed thresholds.
+     * @param[in] thresholds The computed thresholds.
      */
     virtual void finish_partitioning(
         const DWT2D::Coeffs& coeffs,
@@ -1383,9 +1441,9 @@ protected:
      *
      * Subclasses do not typically need to call this function.
      *
-     * @param coeffs
-     * @param levels
-     * @param stdev
+     * @param[in] coeffs
+     * @param[in] levels
+     * @param[in] stdev
      */
     cv::Mat4d compute_partition_thresholds(
         const DWT2D::Coeffs& coeffs,
@@ -1399,9 +1457,9 @@ protected:
      * Subclasses that that support a single threshold for all coefficients
      * (i.e. set partition to Shrink::GLOBALLY) **must** override this function.
      *
-     * @param coeffs The entire set of DWT coefficients.
-     * @param levels The subset of levels over which to compute the threshold.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @param[in] coeffs The entire set of DWT coefficients.
+     * @param[in] levels The subset of levels over which to compute the threshold.
+     * @param[in] stdev The standard deviation of the coefficient noise.
      */
     virtual cv::Scalar compute_global_threshold(
         const DWT2D::Coeffs& coeffs,
@@ -1412,12 +1470,9 @@ protected:
     /**
      * @brief Computes the threshold for a single level subset of coefficients.
      *
-     * Subclasses that support separate thresholds for each level (i.e. set
-     * partition to Shrink::LEVELS) **must** override this function.
-     *
-     * @param detail_coeffs The level detail coefficients.
-     * @param level The decomposition level of the given coefficients.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @param[in] detail_coeffs The level detail coefficients.
+     * @param[in] level The decomposition level of the given coefficients.
+     * @param[in] stdev The standard deviation of the coefficient noise.
      */
     virtual cv::Scalar compute_level_threshold(
         const cv::Mat& detail_coeffs,
@@ -1428,13 +1483,10 @@ protected:
     /**
      * @brief Computes the threshold for a single subband subset of coefficients.
      *
-     * Subclasses that support separate thresholds for each subband (i.e. set
-     * partition to Shrink::SUBBANDS) **must** override this function.
-     *
-     * @param detail_coeffs The subband detail coefficients.
-     * @param level The decomposition level of the given coefficients.
-     * @param subband The subband of the coefficients.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @param[in] detail_coeffs The subband detail coefficients.
+     * @param[in] level The decomposition level of the given coefficients.
+     * @param[in] subband The subband of the coefficients.
+     * @param[in] stdev The standard deviation of the coefficient noise.
      */
     virtual cv::Scalar compute_subband_threshold(
         const cv::Mat& detail_coeffs,
@@ -1444,14 +1496,11 @@ protected:
     ) const;
 
     /**
-     * @brief Computes the thresholds for a implementation defined partition.
+     * @brief Computes the thresholds for an implementation defined partition.
      *
-     * Subclasses that use a custom partitioning scheme (i.e. set partition to
-     * Shrink::SUBSETS) **must** override this function.
-     *
-     * @param detail_coeffs The entire set of coefficients.
-     * @param levels The subset of levels over which to compute the threshold.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @param[in] coeffs The entire set of coefficients.
+     * @param[in] levels The subset of levels over which to compute the threshold.
+     * @param[in] stdev The standard deviation of the coefficient noise.
      */
     virtual cv::Mat4d compute_subset_thresholds(
         const DWT2D::Coeffs& coeffs,
@@ -1459,15 +1508,23 @@ protected:
         const cv::Scalar& stdev
     ) const;
 
+    /**
+     * @brief Expands the thresholds for an implementation defined partition.
+     *
+     * @param[in] coeffs The entire set of coefficients.
+     * @param[in] subset_thresholds The subset thresholds.
+     * @param[in] levels The subset of levels over which to compute the threshold.
+     * @param[out] expanded_thresholds The expanded thresholds.
+     */
     virtual void expand_subset_thresholds(
         const DWT2D::Coeffs& coeffs,
-        const cv::Mat4d& thresholds,
+        const cv::Mat4d& subset_thresholds,
         const cv::Range& levels,
         cv::Mat& expanded_thresholds
     ) const;
 
     /**
-     * @brief %Shrink the coefficients using a implementation defined partition.
+     * @brief Shrinks the coefficients using a implementation defined partition.
      *
      * Subclasses that use a custom partitioning scheme (i.e. set partition to
      * Shrink::SUBSETS) **must** override this function.
@@ -1475,39 +1532,25 @@ protected:
      * Implentations should partition the coefficients into one or more subsets
      * and call shrink_coeffs() for each subset in the partition.
      *
-     * @param coeffs The entire set of coefficients.
-     * @param thresholds The thresholds returned by compute_subbset_thresholds().
-     * @param levels The subset of levels to shrink.
+     * @param[in] coeffs The entire set of coefficients.
+     * @param[in] subset_thresholds The thresholds returned by compute_subbset_thresholds().
+     * @param[in] levels The subset of levels to shrink.
      */
     virtual void shrink_subsets(
         DWT2D::Coeffs& coeffs,
-        const cv::Mat4d& thresholds,
+        const cv::Mat4d& subset_thresholds,
         const cv::Range& levels
     ) const;
 
-    /**
-     * @brief Apply the shrink_function() to the given coefficients inplace
-     *
-     * @param coeffs[inout] The coefficients.
-     * @param threshold[in] The threshold parameter.
-     * @param mask[in] Indicates which coefficients to apply the threshold function to.
-     */
-    void shrink_coeffs(
-        cv::InputOutputArray coeffs,
-        const cv::Scalar& threshold,
-        cv::InputArray mask = cv::noArray()
-    ) const
-    {
-        _shrink_function(coeffs, coeffs, threshold, mask);
-    }
+
 
     /**
-     * @brief Apply the shrink_function() to the given coefficients
+     * @brief Apply the shrink_function() to the given coefficients.
      *
-     * @param coeffs[in] The coefficients.
-     * @param thresholded_coeffs[out] The shrunken coefficients.
-     * @param threshold[in] The threshold parameter.
-     * @param mask[in] Indicates which coefficients to apply the threshold function to.
+     * @param[in] coeffs The coefficients.
+     * @param[out] thresholded_coeffs The shrunken coefficients.
+     * @param[in] threshold The threshold parameter.
+     * @param[in] mask Indicates which coefficients to apply the threshold function to.
      */
     void shrink_coeffs(
         cv::InputArray coeffs,
@@ -1520,26 +1563,55 @@ protected:
     }
 
     /**
+     * @overload
+     *
+     * This is an inplace version of shrink_coeffs().
+     *
+     * @param[inout] coeffs The coefficients.
+     * @param[in] threshold The threshold parameter.
+     * @param[in] mask Indicates which coefficients to apply the threshold function to.
+     */
+    void shrink_coeffs(
+        cv::InputOutputArray coeffs,
+        const cv::Scalar& threshold,
+        cv::InputArray mask = cv::noArray()
+    ) const
+    {
+        _shrink_function(coeffs, coeffs, threshold, mask);
+    }
+
+    /**
      * @brief Apply the stdev_function() to given array.
      *
-     * @param array
+     * @param[in] array
      */
     cv::Scalar compute_stdev(cv::InputArray array) const
     {
         return _stdev_function(array);
     }
 
+    /**
+     * @brief Sets the shrink function.
+     *
+     * @param[in] shrink_function
+     */
     void set_shrink_function(ShrinkFunction shrink_function) { _shrink_function = shrink_function; }
+
+    /**
+     * @brief Set the standard deviation function.
+     *
+     * @param[in] stdev_function
+     */
     void set_stdev_function(StdDevFunction stdev_function) { _stdev_function = stdev_function; }
 
     //  ------------------------------------------------------------------------
     //  Helpers
     /**
-     * @brief Call compute_level_threshold() for each level subset.
+     * @brief Calls compute_level_threshold() for each level subset.
      *
-     * @param coeffs The entire set of DWT coefficients.
-     * @param levels The subset of levels to compute thresholds for.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @param[in] coeffs The entire set of DWT coefficients.
+     * @param[in] levels The subset of levels to compute thresholds for.
+     * @param[in] stdev The standard deviation of the coefficient noise.
      */
     cv::Mat4d compute_level_thresholds(
         const DWT2D::Coeffs& coeffs,
@@ -1548,11 +1620,11 @@ protected:
     ) const;
 
     /**
-     * @brief Call compute_subband_threshold() for each subband subset.
+     * @brief Calls compute_subband_threshold() for each subband subset.
      *
-     * @param coeffs The entire set of DWT coefficients.
-     * @param levels The subset of levels to compute thresholds for.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @param[in] coeffs The entire set of DWT coefficients.
+     * @param[in] levels The subset of levels to compute thresholds for.
+     * @param[in] stdev The standard deviation of the coefficient noise.
      */
     cv::Mat4d compute_subband_thresholds(
         const DWT2D::Coeffs& coeffs,

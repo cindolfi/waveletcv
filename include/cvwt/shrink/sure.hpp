@@ -43,6 +43,9 @@ namespace cvwt
 class SureShrink : public Shrink
 {
 public:
+    /**
+     * @brief The variant of the SureShrink algorithm.
+     */
     enum Variant {
         /** Always use the threshold that minimizes the SURE risk */
         STRICT,
@@ -50,6 +53,9 @@ public:
         HYBRID,
     };
 
+    /**
+     * @brief The optimizer used to compute thresholds.
+     */
     enum Optimizer {
         /** Use BRUTE_FORCE or AUTO_OPTIMIZER depending on the size of the coefficient subset */
         AUTO,
@@ -69,6 +75,9 @@ public:
         BRUTE_FORCE,
     };
 
+    /**
+     * @brief The conditions that define optimizer convergence.
+     */
     struct OptimizerStopConditions
     {
         /** The relative change of the threshold. */
@@ -154,14 +163,14 @@ public:
     {}
 
     /**
-     * @brief This is an overloaded constructor provided for convenience.
+     * @overload
      *
      * Equiqualent to:
      * @code{cpp}
      * SureShrink(Shrink::SUBBANDS, variant, SureShrink::AUTO)
      * @endcode
      *
-     * @param variant The variant of the algorithm.
+     * @param[in] variant The variant of the algorithm.
      */
     SureShrink(SureShrink::Variant variant) :
         SureShrink(
@@ -172,14 +181,14 @@ public:
     {}
 
     /**
-     * @brief This is an overloaded constructor provided for convenience.
+     * @overload
      *
      * Equiqualent to:
      * @code{cpp}
      * SureShrink(partition, SureShrink::HYBRID, SureShrink::AUTO)
      * @endcode
      *
-     * @param partition
+     * @param[in] partition
      */
     SureShrink(Shrink::Partition partition) :
         SureShrink(
@@ -190,15 +199,15 @@ public:
     {}
 
     /**
-     * @brief This is an overloaded constructor provided for convenience.
+     * @overload
      *
      * Equiqualent to:
      * @code{cpp}
      * SureShrink(partition, variant, SureShrink::AUTO)
      * @endcode
      *
-     * @param partition
-     * @param variant
+     * @param[in] partition
+     * @param[in] variant
      */
     SureShrink(Shrink::Partition partition, SureShrink::Variant variant) :
         SureShrink(
@@ -211,9 +220,9 @@ public:
     /**
      * @brief Construct a SureShrink object.
      *
-     * @param partition How the coeffcients are partitioned.
-     * @param variant The variant of the algorithm to use.
-     * @param optimizer The optimization algorithm used to compute the thresholds.
+     * @param[in] partition How the coefficients are partitioned.
+     * @param[in] variant The variant of the algorithm to use.
+     * @param[in] optimizer The optimization algorithm used to compute the thresholds.
      */
     SureShrink(
         Shrink::Partition partition,
@@ -232,10 +241,10 @@ public:
     /**
      * @brief Construct a SureShrink object with specified optimizer stopping conditions.
      *
-     * @param partition How the coeffcients are partitioned.
-     * @param variant The variant of the algorithm to use.
-     * @param optimizer The optimization algorithm used to compute the thresholds.
-     * @param stop_conditions The conditions used to determine optimizer convergence.
+     * @param[in] partition How the coefficients are partitioned.
+     * @param[in] variant The variant of the algorithm to use.
+     * @param[in] optimizer The optimization algorithm used to compute the thresholds.
+     * @param[in] stop_conditions The conditions used to determine optimizer convergence.
      */
     SureShrink(
         Shrink::Partition partition,
@@ -254,11 +263,11 @@ public:
     {}
 
     /**
-     * @brief Copy constructor.
+     * @brief Copy Constructor.
      */
     SureShrink(const SureShrink& other) = default;
     /**
-     * @brief Move constructor.
+     * @brief Move Constructor.
      */
     SureShrink(SureShrink&& other) = default;
 
@@ -278,12 +287,11 @@ public:
      */
     void warn_on_timeout() { _stop_conditions.timeout_is_error = false; }
     /**
-     * @brief Return true if an exception is thrown when the optimizer runs for the maximum allowed time.
+     * @brief Returns true if an exception is thrown when the optimizer runs for the maximum allowed time.
      */
     bool is_timeout_an_error() { return _stop_conditions.timeout_is_error; }
 
     /**
-     *
      * @brief Throw an exception when the optimizer performs the maximum number of allowed evaluations.
      */
     void fail_on_max_evaluations() { _stop_conditions.max_evals_is_error = true; }
@@ -292,12 +300,12 @@ public:
      */
     void warn_on_max_evaluations() { _stop_conditions.max_evals_is_error = false; }
     /**
-     * @brief Return true if an exception is thrown when the optimizer performs the maximum number of allowed evaluations.
+     * @brief Returns true if an exception is thrown when the optimizer performs the maximum number of allowed evaluations.
      */
     bool is_max_evaluations_reached_an_error() const { return _stop_conditions.max_evals_is_error; }
 
     /**
-     * @brief Compute the SureShrink algorithm threshold.
+     * @brief Computes the SureShrink algorithm threshold.
      *
      * For a single channel with \f$\sigma = 1\f$, the SURE threshold is defined by
      * \f{equation}{
@@ -341,9 +349,9 @@ public:
      *
      * @see compute_universal_threshold()
      *
-     * @param detail_coeffs The detail coefficients.
-     * @param stdev The standard deviations of each of the detail coefficients channels.
-     * @param mask Indicates which coefficients are used to compute the
+     * @param[in] detail_coeffs The detail coefficients.
+     * @param[in] stdev The standard deviations of each of the detail coefficients channels.
+     * @param[in] mask Indicates which coefficients are used to compute the
      *             threshold.  This must be a single channel with type CV_8U1 or
      *             CV_8S1.
      */
@@ -353,6 +361,14 @@ public:
         cv::InputArray mask = cv::noArray()
     ) const;
 
+    /**
+     * @brief Computes the SURE risk estimate.
+     *
+     * @param[in] detail_coeffs
+     * @param[in] threshold
+     * @param[in] stdev
+     * @param[in] mask
+     */
     cv::Scalar compute_sure_risk(
         cv::InputArray detail_coeffs,
         const cv::Scalar& threshold,
@@ -361,11 +377,7 @@ public:
     );
 protected:
     /**
-     * @brief Computes the threshold on a single global subset of coefficients.
-     *
-     * @param coeffs The entire set of DWT coefficients.
-     * @param levels The subset of levels over which to compute the threshold.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @copydoc Shrink::compute_global_threshold
      */
     cv::Scalar compute_global_threshold(
         const DWT2D::Coeffs& coeffs,
@@ -377,11 +389,7 @@ protected:
     }
 
     /**
-     * @brief Computes the threshold for a single level subset of coefficients.
-     *
-     * @param detail_coeffs The level detail coefficients.
-     * @param level The decomposition level of the given coefficients.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @copydoc Shrink::compute_level_threshold
      */
     cv::Scalar compute_level_threshold(
         const cv::Mat& detail_coeffs,
@@ -393,12 +401,7 @@ protected:
     }
 
     /**
-     * @brief Computes the threshold for a single subband subset of coefficients.
-     *
-     * @param detail_coeffs The subband detail coefficients.
-     * @param level The decomposition level of the given coefficients.
-     * @param subband The subband of the coefficients.
-     * @param stdev The standard deviation of the coefficient noise.
+     * @copydoc Shrink::compute_subband_threshold
      */
     cv::Scalar compute_subband_threshold(
         const cv::Mat& detail_coeffs,
@@ -417,7 +420,7 @@ protected:
      * This is equalivalent to optimizer() if the optimizer is not
      * SureShrink::Optimizer::AUTO.
      *
-     * @param detail_coeffs A subset of detail coefficients.
+     * @param[in] detail_coeffs A subset of detail coefficients.
      */
     Optimizer resolve_optimizer(cv::InputArray detail_coeffs) const;
 
@@ -437,14 +440,14 @@ private:
  *  @{
  */
 /**
- * @brief %Shrink detail coeffcients using the SureShrink algorithm.
+ * @brief Shrinks detail coefficients using the SureShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  */
 DWT2D::Coeffs sure_shrink(const DWT2D::Coeffs& coeffs);
 
 /**
- * @brief %Shrink detail coeffcients using the SureShrink algorithm.
+ * @brief Shrinks detail coefficients using the SureShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[out] shrunk_coeffs The shrunk discrete wavelet transform coefficients.
@@ -452,7 +455,7 @@ DWT2D::Coeffs sure_shrink(const DWT2D::Coeffs& coeffs);
 void sure_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
 
 /**
- * @brief %Shrink detail coeffcients using the SureShrink algorithm.
+ * @brief Shrinks detail coefficients using the SureShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[in] levels The maximum number of levels to shrink.  Shrinking is applied
@@ -461,7 +464,7 @@ void sure_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
 DWT2D::Coeffs sure_shrink(DWT2D::Coeffs& coeffs, int levels);
 
 /**
- * @brief %Shrink detail coeffcients using the SureShrink algorithm.
+ * @brief Shrinks detail coefficients using the SureShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[out] shrunk_coeffs The shrunk discrete wavelet transform coefficients.
@@ -471,14 +474,14 @@ DWT2D::Coeffs sure_shrink(DWT2D::Coeffs& coeffs, int levels);
 void sure_shrink(DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels);
 
 /**
- * @brief %Shrink detail coeffcients using the SureShrink algorithm.
+ * @brief Shrinks detail coefficients using the SureShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  */
 DWT2D::Coeffs sure_shrink_levelwise(const DWT2D::Coeffs& coeffs);
 
 /**
- * @brief %Shrink detail coeffcients using the SureShrink algorithm.
+ * @brief Shrinks detail coefficients using the SureShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[out] shrunk_coeffs The shrunk discrete wavelet transform coefficients.
@@ -486,7 +489,7 @@ DWT2D::Coeffs sure_shrink_levelwise(const DWT2D::Coeffs& coeffs);
 void sure_shrink_levelwise(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
 
 /**
- * @brief %Shrink detail coeffcients using the SureShrink algorithm.
+ * @brief Shrinks detail coefficients using the SureShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[in] levels The maximum number of levels to shrink.  Shrinking is applied
@@ -495,7 +498,7 @@ void sure_shrink_levelwise(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_co
 DWT2D::Coeffs sure_shrink_levelwise(const DWT2D::Coeffs& coeffs, int levels);
 
 /**
- * @brief %Shrink detail coeffcients using the SureShrink algorithm.
+ * @brief Shrinks detail coefficients using the SureShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[out] shrunk_coeffs The shrunk discrete wavelet transform coefficients.

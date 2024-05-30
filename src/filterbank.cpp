@@ -525,8 +525,8 @@ void FilterBank::reconstruct(
     cv::InputArray horizontal_detail,
     cv::InputArray vertical_detail,
     cv::InputArray diagonal_detail,
-    cv::OutputArray output,
-    const cv::Size& output_size
+    cv::OutputArray image,
+    const cv::Size& image_size
 ) const
 {
     throw_if_reconstruct_coeffs_are_wrong_size(
@@ -543,14 +543,14 @@ void FilterBank::reconstruct(
         stage1a_output,
         _p->reconstruct.even_lowpass,
         _p->reconstruct.odd_lowpass,
-        output_size
+        image_size
     );
     upsample_rows_and_convolve_cols(
         horizontal_detail.getMat(),
         stage1a_output,
         _p->reconstruct.even_highpass,
         _p->reconstruct.odd_highpass,
-        output_size
+        image_size
     );
 
     //  Stage 1b
@@ -560,31 +560,31 @@ void FilterBank::reconstruct(
         stage1b_output,
         _p->reconstruct.even_lowpass,
         _p->reconstruct.odd_lowpass,
-        output_size
+        image_size
     );
     upsample_rows_and_convolve_cols(
         diagonal_detail.getMat(),
         stage1b_output,
         _p->reconstruct.even_highpass,
         _p->reconstruct.odd_highpass,
-        output_size
+        image_size
     );
 
     //  Stage 2
     cv::Mat stage2_output;
     upsample_cols_and_convolve_rows(
         stage1a_output,
-        output,
+        image,
         _p->reconstruct.even_lowpass,
         _p->reconstruct.odd_lowpass,
-        output_size
+        image_size
     );
     upsample_cols_and_convolve_rows(
         stage1b_output,
-        output,
+        image,
         _p->reconstruct.even_highpass,
         _p->reconstruct.odd_highpass,
-        output_size
+        image_size
     );
 }
 

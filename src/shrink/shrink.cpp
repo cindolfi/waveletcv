@@ -14,36 +14,36 @@ namespace cvwt
 //  Thresholding
 //  ----------------------------------------------------------------------------
 void soft_threshold(
-    cv::InputArray input,
-    cv::OutputArray output,
+    cv::InputArray array,
+    cv::OutputArray result,
     cv::Scalar threshold,
     cv::InputArray mask
 )
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_type<internal::SoftThreshold>(
-            input.type(), input, output, threshold
+            array.type(), array, result, threshold
         );
     else
         internal::dispatch_on_pixel_type<internal::SoftThreshold>(
-            input.type(), input, output, threshold, mask
+            array.type(), array, result, threshold, mask
         );
 }
 
 void hard_threshold(
-    cv::InputArray input,
-    cv::OutputArray output,
+    cv::InputArray array,
+    cv::OutputArray result,
     cv::Scalar threshold,
     cv::InputArray mask
 )
 {
     if (is_no_array(mask))
         internal::dispatch_on_pixel_type<internal::HardThreshold>(
-            input.type(), input, output, threshold
+            array.type(), array, result, threshold
         );
     else
         internal::dispatch_on_pixel_type<internal::HardThreshold>(
-            input.type(), input, output, threshold, mask
+            array.type(), array, result, threshold, mask
         );
 }
 
@@ -183,39 +183,45 @@ void Shrink::shrink(
     // finish(coeffs, levels, stdev, shrunk_coeffs, subset_thresholds);
 }
 
-cv::Mat Shrink::expand_thresholds(
+
+
+void Shrink::expand_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Mat4d& subset_thresholds,
+    cv::OutputArray expanded_thresholds,
     const cv::Range& levels
 ) const
 {
-    cv::Mat expanded_thresholds(
+    expanded_thresholds.create(
         coeffs.size(),
-        CV_MAKE_TYPE(subset_thresholds.depth(), coeffs.channels()),
-        cv::Scalar::all(0.0)
+        CV_MAKE_TYPE(subset_thresholds.depth(), coeffs.channels())
     );
+    auto expanded_thresholds_matrix = expanded_thresholds.getMat();
+    expanded_thresholds_matrix = 0.0;
+
     auto resolved_levels = (levels == cv::Range::all()) ? cv::Range(0, coeffs.levels())
                                                         : levels;
     switch (partition()) {
     case Shrink::GLOBALLY:
-        expanded_thresholds.setTo(subset_thresholds.at<cv::Scalar>(0, 0), coeffs.detail_mask(levels));
+        expanded_thresholds_matrix.setTo(
+            subset_thresholds.at<cv::Scalar>(0, 0),
+            coeffs.detail_mask(levels)
+        );
         break;
     case Shrink::LEVELS:
         for (int level = resolved_levels.start; level < resolved_levels.end; ++level)
             for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL})
-                expanded_thresholds(coeffs.detail_rect(level, subband)) = subset_thresholds.at<cv::Scalar>(level);
+                expanded_thresholds_matrix(coeffs.detail_rect(level, subband)) = subset_thresholds.at<cv::Scalar>(level);
         break;
     case Shrink::SUBBANDS:
         for (int level = resolved_levels.start; level < resolved_levels.end; ++level)
             for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL})
-                expanded_thresholds(coeffs.detail_rect(level, subband)) = subset_thresholds.at<cv::Scalar>(level, subband);
+                expanded_thresholds_matrix(coeffs.detail_rect(level, subband)) = subset_thresholds.at<cv::Scalar>(level, subband);
         break;
     case Shrink::SUBSETS:
-        expand_subset_thresholds(coeffs, subset_thresholds, levels, expanded_thresholds);
+        expand_subset_thresholds(coeffs, subset_thresholds, levels, expanded_thresholds_matrix);
         break;
     }
-
-    return expanded_thresholds;
 }
 
 cv::Mat4d Shrink::compute_thresholds(
@@ -268,7 +274,7 @@ cv::Mat4d Shrink::compute_partition_thresholds(
 
 void Shrink::shrink_subsets(
     DWT2D::Coeffs& coeffs,
-    const cv::Mat4d& thresholds,
+    const cv::Mat4d& subset_thresholds,
     const cv::Range& levels
 ) const
 {

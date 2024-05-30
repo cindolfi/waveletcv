@@ -347,7 +347,7 @@ def parse_args():
         action='store',
         type=int,
         default=4,
-        help='Set the precision of the coeffcients (default: 4)',
+        help='Set the precision of the coefficients (default: 4)',
     )
 
     args = parser.parse_args()

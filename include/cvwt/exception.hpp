@@ -15,6 +15,13 @@ namespace internal
 //  forward declaration (defined in utils.cpp)
 std::string get_type_name(int type);
 
+/**
+ * @brief Throws an error.
+ *
+ * @param[in] code A cv::Error::Code.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_error(code, ...) _throw_error(code, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]
@@ -32,6 +39,12 @@ void _throw_error(
     cv::error(code, message.str(), function, file, line);
 }
 
+/**
+ * @brief Throws a bad size exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_bad_size(...) _throw_bad_size(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]
@@ -45,6 +58,13 @@ void _throw_bad_size(
     throw_error(cv::Error::StsBadSize, function, file, line, message_parts...);
 }
 
+/**
+ * @brief Throws a bad size exception the array is empty.
+ *
+ * @param[in] array The array to check.  This must be convertible to cv::InputArray.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_if_empty(array, ...) _throw_if_empty(array, #array, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 void _throw_if_empty(
@@ -67,6 +87,12 @@ void _throw_if_empty(
     }
 }
 
+/**
+ * @brief Throws a bad argument exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_bad_arg(...) _throw_bad_arg(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]
@@ -84,6 +110,12 @@ void _throw_bad_arg(
     );
 }
 
+/**
+ * @brief Throws an out of range exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_out_of_range(...) _throw_out_of_range(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]
@@ -101,6 +133,12 @@ void _throw_out_of_range(
     );
 }
 
+/**
+ * @brief Throws a bad mask exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_bad_mask(...) _throw_bad_mask(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]
@@ -118,6 +156,13 @@ void _throw_bad_mask(
     );
 }
 
+/**
+ * @brief Throws a bad mask exception if the mask type is not CV_8UC1 or CV_8SC1.
+ *
+ * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_if_bad_mask_type(mask, ...) _throw_if_bad_mask_type(mask, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 void _throw_if_bad_mask_type(
@@ -145,6 +190,43 @@ void _throw_if_bad_mask_type(
     }
 }
 
+/**
+ * @brief Throws a bad mask exception if the mask depth is not CV_8U or CV_8S.
+ *
+ * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_if_bad_mask_depth(mask, ...) _throw_if_bad_mask_depth(mask, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+void _throw_if_bad_mask_depth(
+    cv::InputArray mask,
+    const char* function,
+    const char* file,
+    int line,
+    auto... message_parts
+)
+{
+    if (mask.depth() != CV_8U && mask.depth() != CV_8S) {
+        if constexpr (sizeof...(message_parts) == 0)
+            _throw_bad_mask(
+                function, file, line,
+                "Mask depth must be CV_8U or CV_8S, got ",
+                get_type_name(mask.type()), ". "
+            );
+        else
+            _throw_bad_mask(
+                function, file, line,
+                message_parts...,
+                " [Mask type must be CV_8U or CV_8S, got ",
+                get_type_name(mask.type()), "]"
+            );
+    }
+}
+
+/**
+ * @brief Allowed number of mask channels that can be used with given array.
+ */
 enum AllowedMaskChannels
 {
     SINGLE,
@@ -152,6 +234,22 @@ enum AllowedMaskChannels
     SINGLE_OR_SAME,
 };
 
+/**
+ * @brief Throws a bad mask exception if mask cannot be used with the array.
+ *
+ * The mask must have the same size as the array.
+ * If `allowed_channels` is
+ *  - AllowedMaskChannels::SINGLE: the mask must be a single channel
+ *  - AllowedMaskChannels::SAME: the mask must have the same number of
+ *    channels as the array
+ *  - AllowedMaskChannesl::SINGLE_OR_SAME: the mask must be a single channel or
+ *    have the same number of channels as the array
+ *
+ * @param[in] array The array to check.  This must be convertible to cv::InputArray.
+ * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_if_bad_mask_for_array(array, mask, allowed_channels, ...) _throw_if_bad_mask_for_array(array, mask, #array, #mask, allowed_channels, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 void _throw_if_bad_mask_for_array(
@@ -222,6 +320,12 @@ void _throw_if_bad_mask_for_array(
     }
 }
 
+/**
+ * @brief Throws a not implemented exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_not_implemented(...) _throw_not_implemented(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]
@@ -235,6 +339,14 @@ void _throw_not_implemented(
     throw_error(cv::Error::StsNotImplemented, function, file, line, message_parts...);
 }
 
+/**
+ * @brief Throws a member function is not implemented exception.
+ *
+ * @param[in] class_name The name of the class.
+ * @param[in] function_name The name of the member function.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
 #define throw_member_not_implemented(class_name, function_name, ...) _throw_member_not_implemented(class_name, function_name, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]

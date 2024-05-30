@@ -19,93 +19,155 @@ namespace cvwt
 class UniversalShrink : public Shrink
 {
 public:
-    UniversalShrink(
-        ShrinkFunction threshold_function
-    ) :
-        UniversalShrink(
-            Shrink::GLOBALLY,
-            threshold_function
-        )
-    {}
-
-    template <typename T, typename W>
-    UniversalShrink(
-        PrimitiveShrinkFunction<T, W> threshold_function
-    ) :
-        UniversalShrink(
-            make_shrink_function(threshold_function)
-        )
-    {}
-
+    /**
+     * @brief Construct a new Universal Shrink object.
+     *
+     * @param[in] partition
+     * @param[in] shrink_function
+     * @param[in] stdev_function
+     */
     UniversalShrink(
         Shrink::Partition partition,
-        ShrinkFunction threshold_function
-    ) :
-        Shrink(
-            partition,
-            threshold_function
-        )
-    {}
-
-    template <typename T, typename W>
-    UniversalShrink(
-        Shrink::Partition partition,
-        PrimitiveShrinkFunction<T, W> threshold_function
-    ) :
-        UniversalShrink(
-            partition,
-            make_shrink_function(threshold_function)
-        )
-    {}
-
-    UniversalShrink(
-        ShrinkFunction threshold_function,
-        StdDevFunction stdev_function
-    ) :
-        UniversalShrink(
-            Shrink::GLOBALLY,
-            threshold_function,
-            stdev_function
-        )
-    {}
-
-    template <typename T, typename W>
-    UniversalShrink(
-        PrimitiveShrinkFunction<T, W> threshold_function,
-        StdDevFunction stdev_function
-    ) :
-        UniversalShrink(
-            make_shrink_function(threshold_function),
-            stdev_function
-        )
-    {}
-
-    UniversalShrink(
-        Shrink::Partition partition,
-        ShrinkFunction threshold_function,
+        ShrinkFunction shrink_function,
         StdDevFunction stdev_function
     ) :
         Shrink(
             partition,
-            threshold_function,
+            shrink_function,
             stdev_function
         )
     {}
 
+    /**
+     * @overload
+     *
+     * @param[in] shrink_function
+     */
+    UniversalShrink(
+        ShrinkFunction shrink_function
+    ) :
+        UniversalShrink(
+            Shrink::GLOBALLY,
+            shrink_function
+        )
+    {}
+
+    /**
+     * @overload
+     *
+     * @tparam T
+     * @tparam W
+     * @param[in] shrink_function
+     */
+    template <typename T, typename W>
+    UniversalShrink(
+        PrimitiveShrinkFunction<T, W> shrink_function
+    ) :
+        UniversalShrink(
+            make_shrink_function(shrink_function)
+        )
+    {}
+
+    /**
+     * @overload
+     *
+     * @param[in] partition
+     * @param[in] shrink_function
+     */
+    UniversalShrink(
+        Shrink::Partition partition,
+        ShrinkFunction shrink_function
+    ) :
+        Shrink(
+            partition,
+            shrink_function
+        )
+    {}
+
+    /**
+     * @overload
+     *
+     * @tparam T
+     * @tparam W
+     * @param[in] partition
+     * @param[in] shrink_function
+     */
     template <typename T, typename W>
     UniversalShrink(
         Shrink::Partition partition,
-        PrimitiveShrinkFunction<T, W> threshold_function,
+        PrimitiveShrinkFunction<T, W> shrink_function
+    ) :
+        UniversalShrink(
+            partition,
+            make_shrink_function(shrink_function)
+        )
+    {}
+
+    /**
+     * @overload
+     *
+     * @param[in] shrink_function
+     * @param[in] stdev_function
+     */
+    UniversalShrink(
+        ShrinkFunction shrink_function,
+        StdDevFunction stdev_function
+    ) :
+        UniversalShrink(
+            Shrink::GLOBALLY,
+            shrink_function,
+            stdev_function
+        )
+    {}
+
+    /**
+     * @overload
+     *
+     * @tparam T
+     * @tparam W
+     * @param[in] shrink_function
+     * @param[in] stdev_function
+     */
+    template <typename T, typename W>
+    UniversalShrink(
+        PrimitiveShrinkFunction<T, W> shrink_function,
+        StdDevFunction stdev_function
+    ) :
+        UniversalShrink(
+            make_shrink_function(shrink_function),
+            stdev_function
+        )
+    {}
+
+    /**
+     * @overload
+     *
+     * @tparam T
+     * @tparam W
+     * @param[in] partition
+     * @param[in] shrink_function
+     * @param[in] stdev_function
+     */
+    template <typename T, typename W>
+    UniversalShrink(
+        Shrink::Partition partition,
+        PrimitiveShrinkFunction<T, W> shrink_function,
         StdDevFunction stdev_function
     ) :
         UniversalShrink(
             partition,
-            make_shrink_function(threshold_function),
+            make_shrink_function(shrink_function),
             stdev_function
         )
     {}
 
+    /**
+     * @brief Copy Constructor.
+     */
     UniversalShrink(const UniversalShrink& other) = default;
+    /**
+     * @brief Move Constructor.
+     */
     UniversalShrink(UniversalShrink&& other) = default;
 
     /**
@@ -118,8 +180,8 @@ public:
      *
      * @see https://computing.llnl.gov/sites/default/files/jei2001.pdf
 
-    * @param num_elements The number of detail coefficients.
-    * @param stdev The standard deviations of the detail coefficients channels.
+    * @param[in] num_elements The number of detail coefficients.
+    * @param[in] stdev The standard deviations of the detail coefficients channels.
     */
     static cv::Scalar compute_universal_threshold(
         int num_elements,
@@ -136,8 +198,8 @@ public:
      *
      * @see https://computing.llnl.gov/sites/default/files/jei2001.pdf
      *
-     * @param coeffs The discrete wavelet transform coefficients.
-     * @param stdev The standard deviations of the detail coefficients channels.
+     * @param[in] coeffs The discrete wavelet transform coefficients.
+     * @param[in] stdev The standard deviations of the detail coefficients channels.
      */
     static cv::Scalar compute_universal_threshold(
         const DWT2D::Coeffs& coeffs,
@@ -152,11 +214,11 @@ public:
      * compute_universal_threshold(details.total(), stdev);
      * @endcode
      *
-     * @param details The discrete wavelet transform detail coefficients.
-     * @param stdev The standard deviations of the detail coefficients channels.
+     * @param[in] detail_coeffs The discrete wavelet transform detail coefficients.
+     * @param[in] stdev The standard deviations of the detail coefficients channels.
      */
     static cv::Scalar compute_universal_threshold(
-        cv::InputArray details,
+        cv::InputArray detail_coeffs,
         const cv::Scalar& stdev = cv::Scalar::all(1.0)
     );
 
@@ -168,18 +230,21 @@ public:
      * compute_universal_threshold(collect_masked(details, mask), stdev);
      * @endcode
      *
-     * @param details The discrete wavelet transform detail coefficients.
-     * @param mask A single channel matrix of type CV_8U where nonzero entries
+     * @param[in] detail_coeffs The discrete wavelet transform detail coefficients.
+     * @param[in] mask A single channel matrix of type CV_8U where nonzero entries
      *             indicate which input locations are used in the computation.
-     * @param stdev The standard deviations of the detail coefficients channels.
+     * @param[in] stdev The standard deviations of the detail coefficients channels.
      */
     static cv::Scalar compute_universal_threshold(
-        cv::InputArray details,
+        cv::InputArray detail_coeffs,
         cv::InputArray mask,
         const cv::Scalar& stdev = cv::Scalar::all(1.0)
     );
 
 protected:
+    /**
+     * @copydoc Shrink::compute_global_threshold
+     */
     cv::Scalar compute_global_threshold(
         const DWT2D::Coeffs& coeffs,
         const cv::Range& levels,
@@ -189,6 +254,9 @@ protected:
         return compute_universal_threshold(coeffs, coeffs.detail_mask(levels), stdev);
     }
 
+    /**
+     * @copydoc Shrink::compute_level_threshold
+     */
     cv::Scalar compute_level_threshold(
         const cv::Mat& detail_coeffs,
         int level,
@@ -198,6 +266,9 @@ protected:
         return compute_universal_threshold(detail_coeffs, stdev);
     }
 
+    /**
+     * @copydoc Shrink::compute_subband_threshold
+     */
     cv::Scalar compute_subband_threshold(
         const cv::Mat& detail_coeffs,
         int level,
@@ -210,17 +281,26 @@ protected:
 };
 
 /**
- * @brief Gobal shrinkage using the universal threshold, the soft threshold
+ * @brief Gobal shrinkage using the universal threshold, the soft threshold.
  *        function, and the MAD standard deviation estimator.
  *
  */
 class VisuShrink : public UniversalShrink
 {
 public:
+    /**
+     * @overload
+     *
+     */
     VisuShrink() :
         VisuShrink(Shrink::GLOBALLY)
     {}
 
+    /**
+     * @brief Construct a new Visu Shrink object.
+     *
+     * @param[in] partition
+     */
     VisuShrink(Shrink::Partition partition) :
         UniversalShrink(
             partition,
@@ -228,7 +308,13 @@ public:
         )
     {}
 
+    /**
+     * @brief Copy Constructor.
+     */
     VisuShrink(const VisuShrink& other) = default;
+    /**
+     * @brief Move Constructor.
+     */
     VisuShrink(VisuShrink&& other) = default;
 };
 
@@ -239,14 +325,14 @@ public:
  *  @{
  */
 /**
- * @brief %Shrink detail coeffcients using the VisuShrink algorithm.
+ * @brief Shrinks detail coefficients using the VisuShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  */
 DWT2D::Coeffs visu_shrink(const DWT2D::Coeffs& coeffs);
 
 /**
- * @brief %Shrink detail coeffcients using the VisuShrink algorithm.
+ * @brief Shrinks detail coefficients using the VisuShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[out] shrunk_coeffs The shrunk discrete wavelet transform coefficients.
@@ -254,7 +340,7 @@ DWT2D::Coeffs visu_shrink(const DWT2D::Coeffs& coeffs);
 void visu_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
 
 /**
- * @brief %Shrink detail coeffcients using the VisuShrink algorithm.
+ * @brief Shrinks detail coefficients using the VisuShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[in] levels The maximum number of levels to shrink.  Shrinking is applied
@@ -263,7 +349,7 @@ void visu_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
 DWT2D::Coeffs visu_shrink(DWT2D::Coeffs& coeffs, int levels);
 
 /**
- * @brief %Shrink detail coeffcients using the VisuShrink algorithm.
+ * @brief Shrinks detail coefficients using the VisuShrink algorithm.
  *
  * @param[in] coeffs The discrete wavelet transform coefficients.
  * @param[out] shrunk_coeffs The shrunk discrete wavelet transform coefficients.

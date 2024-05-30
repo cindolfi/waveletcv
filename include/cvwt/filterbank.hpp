@@ -29,8 +29,8 @@ public:
      *
      * The two kernels must be the same size and type.
      *
-     * @param lowpass
-     * @param highpass
+     * @param[in] lowpass
+     * @param[in] highpass
      */
     KernelPair(const cv::Mat& lowpass, const cv::Mat& highpass) :
         _lowpass(lowpass),
@@ -60,7 +60,7 @@ public:
      */
     cv::Mat highpass() const { return _highpass; }
     /**
-     * @brief Returns true if both kernels are empty
+     * @brief Returns true if both kernels are empty.
      */
     bool empty() const { return _lowpass.empty(); }
     /**
@@ -189,7 +189,7 @@ struct FilterBankImpl
 
 
 /**
- * @brief Two dimensional discrete wavelet transform filter bank
+ * @brief Two dimensional discrete wavelet transform filter bank.
  *
  * This class is used as a building block to implement two dimensional multiscale
  * discrete wavelet transforms.
@@ -224,10 +224,10 @@ public:
     /**
      * @brief Construct a new filter bank.
      *
-     * @param decompose_lowpass
-     * @param decompose_highpass
-     * @param reconstruct_lowpass
-     * @param reconstruct_highpass
+     * @param[in] decompose_lowpass
+     * @param[in] decompose_highpass
+     * @param[in] reconstruct_lowpass
+     * @param[in] reconstruct_highpass
      */
     FilterBank(
         const cv::Mat& decompose_lowpass,
@@ -236,11 +236,11 @@ public:
         const cv::Mat& reconstruct_highpass
     );
     /**
-     * @brief Copy Constructor
+     * @brief Copy Constructor.
      */
     FilterBank(const FilterBank& other) = default;
     /**
-     * @brief Move Constructor
+     * @brief Move Constructor.
      */
     FilterBank(FilterBank&& other) = default;
 
@@ -272,15 +272,13 @@ public:
     KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
 
     /**
-     * @brief
-     *
-     * @param other
+     * @brief Two filter banks are equal if their decompose_kernels() are equal and their reconstruct_kernels() are equal.
      */
     bool operator==(const FilterBank& other) const;
     friend std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
 
     /**
-     * @brief Decompose an image
+     * @brief Decompose an image.
      *
      * The outputs will all have the same number of channels as the input image
      * and depth equal to `max(image.depth(), depth())`.
@@ -309,7 +307,7 @@ public:
     ) const;
 
     /**
-     * @brief Reconstruct an image
+     * @brief Reconstruct an image.
      *
      * The coefficients `approx`, `horizontal_detail`, `vertical_detail`,
      * and `diagonal_detail` must all be the same size, same depth, and have the
@@ -329,8 +327,8 @@ public:
      * @param[in] horizontal_detail The horizontal detail subband coefficients.
      * @param[in] vertical_detail The vertical detail subband coefficients.
      * @param[in] diagonal_detail The diagonal detail subband coefficients.
-     * @param[out] output The reconstructed image.
-     * @param[in] output_size The size of the reconstructed image.
+     * @param[out] image The reconstructed image.
+     * @param[in] image_size The size of the reconstructed image.
      *                        This must be the size of the image passed to
      *                        decompose().
      */
@@ -339,38 +337,39 @@ public:
         cv::InputArray horizontal_detail,
         cv::InputArray vertical_detail,
         cv::InputArray diagonal_detail,
-        cv::OutputArray output,
-        const cv::Size& output_size
+        cv::OutputArray image,
+        const cv::Size& image_size
     ) const;
 
     /**
      * @brief Returns the size of each coefficient subband for the given image size.
      *
-     * @param image_size The size of the image.
+     * @param[in] image_size The size of the image.
      */
     cv::Size subband_size(const cv::Size& image_size) const;
 
     /**
-     * @brief Swaps and flips the decomposition and reconstruction kernels
+     * @brief Swaps and flips the decomposition and reconstruction kernels.
      */
-    [[nodiscard]] FilterBank reverse() const;
+    [[nodiscard]]
+    FilterBank reverse() const;
 
     //  Filter Bank Factories
     /**@{*/
     /**
-     * @brief Create an orthogonal wavelet filter bank.
+     * @brief Creates an orthogonal wavelet filter bank.
      *
-     * @param reconstruct_lowpass_coeffs
+     * @param[in] reconstruct_lowpass_coeffs
      */
     static FilterBank create_orthogonal_filter_bank(
         cv::InputArray reconstruct_lowpass_coeffs
     );
 
     /**
-     * @brief Create a biorthogonal wavelet filter bank.
+     * @brief Creates a biorthogonal wavelet filter bank.
      *
-     * @param reconstruct_lowpass_coeffs
-     * @param decompose_lowpass_coeffs
+     * @param[in] reconstruct_lowpass_coeffs
+     * @param[in] decompose_lowpass_coeffs
      */
     static FilterBank create_biorthogonal_filter_bank(
         cv::InputArray reconstruct_lowpass_coeffs,
@@ -444,6 +443,9 @@ private:
     std::shared_ptr<internal::FilterBankImpl> _p;
 };
 
+/**
+ * @brief Writes a string representation of a FilterBank to an output stream.
+ */
 std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
 } // namespace cvwt
 

@@ -12,7 +12,6 @@ namespace cvwt
  */
 /**
  * @brief Implements the BayesShrink algorithm for shrinking DWT coefficients.
- * @headerfile cvwt/shrinkage.hpp
  *
  * The threshold for subband \f$s\f$ is
  * \f{equation}{
@@ -37,41 +36,82 @@ namespace cvwt
 class BayesShrink : public Shrink
 {
 public:
-    BayesShrink() :
-        BayesShrink(Shrink::SUBBANDS)
-    {}
-
-    BayesShrink(Shrink::Partition partition) :
-        BayesShrink(partition, soft_threshold)
-    {}
-
-    template <typename T, typename W>
+    /**
+     * @brief Construct a new Bayes Shrink object.
+     *
+     * @param[in] partition
+     * @param[in] shrink_function
+     */
     BayesShrink(
         Shrink::Partition partition,
-        PrimitiveShrinkFunction<T, W> threshold_function
-    ) :
-        BayesShrink(partition, make_shrink_function(threshold_function))
-    {}
-
-    BayesShrink(
-        Shrink::Partition partition,
-        ShrinkFunction threshold_function
+        ShrinkFunction shrink_function
     ) :
         Shrink(
             partition,
-            threshold_function,
+            shrink_function,
             mad_stdev
         )
     {}
 
+    /**
+     * @overload
+     */
+    BayesShrink() :
+        BayesShrink(Shrink::SUBBANDS)
+    {}
+
+    /**
+     * @overload
+     *
+     * @param[in] partition
+     */
+    BayesShrink(Shrink::Partition partition) :
+        BayesShrink(partition, soft_threshold)
+    {}
+
+    /**
+     * @overload
+     *
+     * @tparam T
+     * @tparam W
+     * @param[in] partition
+     * @param[in] shrink_function
+     */
+    template <typename T, typename W>
+    BayesShrink(
+        Shrink::Partition partition,
+        PrimitiveShrinkFunction<T, W> shrink_function
+    ) :
+        BayesShrink(partition, make_shrink_function(shrink_function))
+    {}
+
+    /**
+     * @brief Copy Constructor.
+     */
     BayesShrink(const BayesShrink& other) = default;
+    /**
+     * @brief Move Constructor.
+     */
     BayesShrink(BayesShrink&& other) = default;
 
+    /**
+     * @brief Computes the BayesShrink threshold.
+     *
+     * @param[in] detail_coeffs
+     * @param[in] stdev
+     */
     cv::Scalar compute_bayes_threshold(
         cv::InputArray detail_coeffs,
         const cv::Scalar& stdev
     ) const;
 
+    /**
+     * @overload
+     *
+     * @param[in] detail_coeffs
+     * @param[in] mask
+     * @param[in] stdev
+     */
     cv::Scalar compute_bayes_threshold(
         cv::InputArray detail_coeffs,
         cv::InputArray mask,
@@ -79,6 +119,9 @@ public:
     ) const;
 
 protected:
+    /**
+     * @copydoc Shrink::compute_global_threshold
+     */
     cv::Scalar compute_global_threshold(
         const DWT2D::Coeffs& coeffs,
         const cv::Range& levels,
@@ -88,19 +131,25 @@ protected:
         return compute_bayes_threshold(coeffs, coeffs.detail_mask(levels), stdev);
     }
 
-    cv::Scalar compute_subband_threshold(
+    /**
+     * @copydoc Shrink::compute_level_threshold
+     */
+    cv::Scalar compute_level_threshold(
         const cv::Mat& detail_coeffs,
         int level,
-        int subband,
         const cv::Scalar& stdev
     ) const override
     {
         return compute_bayes_threshold(detail_coeffs, stdev);
     }
 
-    cv::Scalar compute_level_threshold(
+    /**
+     * @copydoc Shrink::compute_subband_threshold
+     */
+    cv::Scalar compute_subband_threshold(
         const cv::Mat& detail_coeffs,
         int level,
+        int subband,
         const cv::Scalar& stdev
     ) const override
     {
@@ -113,18 +162,15 @@ protected:
 /** @name BayesShrink Functional API
  *  @{
  */
-
 /**
- * @headerfile cvwt/shrink/bayes.hpp <cvwt/shrinkage.hpp>
- * @brief %Shrink DWT coefficients using the BayesShrink algorithm
+ * @brief Shrinks DWT coefficients using the BayesShrink algorithm.
  *
  * @param[in] coeffs The DWT coefficients.
  */
 DWT2D::Coeffs bayes_shrink(const DWT2D::Coeffs& coeffs);
 
 /**
- * @brief %Shrink DWT coefficients using the BayesShrink algorithm
- * @headerfile cvwt/shrinkage.hpp
+ * @brief Shrinks DWT coefficients using the BayesShrink algorithm.
  *
  * @param[in] coeffs The DWT coefficients.
  * @param[out] shrunk_coeffs The shrunken DWT coefficients.

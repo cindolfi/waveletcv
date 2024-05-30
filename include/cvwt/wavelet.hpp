@@ -12,8 +12,7 @@
 namespace cvwt
 {
 /**
- * @brief
- *
+ * @brief The degree of Wavelet symmetry.
  */
 enum class Symmetry {
     SYMMETRIC,
@@ -22,27 +21,27 @@ enum class Symmetry {
 };
 
 /**
- * @brief A named wavelet
+ * @brief A named wavelet.
  *
  */
 class Wavelet
 {
 public:
     /**
-     * @brief Construct a new Wavelet object
+     * @brief Construct an invalid Wavelet.
      */
     Wavelet();
     /**
-     * @brief Construct a new Wavelet object
+     * @brief Construct a new Wavelet.
      *
-     * @param vanishing_moments_psi
-     * @param vanishing_moments_phi
-     * @param orthogonal
-     * @param biorthogonal
-     * @param symmetry
-     * @param family
-     * @param name
-     * @param filter_bank
+     * @param[in] vanishing_moments_psi
+     * @param[in] vanishing_moments_phi
+     * @param[in] orthogonal
+     * @param[in] biorthogonal
+     * @param[in] symmetry
+     * @param[in] family
+     * @param[in] name
+     * @param[in] filter_bank
      */
     Wavelet(
         int vanishing_moments_psi,
@@ -55,98 +54,97 @@ public:
         const FilterBank& filter_bank
     );
     /**
-     * @brief Copy Constructor
+     * @brief Copy Constructor.
      */
     Wavelet(const Wavelet& other) = default;
     /**
-     * @brief Move Constructor
+     * @brief Move Constructor.
      */
     Wavelet(Wavelet&& other) = default;
 
     /**
-     * @brief Copy Assignment
+     * @brief Copy Assignment.
      */
     Wavelet& operator=(const Wavelet& other) = default;
     /**
-     * @brief Move Assignment
+     * @brief Move Assignment.
      */
     Wavelet& operator=(Wavelet&& other) = default;
 
     /**
-     * @brief The number of vanishing moments of the wavelet function
+     * @brief The number of vanishing moments of the wavelet function.
      */
     int vanishing_moments_psi() const { return _p->vanishing_moments_psi; }
 
     /**
-     * @brief The number of vanishing moments of the scaling function
+     * @brief The number of vanishing moments of the scaling function.
      */
     int vanishing_moments_phi() const { return _p->vanishing_moments_phi; }
 
     /**
-     * @brief Returns true if the wavelet is orthogonal
+     * @brief Returns true if the wavelet is orthogonal.
      */
     bool orthogonal() const { return _p->orthogonal; }
 
     /**
-     * @brief Returns true if the wavelet is biorthogonal
+     * @brief Returns true if the wavelet is biorthogonal.
      */
     bool biorthogonal() const { return _p->biorthogonal; }
 
     /**
-     * @brief Returns how symmetric the wavelet is
+     * @brief Returns the degree of symmetry of the filter.
      */
     Symmetry symmetry() const { return _p->symmetry; }
 
     /**
-     * @brief The family name the wavelet belongs to
+     * @brief The name of the wavelet family.
      */
     std::string family() const { return _p->family; }
 
     /**
-     * @brief The name of the wavelet
+     * @brief The name of the wavelet.
      */
     std::string name() const { return _p->name; }
 
     /**
-     * @brief The wavelet filter bank
+     * @brief The filter bank that defines the wavelet.
      */
     FilterBank filter_bank() const { return _p->filter_bank; }
 
     /**
-     * @brief The length of the wavelet's filter kernel
+     * @brief The length of the wavelet's filter kernel.
      */
     int filter_length() const { return _p->filter_bank.filter_length(); }
 
     /**
-     * @brief Returns true if the wavelet is valid
+     * @brief Returns true if the wavelet is valid.
      *
-     * A valid wavelet has a non-empty Wavelet::name() and a non-empty
+     * A valid wavelet has a nonempty Wavelet::name() and a nonempty
      * Wavelet::filter_bank(). A default constructed wavelet is always invalid.
-     *
      */
     bool is_valid() const { return _p->filter_bank.filter_length() > 0; }
 
     /**
-     * @brief Creates a Wavelet object by name
+     * @brief Creates a Wavelet by name.
      *
-     * ```cpp
+     * @code{cpp}
      * Wavelet wavelet = Wavelet::create("db2");
-     * ```
+     * @endcode
+     *
      * Use Wavelet::available_wavelets() to get available wavelet names.
      * Use Wavelet::register_factory() to register a factory for custom wavelets.
      *
-     * @param name
+     * @param[in] name The name of the wavelet.
      */
     static Wavelet create(const std::string& name);
 
     /**
-     * @brief Returns a collection of wavelet names that can be used with Wavelet::create()
-     *
+     * @brief Returns a collection of wavelet names that can be used with Wavelet::create().
      */
     static std::vector<std::string> available_wavelets();
 
     /**
-     * @brief Register a Wavelet factory used by Wavelet::create()
+     * @brief Register a Wavelet factory for use by Wavelet::create().
      *
      * This function is used to add support for creating custom wavelets with
      * Wavelet::create().  The given arguments are bound to the factory function
@@ -167,8 +165,8 @@ public:
      * Wavelet::register_factory(create_my_custom_wavelet, 4);
      * ```
      *
-     * @param factory A callable that creates and returns a Wavelet object.
-     * @param args The arguments passed to wavelet factory.
+     * @param[in] factory A callable that creates a Wavelet object.
+     * @param[in] args The arguments passed to wavelet factory.
      */
     template <typename... Args>
     static void register_factory(
@@ -182,7 +180,7 @@ public:
     }
 
     /**
-     * @brief Two Wavelets are equal if they have the same name and have equal filter banks
+     * @brief Wavelets are equal if they have the same name and have equal filter banks.
      */
     bool operator==(const Wavelet& other) const;
 
@@ -205,10 +203,7 @@ private:
 };
 
 /**
- * @brief Writes a string representation a Wavelet object to the output stream
- *
- * @param stream
- * @param wavelet
+ * @brief Writes a string representation of a Wavelet to the output stream.
  */
 std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
 
@@ -221,44 +216,44 @@ std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
  * @{
  */
 /**
- * @brief Create a Haar Wavelet object
+ * @brief Create a Haar Wavelet.
  */
 Wavelet create_haar();
 
 /**
- * @brief Create a Daubechies Wavelet object
+ * @brief Create a Daubechies Wavelet.
  *
- * @param order The order of the wavelet.  Must be 2 <= order <= 20.
+ * @param[in] order The order of the wavelet.  Must be 2 <= order <= 20.
  */
 Wavelet create_daubechies(int order);
 
 /**
- * @brief Create a Symlets Wavelet object
+ * @brief Create a Symlets Wavelet.
  *
- * @param order The order of the wavelet.  Must be 2 <= order <= 20.
+ * @param[in] order The order of the wavelet.  Must be 2 <= order <= 20.
  */
 Wavelet create_symlets(int order);
 
 /**
- * @brief Create a Coiflets Wavelet object
+ * @brief Create a Coiflets Wavelet.
  *
- * @param order The order of the wavelet.  Must be 1 <= order <= 17.
+ * @param[in] order The order of the wavelet.  Must be 1 <= order <= 17.
  */
 Wavelet create_coiflets(int order);
 
 /**
- * @brief Create a Biorthogonal Wavelet object
+ * @brief Create a Biorthogonal Wavelet.
  *
- * @param vanishing_moments_psi The number of vanishing moments of the wavelet function.
- * @param vanishing_moments_phi The number of vanishing moments of the scaling function.
+ * @param[in] vanishing_moments_psi The number of vanishing moments of the wavelet function.
+ * @param[in] vanishing_moments_phi The number of vanishing moments of the scaling function.
  */
 Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
 
 /**
- * @brief Create a Reverse Biorthogonal Wavelet object
+ * @brief Create a Reverse Biorthogonal Wavelet.
  *
- * @param vanishing_moments_psi The number of vanishing moments of the wavelet function.
- * @param vanishing_moments_phi The number of vanishing moments of the scaling function.
+ * @param[in] vanishing_moments_psi The number of vanishing moments of the wavelet function.
+ * @param[in] vanishing_moments_phi The number of vanishing moments of the scaling function.
  */
 Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
 /** @}*/
