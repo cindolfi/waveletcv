@@ -567,7 +567,7 @@ INSTANTIATE_TEST_CASE_P(
 
 /**
  * -----------------------------------------------------------------------------
- * Test access to coeffcients at specified levels
+ * Test access to coefficients at specified levels
  *
  * This test is parameterized to run at each possible level for the specified
  * matrix size.
@@ -648,6 +648,96 @@ protected:
             actual_detail,
             MatrixEq(expected_detail)
         ) << "detail values are incorrect";
+    }
+
+    // template <typename Values>
+    void test_set_approx(
+        auto new_value,
+        const cv::Mat& new_approx_values,
+        auto set_approx
+    )
+    {
+        auto expected_modified_full_matrix = expected_matrix.clone();
+
+        auto full_coeffs = dwt.create_coeffs(
+            expected_modified_full_matrix,
+            full_size,
+            full_levels
+        );
+        auto level_coeffs = full_coeffs.at_level(level);
+
+        //  Get approx coefficients before assignment so that we can make sure
+        //  view semantics are followed - i.e. assignment should be reflected
+        //  in these objects, it should NOT force a copy of the underlying matrix.
+        auto approx_from_full_coeffs_before_assign = full_coeffs.approx();
+        auto approx_from_level_coeffs_before_assign = level_coeffs.approx();
+
+        //  update expected
+        expected_modified_full_matrix = expected_modified_full_matrix.clone();
+        new_approx_values.copyTo(expected_modified_full_matrix(expected_approx_rect));
+
+        //  fill approx with new value
+        set_approx(full_coeffs, new_value);
+
+        auto approx_from_full_coeffs_after_assign = full_coeffs.approx();
+        auto approx_from_level_coeffs_after_assign = level_coeffs.approx();
+
+        assert_set_approx(
+            full_coeffs,
+            new_approx_values,
+            expected_modified_full_matrix,
+            approx_from_full_coeffs_before_assign,
+            approx_from_full_coeffs_after_assign,
+            approx_from_level_coeffs_before_assign,
+            approx_from_level_coeffs_after_assign
+        );
+    }
+
+    void test_set_detail(
+        auto new_value,
+        const cv::Mat& new_detail_values,
+        int subband,
+        const cv::Rect& detail_rect,
+        auto set_detail
+    )
+    {
+        auto expected_modified_full_matrix = expected_matrix.clone();
+        auto full_coeffs = dwt.create_coeffs(
+            expected_modified_full_matrix,
+            full_size,
+            full_levels
+        );
+        auto level_coeffs = full_coeffs.at_level(level);
+
+        //  Get detail coefficients before assignment so that we can make sure
+        //  view semantics are followed - i.e. assignment should be reflected
+        //  in these objects, it should NOT force a copy of the underlying matrix.
+        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(level, subband);
+        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(subband);
+
+        // //  Update expected
+        // expected_modified_full_matrix = expected_modified_full_matrix.clone();
+        // expected_modified_full_matrix(detail_rect) = new_value;
+        //  update expected
+        expected_modified_full_matrix = expected_modified_full_matrix.clone();
+        new_detail_values.copyTo(expected_modified_full_matrix(detail_rect));
+
+        //  fill details with new value
+        set_detail(full_coeffs, level, subband, new_value);
+
+        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(level, subband);
+        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(subband);
+
+        assert_set_detail(
+            full_coeffs,
+            new_detail_values,
+            expected_modified_full_matrix,
+            detail_from_full_coeffs_before_assign,
+            detail_from_full_coeffs_after_assign,
+            detail_from_level_coeffs_before_assign,
+            detail_from_level_coeffs_after_assign,
+            subband
+        );
     }
 
     void assert_set_approx(
@@ -1180,123 +1270,53 @@ TEST_P(Dwt2dCoeffsLevelsTest, DiagonalDetailSharesDataWithCoeffs)
 
 TEST_P(Dwt2dCoeffsLevelsTest, SetApproxToMatrix)
 {
-    auto expected_modified_full_matrix = expected_matrix.clone();
-
-    auto full_coeffs = dwt.create_coeffs(
-        expected_modified_full_matrix,
-        full_size,
-        full_levels
-    );
-    auto level_coeffs = full_coeffs.at_level(level);
-
-    //  Get approx coefficients before assignment so that we can make sure
-    //  view semantics are followed - i.e. assignment should be reflected
-    //  in these objects, it should NOT force a copy of the underlying matrix.
-    auto approx_from_full_coeffs_before_assign = full_coeffs.approx();
-    auto approx_from_level_coeffs_before_assign = level_coeffs.approx();
-
     auto new_value = make_scalar(0.5 + level);
     auto new_approx_values = cv::Mat(expected_approx_rect.size(), type, new_value);
-
-    //  update expected
-    expected_modified_full_matrix = expected_modified_full_matrix.clone();
-    new_approx_values.copyTo(expected_modified_full_matrix(expected_approx_rect));
-
-    //  fill approx with new value
-    full_coeffs.set_approx(new_approx_values);
-
-    auto approx_from_full_coeffs_after_assign = full_coeffs.approx();
-    auto approx_from_level_coeffs_after_assign = level_coeffs.approx();
-
-    assert_set_approx(
-        full_coeffs,
+    test_set_approx(
         new_approx_values,
-        expected_modified_full_matrix,
-        approx_from_full_coeffs_before_assign,
-        approx_from_full_coeffs_after_assign,
-        approx_from_level_coeffs_before_assign,
-        approx_from_level_coeffs_after_assign
+        new_approx_values,
+        [](auto full_coeffs, auto new_approx_coeffs) {
+            full_coeffs.set_approx(new_approx_coeffs);
+        }
     );
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, SetApproxToScalar)
 {
-    auto expected_modified_full_matrix = expected_matrix.clone();
-
-    auto full_coeffs = dwt.create_coeffs(
-        expected_modified_full_matrix,
-        full_size,
-        full_levels
-    );
-    auto level_coeffs = full_coeffs.at_level(level);
-
-    //  Get approx coefficients before assignment so that we can make sure
-    //  view semantics are followed - i.e. assignment should be reflected
-    //  in these objects, it should NOT force a copy of the underlying matrix.
-    auto approx_from_full_coeffs_before_assign = full_coeffs.approx();
-    auto approx_from_level_coeffs_before_assign = level_coeffs.approx();
-
     auto new_value = make_scalar(0.5 + level);
     auto new_approx_values = cv::Mat(expected_approx_rect.size(), type, new_value);
-
-    //  update expected
-    expected_modified_full_matrix = expected_modified_full_matrix.clone();
-    new_approx_values.copyTo(expected_modified_full_matrix(expected_approx_rect));
-
-    //  fill approx with new value
-    full_coeffs.set_approx(new_value);
-
-    auto approx_from_full_coeffs_after_assign = full_coeffs.approx();
-    auto approx_from_level_coeffs_after_assign = level_coeffs.approx();
-
-    assert_set_approx(
-        full_coeffs,
+    test_set_approx(
+        new_value,
         new_approx_values,
-        expected_modified_full_matrix,
-        approx_from_full_coeffs_before_assign,
-        approx_from_full_coeffs_after_assign,
-        approx_from_level_coeffs_before_assign,
-        approx_from_level_coeffs_after_assign
+        [](auto full_coeffs, auto new_approx_coeffs) {
+            full_coeffs.set_approx(new_approx_coeffs);
+        }
+    );
+}
+
+TEST_P(Dwt2dCoeffsLevelsTest, CopyMatrixToApprox)
+{
+    auto new_value = make_scalar(0.5 + level);
+    auto new_approx_values = cv::Mat(expected_approx_rect.size(), type, new_value);
+    test_set_approx(
+        new_approx_values,
+        new_approx_values,
+        [](auto full_coeffs, auto new_approx_coeffs) {
+            new_approx_coeffs.copyTo(full_coeffs.approx());
+        }
     );
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToApprox)
 {
-    auto expected_modified_full_matrix = expected_matrix.clone();
-    auto full_coeffs = dwt.create_coeffs(
-        expected_modified_full_matrix,
-        full_size,
-        full_levels
-    );
-    auto level_coeffs = full_coeffs.at_level(level);
-
-    //  Get approx coefficients before assignment so that we can make sure
-    //  view semantics are followed - i.e. assignment should be reflected
-    //  in these objects, it should NOT force a copy of the underlying matrix.
-    auto approx_from_full_coeffs_before_assign = full_coeffs.approx();
-    auto approx_from_level_coeffs_before_assign = level_coeffs.approx();
-
     auto new_value = make_scalar(0.5 + level);
     auto new_approx_values = cv::Mat(expected_approx_rect.size(), type, new_value);
-
-    //  update expected
-    expected_modified_full_matrix = expected_modified_full_matrix.clone();
-    new_approx_values.copyTo(expected_modified_full_matrix(expected_approx_rect));
-
-    //  fill approx with new value
-    full_coeffs.approx() = new_value;
-
-    auto approx_from_full_coeffs_after_assign = full_coeffs.approx();
-    auto approx_from_level_coeffs_after_assign = level_coeffs.approx();
-
-    assert_set_approx(
-        full_coeffs,
+    test_set_approx(
+        new_value,
         new_approx_values,
-        expected_modified_full_matrix,
-        approx_from_full_coeffs_before_assign,
-        approx_from_full_coeffs_after_assign,
-        approx_from_level_coeffs_before_assign,
-        approx_from_level_coeffs_after_assign
+        [](auto full_coeffs, auto new_approx_coeffs) {
+            full_coeffs.approx() = new_approx_coeffs;
+        }
     );
 }
 
@@ -1304,43 +1324,16 @@ TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToApprox)
 TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToMatrix)
 {
     for (auto [subband, detail_rect] : expected_subband_detail_rects) {
-        auto expected_modified_full_matrix = expected_matrix.clone();
-        auto full_coeffs = dwt.create_coeffs(
-            expected_modified_full_matrix,
-            full_size,
-            full_levels
-        );
-
-        auto level_coeffs = full_coeffs.at_level(level);
-
-        //  Get detail coefficients before assignment so that we can make sure
-        //  view semantics are followed - i.e. assignment should be reflected
-        //  in these objects, it should NOT force a copy of the underlying matrix.
-        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(level, subband);
-        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(subband);
-
         auto new_value = make_scalar(0.5 + level);
         auto new_detail_values = cv::Mat(detail_rect.size(), type, new_value);
-
-        //  update expected
-        expected_modified_full_matrix = expected_modified_full_matrix.clone();
-        new_detail_values.copyTo(expected_modified_full_matrix(detail_rect));
-
-        //  fill details with new value
-        full_coeffs.set_detail(level, subband, new_detail_values);
-
-        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(level, subband);
-        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(subband);
-
-        assert_set_detail(
-            full_coeffs,
+        test_set_detail(
             new_detail_values,
-            expected_modified_full_matrix,
-            detail_from_full_coeffs_before_assign,
-            detail_from_full_coeffs_after_assign,
-            detail_from_level_coeffs_before_assign,
-            detail_from_level_coeffs_after_assign,
-            subband
+            new_detail_values,
+            subband,
+            detail_rect,
+            [](auto& full_coeffs, auto level, auto subband, auto new_detail_coeffs) {
+                full_coeffs.set_detail(level, subband, new_detail_coeffs);
+            }
         );
     }
 }
@@ -1348,85 +1341,51 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToMatrix)
 TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToScalar)
 {
     for (auto [subband, detail_rect] : expected_subband_detail_rects) {
-        auto expected_modified_full_matrix = expected_matrix.clone();
-        auto full_coeffs = dwt.create_coeffs(
-            expected_modified_full_matrix,
-            full_size,
-            full_levels
-        );
-        auto level_coeffs = full_coeffs.at_level(level);
-
-        //  Get detail coefficients before assignment so that we can make sure
-        //  view semantics are followed - i.e. assignment should be reflected
-        //  in these objects, it should NOT force a copy of the underlying matrix.
-        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(level, subband);
-        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(subband);
-
         auto new_value = make_scalar(0.5 + level);
         auto new_detail_values = cv::Mat(detail_rect.size(), type, new_value);
-
-        //  update expected
-        expected_modified_full_matrix = expected_modified_full_matrix.clone();
-        expected_modified_full_matrix(detail_rect) = new_value;
-
-        //  fill details with new value
-        full_coeffs.set_detail(level, subband, new_value);
-
-        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(level, subband);
-        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(subband);
-
-        assert_set_detail(
-            full_coeffs,
+        test_set_detail(
+            new_value,
             new_detail_values,
-            expected_modified_full_matrix,
-            detail_from_full_coeffs_before_assign,
-            detail_from_full_coeffs_after_assign,
-            detail_from_level_coeffs_before_assign,
-            detail_from_level_coeffs_after_assign,
-            subband
+            subband,
+            detail_rect,
+            [](auto& full_coeffs, auto level, auto subband, auto new_detail_coeffs) {
+                full_coeffs.set_detail(level, subband, new_detail_coeffs);
+            }
         );
     }
+}
+
+TEST_P(Dwt2dCoeffsLevelsTest, CopyMatrixToDetails)
+{
+    for (auto [subband, detail_rect] : expected_subband_detail_rects) {
+        auto new_value = make_scalar(0.5 + level);
+        auto new_detail_values = cv::Mat(detail_rect.size(), type, new_value);
+        test_set_detail(
+            new_detail_values,
+            new_detail_values,
+            subband,
+            detail_rect,
+            [](auto full_coeffs, auto level, auto subband, auto new_detail_coeffs) {
+                new_detail_coeffs.copyTo(full_coeffs.detail(level, subband));
+            }
+        );
+    }
+
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToDetails)
 {
     for (auto [subband, detail_rect] : expected_subband_detail_rects) {
-        auto expected_modified_full_matrix = expected_matrix.clone();
-        auto full_coeffs = dwt.create_coeffs(
-            expected_modified_full_matrix,
-            full_size,
-            full_levels
-        );
-        auto level_coeffs = full_coeffs.at_level(level);
-
-        //  Get detail coefficients before assignment so that we can make sure
-        //  view semantics are followed - i.e. assignment should be reflected
-        //  in these objects, it should NOT force a copy of the underlying matrix.
-        auto detail_from_full_coeffs_before_assign = full_coeffs.detail(level, subband);
-        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(subband);
-
         auto new_value = make_scalar(0.5 + level);
         auto new_detail_values = cv::Mat(detail_rect.size(), type, new_value);
-
-        //  Update expected
-        expected_modified_full_matrix = expected_modified_full_matrix.clone();
-        expected_modified_full_matrix(detail_rect) = new_value;
-
-        //  fill details with new value
-        full_coeffs.detail(level, subband) = new_value;
-
-        auto detail_from_full_coeffs_after_assign = full_coeffs.detail(level, subband);
-        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(subband);
-
-        assert_set_detail(
-            full_coeffs,
+        test_set_detail(
+            new_value,
             new_detail_values,
-            expected_modified_full_matrix,
-            detail_from_full_coeffs_before_assign,
-            detail_from_full_coeffs_after_assign,
-            detail_from_level_coeffs_before_assign,
-            detail_from_level_coeffs_after_assign,
-            subband
+            subband,
+            detail_rect,
+            [](auto full_coeffs, auto level, auto subband, auto new_detail_coeffs) {
+                full_coeffs.detail(level, subband) = new_detail_coeffs;
+            }
         );
     }
 }
