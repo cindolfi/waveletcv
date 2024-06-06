@@ -50,6 +50,8 @@ if (DOXYGEN_FOUND)
 
     set(DOXYGEN_STRIP_FROM_PATH "${CVWT_INCLUDE_DIR}")
     set(DOXYGEN_STRIP_FROM_INC_PATH "${CVWT_INCLUDE_DIR}")
+    set(DOXYGEN_CITE_BIB_FILES "dwt2d.bib")
+
     set(DOXYGEN_FULL_PATH_NAMES YES)
     set(DOXYGEN_ALIASES
         [[pref{1}="<span class=\"paramname\">\1</span>"]]

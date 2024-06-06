@@ -148,6 +148,8 @@ class CoeffsExpr;
  * cv::Mat reconstructed_image = idwt2d(coeffs, "db2");
  * @endcode
  *
+ * @cite AConciseIntroductionToWavelets
+ *
  * @see
  *  - FilterBank
  *  - Wavelet
@@ -260,7 +262,7 @@ public:
          * @class common_scalar_definition
          *
          * Scalars are defined to be:
-         *  - A primitive scalar (e.g. float, double, etc.)
+         *  - A fundamental type (e.g. float, double, etc.)
          *  - A vector scalar containing channels() elements (e.g. cv::Vec,
          *    std::vector, array, etc.)
          *  - A cv::Scalar if channels() is less than or equal to 4
@@ -268,7 +270,7 @@ public:
         /**
          * @class common_scalar_definition_list
          *
-         *  A primitive scalar (e.g. float, double, etc.)
+         *  A fundamental type (e.g. float, double, etc.)
          *  - A vector scalar containing channels() elements (e.g. cv::Vec,
          *    std::vector, array, etc.)
          *  - A cv::Scalar if channels() is less than or equal to 4
