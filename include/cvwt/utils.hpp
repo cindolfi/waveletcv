@@ -6,225 +6,112 @@
 #include <memory>
 #include <string>
 #include <atomic>
-#include <opencv2/core.hpp>
+#include <type_traits>
 #include <iostream>
+#include <opencv2/core.hpp>
 #include "cvwt/exception.hpp"
 
 namespace cvwt
 {
-/**
- * @name Utilities
- * @{
- */
-/**
- * @brief Collect values indicated by the given mask.
- *
- * @param[in] array
- * @param[out] collected
- * @param[in] mask
- */
-void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputArray mask);
+namespace internal
+{
+template <std::floating_point T>
+inline constexpr T sqrt_epsilon = std::sqrt(std::numeric_limits<T>::epsilon());
+
+template <typename... T>
+using promote_types = decltype((std::declval<T>() + ...));
+}
 
 /**
- * @brief Returns true if all values two matrices are equal.
+ * @brief Returns true if the floating point value is approximately zero.
  *
- * @param[in] a
- * @param[in] b
+ * @param[in] x
+ * @param[in] absolute_tolerance
  */
-bool matrix_equals(const cv::Mat& a, const cv::Mat& b);
+template <typename T>
+requires std::floating_point<std::remove_cvref_t<T>>
+bool approx_zero(T x, double absolute_tolerance)
+{
+    return std::abs(x) < static_cast<T>(absolute_tolerance);
+}
 
 /**
- * @brief Returns true if two matrices refer to the same data and are equal.
- *
- * @param[in] a
- * @param[in] b
+ * @overload
  */
-bool identical(const cv::Mat& a, const cv::Mat& b);
+template <typename T>
+requires std::floating_point<std::remove_cvref_t<T>>
+bool approx_zero(T x)
+{
+    return approx_zero(x, internal::sqrt_epsilon<T>);
+}
 
 /**
- * @brief Returns true if the two matrices refer to the same data.
+ * @brief Returns true if the two floating point values are approximately equal.
  *
- * @param[in] a
- * @param[in] b
+ * @param[in] x
+ * @param[in] y
+ * @param[in] relative_tolerance
+ * @param[in] zero_absolute_tolerance
  */
-bool shares_data(const cv::Mat& a, const cv::Mat& b);
+template <typename T1, typename T2>
+requires std::floating_point<std::remove_cvref_t<T1>>
+    && std::floating_point<std::remove_cvref_t<T2>>
+constexpr bool approx_equal(
+    T1 x,
+    T2 y,
+    double relative_tolerance,
+    double zero_absolute_tolerance
+)
+{
+    using T = internal::promote_types<T1, T2>;
+
+    //  https://www.reidatcheson.com/floating%20point/comparison/2019/03/20/floating-point-comparison.html
+    if (x == 0.0)
+        return approx_zero(y, zero_absolute_tolerance);
+
+    if (y == 0.0)
+        return approx_zero(x, zero_absolute_tolerance);
+
+    T min = std::max(
+        std::min(std::abs(x), std::abs(y)),
+        std::numeric_limits<T>::min()
+    );
+    return std::abs(x - y) / min < static_cast<T>(relative_tolerance);
+}
 
 /**
- * @brief Negates all even indexed values.
- *
- * @param[in] vector A row or column vector.
- * @param[out] result The input vector with the even indexed values negated.
+ * @overload
  */
-void negate_even_indices(cv::InputArray vector, cv::OutputArray result);
+template <typename T1, typename T2>
+requires std::floating_point<std::remove_cvref_t<T1>>
+    && std::floating_point<std::remove_cvref_t<T2>>
+constexpr bool approx_equal(T1 x, T2 y, double relative_tolerance)
+{
+    using T = internal::promote_types<T1, T2>;
+
+    return approx_equal(
+        x, y,
+        static_cast<T>(relative_tolerance),
+        internal::sqrt_epsilon<T>
+    );
+}
 
 /**
- * @brief Negates all odd indexed values.
- *
- * @param[in] vector A row or column vector.
- * @param[out] result The input vector with the odd indexed values negated.
+ * @overload
  */
-void negate_odd_indices(cv::InputArray vector, cv::OutputArray result);
+template <typename T1, typename T2>
+requires std::floating_point<std::remove_cvref_t<T1>>
+    && std::floating_point<std::remove_cvref_t<T2>>
+constexpr bool approx_equal(T1 x, T2 y)
+{
+    using T = internal::promote_types<T1, T2>;
 
-/**
- * @brief Returns true if array is cv::noArray().
- *
- * @param[in] array
- */
-bool is_no_array(cv::InputArray array);
-
-/**
- * @brief Returns the maximum absolute value over all channels.
- *
- * @param[in] array
- * @param[in] mask
- */
-double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray());
-
-/**
- * @brief Replace all NaN values.
- *
- * This is a version of cv::patch_nans() that accepts arrays of any depth, not
- * just CV_32F.
- *
- * @param[inout] array The array containing NaN values.
- * @param[in] value The value used to replace NaN.
- */
-void patch_nans(cv::InputOutputArray array, double value = 0.0);
-
-bool is_scalar_for_array(cv::InputArray scalar, cv::InputArray array);
-
-/** @}*/
-
-/**
- * @name Statistics
- * @{
- */
-/**
- * @brief Computes the channel-wise median.
- *
- * @param[in] array
- * @param[in] mask A single channel matrix of type CV_8UC1 or CV_8SC1 where
- *                 nonzero entries indicate which array elements are used.
- */
-cv::Scalar median(cv::InputArray array, cv::InputArray mask = cv::noArray());
-
-/**
- * @brief Masked mean absolute deviation.
- *
- * The standard deviation of the \f$k^{th}\f$ channel of \f$x\f$ is estimated by
- * \f{equation}{
- *     \mad(x_k) = \median(|x_k| - \median(x_k))
- * \f}
- * where the median is taken over locations where the mask is nonzero.
- *
- * @param[in] array The multichannel array.
- * @param[in] mask A single channel matrix of type CV_8UC1 or CV_8SC1 where nonzero
- *             entries indicate which array elements are used.
- */
-cv::Scalar mad(cv::InputArray array, cv::InputArray mask = cv::noArray());
-
-/**
- * @brief Robust estimation of the standard deviation.
- *
- * This function estimates the standard deviation of each channel separately
- * using the mean absolute deviation (i.e. mad()).  The elements in a each
- * channel are assumed to be i.i.d from a normal distribution.
- *
- * Specifically, the standard deviation of the \f$k^{th}\f$ channel of \f$x\f$
- * is estimated by
- * \f{equation}{
- *     \hat{\sigma_k} = \frac{\mad(x_k)}{0.675}
- * \f}
- *
- * @param[in] array The data samples.  This can a multichannel with up to 4 channels.
- */
-cv::Scalar mad_stdev(cv::InputArray array);
-/** @}*/
-
-
-/**
- * @name Multichannel Comparison Functions
- * @{
- */
-/**
- * @brief Returns a multichannel mask indicating which elements of a matrix are
- *        less than the elements of another matrix.
- *
- * @param[in] a
- * @param[in] b
- * @param[out] result
- * @param[in] mask
- */
-void less_than(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray result,
-    cv::InputArray mask = cv::noArray()
-);
-/**
- * @brief Returns a multichannel mask indicating which elements of a matrix are
- *        less than or equal to the elements of another matrix.
- *
- * @param[in] a
- * @param[in] b
- * @param[out] result
- * @param[in] mask
- */
-void less_than_or_equal(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray result,
-    cv::InputArray mask = cv::noArray()
-);
-/**
- * @brief Returns a multichannel mask indicating which elements of a matrix are
- *        greater than the elements of another matrix.
- *
- * @param[in] a
- * @param[in] b
- * @param[out] result
- * @param[in] mask
- */
-void greater_than(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray result,
-    cv::InputArray mask = cv::noArray()
-);
-/**
- * @brief Returns a multichannel mask indicating which elements of a matrix are
- *        greater than or equal to the elements of another matrix.
- *
- * @param[in] a
- * @param[in] b
- * @param[out] result
- * @param[in] mask
- */
-void greater_than_or_equal(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray result,
-    cv::InputArray mask = cv::noArray()
-);
-/**
- * @brief Returns a multichannel mask indicating how the elements of a matrix
- *        compare to the elements of another matrix.
- *
- * @param[in] a
- * @param[in] b
- * @param[out] result
- * @param[in] compare_type
- * @param[in] mask
- */
-void compare(
-    cv::InputArray a,
-    cv::InputArray b,
-    cv::OutputArray result,
-    cv::CmpTypes compare_type,
-    cv::InputArray mask = cv::noArray()
-);
-/** @}*/
-
+    return approx_equal(
+        x, y,
+        internal::sqrt_epsilon<T>,
+        internal::sqrt_epsilon<T>
+    );
+}
 
 
 namespace internal
@@ -535,6 +422,332 @@ auto dispatch_on_pixel_depths(int type1, int type2, auto&&... args)
     );
 }
 }   // namespace internal
+
+/**
+ * @name Utilities
+ * @{
+ */
+/**
+ * @brief Collect values indicated by the given mask.
+ *
+ * @param[in] array
+ * @param[out] collected
+ * @param[in] mask
+ */
+void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputArray mask);
+
+/**
+ * @brief Returns true if all values two matrices are equal.
+ *
+ * @param[in] a
+ * @param[in] b
+ */
+bool matrix_equals(cv::InputArray a, cv::InputArray b);
+
+
+/**
+ * @brief Returns true if all corresponding values in two matrices are approximately equal.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[in] relative_tolerance
+ * @param[in] zero_absolute_tolerance
+ */
+bool matrix_approx_equals(
+    cv::InputArray a,
+    cv::InputArray b,
+    double relative_tolerance,
+    double zero_absolute_tolerance
+);
+/**
+ * @overload
+ */
+bool matrix_approx_equals(cv::InputArray a, cv::InputArray b, double relative_tolerance);
+/**
+ * @overload
+ */
+bool matrix_approx_equals(cv::InputArray a, cv::InputArray b);
+
+/**
+ * @brief Returns true if all corresponding values in two matrices are approximately equal.
+ *
+ * @param[in] a
+ * @param[in] absolute_tolerance
+ */
+bool matrix_approx_zeros(cv::InputArray a, double absolute_tolerance);
+/**
+ * @overload
+ */
+bool matrix_approx_zeros(cv::InputArray a);
+
+
+/**
+ * @brief Returns true if two matrices refer to the same data and are equal.
+ *
+ * @param[in] a
+ * @param[in] b
+ */
+bool identical(const cv::Mat& a, const cv::Mat& b);
+
+/**
+ * @brief Returns true if the two matrices refer to the same data.
+ *
+ * @param[in] a
+ * @param[in] b
+ */
+bool shares_data(const cv::Mat& a, const cv::Mat& b);
+
+/**
+ * @brief Negates all even indexed values.
+ *
+ * @param[in] vector A row or column vector.
+ * @param[out] result The input vector with the even indexed values negated.
+ */
+void negate_even_indices(cv::InputArray vector, cv::OutputArray result);
+
+/**
+ * @brief Negates all odd indexed values.
+ *
+ * @param[in] vector A row or column vector.
+ * @param[out] result The input vector with the odd indexed values negated.
+ */
+void negate_odd_indices(cv::InputArray vector, cv::OutputArray result);
+
+/**
+ * @brief Returns true if array is cv::noArray().
+ *
+ * @param[in] array
+ */
+bool is_no_array(cv::InputArray array);
+
+/**
+ * @brief Returns the maximum absolute value over all channels.
+ *
+ * @param[in] array
+ * @param[in] mask
+ */
+double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray());
+
+/**
+ * @brief Replace all NaN values.
+ *
+ * This is a version of cv::patch_nans() that accepts arrays of any depth, not
+ * just CV_32F.
+ *
+ * @param[inout] array The array containing NaN values.
+ * @param[in] value The value used to replace NaN.
+ */
+void patch_nans(cv::InputOutputArray array, double value = 0.0);
+
+/**
+ * @brief Returns true if the given value can be used as a scalar for the given array.
+ *
+ * Scalars can be added to or subtracted from the array, be assigned to all or
+ * some array elements, or be used with comparison functions (e.g. compare(),
+ * less_than(), etc.).
+ *
+ * A scalar is defined to be one of the following:
+ *  - A fundamental type (e.g. float, double, etc.)
+ *  - A vector containing @pref{array}.channels() elements (e.g. cv::Vec,
+ *    std::vector, array, etc.)
+ *  - A cv::Scalar if @pref{array}.channels() is less than or equal to 4
+ *
+ * @param[in] scalar
+ * @param[in] array
+ */
+bool is_scalar_for_array(cv::InputArray scalar, cv::InputArray array);
+
+/**
+ * @brief Returns true if the array is a row vector or column vector.
+ *
+ * The @pref{array} is a vector if it has a single row or column and is
+ * continuous.
+ *
+ * @param array The potential vector.
+ */
+bool is_vector(cv::InputArray array);
+
+/**
+ * @brief Returns true if the array is a row vector or column vector.
+ *
+ * The @pref{array} is a vector if it has a single row or column, is continuous,
+ * and has @pref{channels} number of channels.
+ *
+ * @param array The potential vector.
+ * @param channels The required number of channels.
+ */
+bool is_vector(cv::InputArray array, int channels);
+
+/**
+ * @brief Returns true if the array is a row vector or column vector.
+ *
+ * The @pref{array} is a vector if it has a single column and is continuous.
+ *
+ * @param array The potential vector.
+ */
+bool is_column_vector(cv::InputArray array);
+
+/**
+ * @brief Returns true if the array is a column vector.
+ *
+ * The @pref{array} is a vector if it has a single column, is continuous, and
+ * has @pref{channels} number of channels.
+ *
+ * @param array The potential vector.
+ * @param channels The required number of channels.
+ */
+bool is_column_vector(cv::InputArray array, int channels);
+
+/**
+ * @brief Returns true if the array is a row vector or column vector.
+ *
+ * The @pref{array} is a vector if it has a single row and is continuous.
+ *
+ * @param array The potential vector.
+ */
+bool is_row_vector(cv::InputArray array);
+
+/**
+ * @brief Returns true if the array is a row vector.
+ *
+ * The @pref{array} is a vector if it has a single row, is continuous, and
+ * has @pref{channels} number of channels.
+ *
+ * @param array The potential vector.
+ * @param channels The required number of channels.
+ */
+bool is_row_vector(cv::InputArray array, int channels);
+/** @}*/
+
+/**
+ * @name Statistics
+ * @{
+ */
+/**
+ * @brief Computes the channel-wise median.
+ *
+ * @param[in] array
+ * @param[in] mask A single channel matrix of type CV_8UC1 or CV_8SC1 where
+ *                 nonzero entries indicate which array elements are used.
+ */
+cv::Scalar median(cv::InputArray array, cv::InputArray mask = cv::noArray());
+
+/**
+ * @brief Masked mean absolute deviation.
+ *
+ * The standard deviation of the \f$k^{th}\f$ channel of \f$x\f$ is estimated by
+ * \f{equation}{
+ *     \mad(x_k) = \median(|x_k| - \median(x_k))
+ * \f}
+ * where the median is taken over locations where the mask is nonzero.
+ *
+ * @param[in] array The multichannel array.
+ * @param[in] mask A single channel matrix of type CV_8UC1 or CV_8SC1 where nonzero
+ *             entries indicate which array elements are used.
+ */
+cv::Scalar mad(cv::InputArray array, cv::InputArray mask = cv::noArray());
+
+/**
+ * @brief Robust estimation of the standard deviation.
+ *
+ * This function estimates the standard deviation of each channel separately
+ * using the mean absolute deviation (i.e. mad()).  The elements in a each
+ * channel are assumed to be i.i.d from a normal distribution.
+ *
+ * Specifically, the standard deviation of the \f$k^{th}\f$ channel of \f$x\f$
+ * is estimated by
+ * \f{equation}{
+ *     \hat{\sigma_k} = \frac{\mad(x_k)}{0.675}
+ * \f}
+ *
+ * @param[in] array The data samples.  This can a multichannel with up to 4 channels.
+ */
+cv::Scalar mad_stdev(cv::InputArray array);
+/** @}*/
+
+
+/**
+ * @name Multichannel Comparison Functions
+ * @{
+ */
+/**
+ * @brief Returns a multichannel mask indicating which elements of a matrix are
+ *        less than the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] mask
+ */
+void less_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray result,
+    cv::InputArray mask = cv::noArray()
+);
+/**
+ * @brief Returns a multichannel mask indicating which elements of a matrix are
+ *        less than or equal to the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] mask
+ */
+void less_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray result,
+    cv::InputArray mask = cv::noArray()
+);
+/**
+ * @brief Returns a multichannel mask indicating which elements of a matrix are
+ *        greater than the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] mask
+ */
+void greater_than(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray result,
+    cv::InputArray mask = cv::noArray()
+);
+/**
+ * @brief Returns a multichannel mask indicating which elements of a matrix are
+ *        greater than or equal to the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] mask
+ */
+void greater_than_or_equal(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray result,
+    cv::InputArray mask = cv::noArray()
+);
+/**
+ * @brief Returns a multichannel mask indicating how the elements of a matrix
+ *        compare to the elements of another matrix.
+ *
+ * @param[in] a
+ * @param[in] b
+ * @param[out] result
+ * @param[in] compare_type
+ * @param[in] mask
+ */
+void compare(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray result,
+    cv::CmpTypes compare_type,
+    cv::InputArray mask = cv::noArray()
+);
+/** @}*/
 }   // namespace cvwt
 
 #endif  // CVWT_UTILS_HPP

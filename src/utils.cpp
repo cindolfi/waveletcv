@@ -3,6 +3,8 @@
 #include <iostream>
 #include <sstream>
 #include <experimental/iterator>
+#include <atomic>
+#include <limits>
 
 namespace cvwt
 {
@@ -21,8 +23,8 @@ std::string get_type_name(int type)
         case CV_8S: return "CV_8SC" + channels;
         case CV_8U: return "CV_8UC" + channels;
     }
-    assert(false);
-    return "";
+
+    return std::to_string(type);
 }
 
 cv::Scalar set_unused_channels(const cv::Scalar& scalar, int channels, double value)
@@ -659,6 +661,144 @@ struct Compare
             );
     }
 };
+
+template <typename T1, typename T2>
+struct MatrixApproxEquals
+{
+    using Float = promote_types<T1, T2, float>;
+
+    bool operator()(
+        cv::InputArray a,
+        cv::InputArray b,
+        double relative_tolerance,
+        double zero_absolute_tolerance
+    ) const
+    {
+        auto is_approx_equal = [&](T1 x, T2 y) {
+            return approx_equal<Float, Float>(
+                x,
+                y,
+                relative_tolerance,
+                zero_absolute_tolerance
+            );
+        };
+
+        return compare_approx_equal(a, b, is_approx_equal);
+    }
+
+    bool operator()(
+        cv::InputArray a,
+        cv::InputArray b,
+        double relative_tolerance
+    ) const
+    {
+        auto is_approx_equal = [&](T1 x, T2 y) {
+            return approx_equal<Float, Float>(
+                x,
+                y,
+                relative_tolerance
+            );
+        };
+
+        return compare_approx_equal(a, b, is_approx_equal);
+    }
+
+    bool operator()(
+        cv::InputArray a,
+        cv::InputArray b
+    ) const
+    {
+        auto is_approx_equal = [&](T1 x, T2 y) {
+            return approx_equal<Float, Float>(x, y);
+        };
+
+        return compare_approx_equal(a, b, is_approx_equal);
+    }
+
+protected:
+    bool compare_approx_equal(cv::InputArray a, cv::InputArray b, auto is_approx_equal) const
+    {
+        if (a.dims() != b.dims() || a.size() != b.size() || a.channels() != b.channels())
+            return false;
+
+        cv::Mat matrix_a = a.getMat();
+        cv::Mat matrix_b = b.getMat();
+        const int channels = matrix_a.channels();
+
+        std::atomic<bool> result = true;
+        cv::parallel_for_(
+            cv::Range(0, matrix_a.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(matrix_a, index);
+                    auto x = matrix_a.ptr<T1>(row, col);
+                    auto y = matrix_b.ptr<T2>(row, col);
+                    for (int k = 0; k < channels; ++k) {
+                        if (!is_approx_equal(x[k], y[k])) {
+                            result = false;
+                            break;
+                        }
+
+                        if (!result)
+                            break;
+                    }
+                }
+            }
+        );
+
+        return result;
+    }
+};
+
+template <typename T>
+struct MatrixApproxZero
+{
+    using Float = promote_types<T, float>;
+
+    bool operator()(cv::InputArray a, double zero_absolute_tolerance) const
+    {
+        auto is_approx_zero = [&](T x) {
+            return approx_zero<Float>(x, zero_absolute_tolerance);
+        };
+
+        return compare_approx_zero(a, is_approx_zero);
+    }
+
+    bool operator()(cv::InputArray a) const
+    {
+        auto is_approx_zero = [&](T x) {
+            return approx_zero<Float>(x);
+        };
+
+        return compare_approx_zero(a, is_approx_zero);
+    }
+
+protected:
+bool compare_approx_zero(cv::InputArray a, auto is_approx_zero) const
+    {
+        cv::Mat matrix_a = a.getMat();
+        const int channels = matrix_a.channels();
+
+        std::atomic<bool> result = true;
+        cv::parallel_for_(
+            cv::Range(0, matrix_a.total()),
+            [&](const cv::Range& range) {
+                for (int index = range.start; index < range.end; ++index) {
+                    auto [row, col] = unravel_index(matrix_a, index);
+                    auto x = matrix_a.ptr<T>(row, col);
+                    for (int k = 0; k < channels; ++k)
+                        if (!is_approx_zero(x[k])) {
+                            result = false;
+                            goto done;
+                        }
+                }
+                done:;
+            }
+        );
+
+        return result;
+    }
+};
 }   // namespace internal
 
 void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputArray mask)
@@ -671,19 +811,62 @@ void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputAr
     );
 }
 
-bool matrix_equals(const cv::Mat& a, const cv::Mat& b)
+bool matrix_equals(cv::InputArray a, cv::InputArray b)
 {
-    if (a.dims != b.dims || a.size != b.size || a.channels() != b.channels())
+    if (a.dims() != b.dims() || a.size() != b.size() || a.channels() != b.channels())
         return false;
 
-    const cv::Mat* matrices[2] = {&a, &b};
+    cv::Mat matrix_a = a.getMat();
+    cv::Mat matrix_b = b.getMat();
+    const cv::Mat* matrices[2] = {&matrix_a, &matrix_b};
     cv::Mat planes[2];
     cv::NAryMatIterator it(matrices, planes, 2);
     for (int p = 0; p < it.nplanes; ++p, ++it)
-        if (cv::countNonZero(it.planes[0] != it.planes[1]) != 0)
+        if (cv::countNonZero(it.planes[0].reshape(1) != it.planes[1].reshape(1)) != 0)
             return false;
 
     return true;
+}
+
+bool matrix_approx_equals(
+    cv::InputArray a,
+    cv::InputArray b,
+    double relative_tolerance,
+    double zero_absolute_tolerance
+)
+{
+    return internal::dispatch_on_pixel_depths<internal::MatrixApproxEquals>(
+        a.depth(), b.depth(), a, b, relative_tolerance, zero_absolute_tolerance
+    );
+}
+
+bool matrix_approx_equals(cv::InputArray a, cv::InputArray b, double relative_tolerance)
+{
+    return internal::dispatch_on_pixel_depths<internal::MatrixApproxEquals>(
+        a.depth(), b.depth(), a, b, relative_tolerance
+    );
+}
+
+bool matrix_approx_equals(cv::InputArray a, cv::InputArray b)
+{
+    return internal::dispatch_on_pixel_depths<internal::MatrixApproxEquals>(
+        a.depth(), b.depth(), a, b
+    );
+}
+
+
+bool matrix_approx_zeros(cv::InputArray a, double absolute_tolerance)
+{
+    return internal::dispatch_on_pixel_depth<internal::MatrixApproxZero>(
+        a.depth(), a, absolute_tolerance
+    );
+}
+
+bool matrix_approx_zeros(cv::InputArray a)
+{
+    return internal::dispatch_on_pixel_depth<internal::MatrixApproxZero>(
+        a.depth(), a
+    );
 }
 
 bool identical(const cv::Mat& a, const cv::Mat& b)
@@ -774,6 +957,44 @@ bool is_scalar_for_array(cv::InputArray scalar, cv::InputArray array)
         );
 }
 
+bool is_vector(cv::InputArray array)
+{
+    return (array.rows() == 1 || array.cols() == 1)
+        && array.isContinuous();
+}
+
+bool is_vector(cv::InputArray array, int channels)
+{
+    return (array.rows() == 1 || array.cols() == 1)
+        && array.channels() == channels
+        && array.isContinuous();
+}
+
+bool is_column_vector(cv::InputArray array)
+{
+    return array.cols() == 1
+        && array.isContinuous();
+}
+
+bool is_column_vector(cv::InputArray array, int channels)
+{
+    return array.cols() == 1
+        && array.channels() == channels
+        && array.isContinuous();
+}
+
+bool is_row_vector(cv::InputArray array)
+{
+    return array.rows() == 1
+        && array.isContinuous();
+}
+
+bool is_row_vector(cv::InputArray array, int channels)
+{
+    return array.rows() == 1
+        && array.channels() == channels
+        && array.isContinuous();
+}
 
 double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
 {
