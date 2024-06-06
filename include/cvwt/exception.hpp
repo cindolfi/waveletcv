@@ -10,9 +10,12 @@
 
 namespace cvwt
 {
+//  forward declarations (defined in utils.cpp)
+bool is_vector(cv::InputArray vector, int channels);
+
 namespace internal
 {
-//  forward declaration (defined in utils.cpp)
+//  forward declarations (defined in utils.cpp)
 std::string get_type_name(int type);
 
 /**
@@ -364,6 +367,42 @@ void _throw_member_not_implemented(
         class_name, "::", function_name, " is not implemented. ",
         message_parts...
     );
+}
+
+/**
+ * @brief Throws a bad size exception if the array is not a single channel row or column vector.
+ *
+ * @param[in] array The array to check.  This must be convertible to cv::InputArray.
+ */
+#define throw_if_not_vector(array, channels, ...) _throw_if_not_vector(array, channels, #array, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+void _throw_if_not_vector(
+    cv::InputArray array,
+    int channels,
+    const std::string& array_name,
+    const char* function,
+    const char* file,
+    int line,
+    auto... message_parts
+)
+{
+    if (!is_vector(array, channels)) {
+        if constexpr (sizeof...(message_parts) == 0)
+            _throw_bad_size(
+                function, file, line,
+                "Vectors must have rows == 1 or cols == 1 and channels == ", channels, ". ",
+                "Got ", array_name, ".size() = ", array.size(), " and ",
+                array_name, ".channels() = ", array.channels(), "."
+            );
+        else
+            _throw_bad_size(
+                function, file, line,
+                message_parts...,
+                " [Vectors must have rows == 1 or cols == 1 and channels == ", channels, ". ",
+                "Got ", array_name, ".size() = ", array.size(), " and ",
+                array_name, ".channels() = ", array.channels(), ".]"
+            );
+    }
 }
 }   // namespace internal
 }   // namespace cvwt
