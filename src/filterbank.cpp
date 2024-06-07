@@ -3,6 +3,7 @@
 #include <functional>
 #include <opencv2/imgproc.hpp>
 #include <ranges>
+#include <numbers>
 #include "cvwt/utils.hpp"
 
 namespace cvwt
@@ -274,6 +275,76 @@ struct MergeEvenAndOddKernels
     }
 };
 
+template <typename T>
+struct StripZeros
+{
+    void operator()(cv::InputArray kernel, cv::OutputArray stripped_kernel) const
+    {
+        const int channels = kernel.channels();
+        auto array = kernel.getMat();
+        int left = 0;
+        while (is_zero(array, left) && left < array.total())
+            ++left;
+
+        int right = array.total() - 1;
+        while (is_zero(array, right) && right >= 0)
+            --right;
+
+        array.rowRange(left, right + 1).copyTo(stripped_kernel);
+    }
+
+    bool is_zero(const cv::Mat& array, int index) const
+    {
+        auto element = array.ptr<T>(index);
+        return std::all_of(
+            element,
+            element + array.channels(),
+            [](auto x) { return x == 0.0; }
+        );
+    }
+};
+
+void strip_zeros(cv::InputArray kernel, cv::OutputArray stripped_kernel)
+{
+    internal::dispatch_on_pixel_depth<internal::StripZeros>(
+        kernel.depth(), kernel, stripped_kernel
+    );
+}
+
+void strided_correlate(
+    cv::InputArray a,
+    cv::InputArray b,
+    cv::OutputArray result,
+    int stride
+)
+{
+    assert(is_vector(a, 1));
+    assert(is_vector(b, 1));
+    assert(a.size() == b.size());
+    assert(stride >= 1);
+
+    cv::filter2D(a, result, -1, b, cv::Point(0, 0), 0.0, cv::BORDER_CONSTANT);
+    if (stride > 1) {
+        cv::resize(
+            result,
+            result,
+            cv::Size(1, a.total() / stride),
+            0, 0,
+            cv::INTER_NEAREST
+        );
+    }
+}
+
+cv::Mat convolve(cv::InputArray x, cv::InputArray y)
+{
+    cv::Mat result;
+    cv::Mat flipped_y;
+    cv::flip(y, flipped_y, -1);
+    cv::filter2D(x, result, -1, flipped_y, cv::Point(0, 0), 0.0, cv::BORDER_CONSTANT);
+
+    return result;
+};
+
 cv::Mat as_column_vector(const cv::Mat& vector)
 {
     assert(vector.rows == 1 || vector.cols == 1);
@@ -322,7 +393,11 @@ FilterBankImpl::FilterBankImpl(
     );
 }
 
-void FilterBankImpl::split_kernel_into_odd_and_even_parts(cv::InputArray kernel, cv::OutputArray even_kernel, cv::OutputArray odd_kernel) const
+void FilterBankImpl::split_kernel_into_odd_and_even_parts(
+    cv::InputArray kernel,
+    cv::OutputArray even_kernel,
+    cv::OutputArray odd_kernel
+) const
 {
     dispatch_on_pixel_depth<SplitKernelIntoOddAndEvenParts>(
         kernel.depth(),
@@ -377,19 +452,20 @@ void FilterBankImpl::throw_if_wrong_size(
     const cv::Mat& decompose_highpass
 ) const
 {
-    auto all_empty = decompose_lowpass.empty()
+    bool all_empty = decompose_lowpass.empty()
         && decompose_highpass.empty()
         && reconstruct_lowpass.empty()
         && reconstruct_highpass.empty();
 
     if (!all_empty) {
-        if (decompose_lowpass.empty()
-            || decompose_highpass.empty()
-            || reconstruct_lowpass.empty()
-            || reconstruct_highpass.empty()
-        ) {
+        bool all_nonempty = !decompose_lowpass.empty()
+            && !decompose_highpass.empty()
+            && !reconstruct_lowpass.empty()
+            && !reconstruct_highpass.empty();
+
+        if (!all_nonempty) {
             internal::throw_bad_arg(
-                "FilterBank: Kernels must all be empty or all nonempty, got ",
+                "FilterBank: Kernels must all be empty or all nonempty. Got ",
                 (reconstruct_lowpass.empty() ? "empty" : "nonempty"), " reconstruct_lowpass, ",
                 (reconstruct_highpass.empty() ? "empty" : "nonempty"), " reconstruct_highpass, ",
                 (decompose_lowpass.empty() ? "empty" : "nonempty"), " decompose_lowpass, and ",
@@ -398,22 +474,26 @@ void FilterBankImpl::throw_if_wrong_size(
         }
 
         if (decompose_lowpass.size() != decompose_highpass.size()
-            || (decompose_lowpass.rows != 1 && decompose_lowpass.cols != 1)
-        ) {
+            || !is_vector(decompose_lowpass, 1)) {
             internal::throw_bad_size(
-                "FilterBank: decompose_lowpass and decompose_highpass must be row or column vectors of the same size, ",
-                "got decompose_lowpass.size() = ", decompose_lowpass.size(), ", ",
-                "decompose_highpass.size() = ", decompose_highpass.size(), "."
+                "FilterBank: decompose_lowpass and decompose_highpass kernels "
+                "must be single channel vectors of the same size. ",
+                "Got decompose_lowpass.size() = ", decompose_lowpass.size(),
+                " and decompose_highpass.size() = ", decompose_highpass.size(), ". ",
+                "Got decompose_lowpass.channels() = ", decompose_lowpass.channels(),
+                " and decompose_highpass.channels() = ", decompose_highpass.channels(), "."
             );
         }
 
         if (reconstruct_lowpass.size() != reconstruct_highpass.size()
-            || (reconstruct_lowpass.rows != 1 && reconstruct_lowpass.cols != 1)
-        ) {
+            || !is_vector(reconstruct_lowpass, 1)) {
             internal::throw_bad_size(
-                "FilterBank: reconstruct_lowpass and reconstruct_highpass must be row or column vectors of the same size, ",
-                "got reconstruct_lowpass.size() = ", reconstruct_lowpass.size(), ", ",
-                "reconstruct_highpass.size() = ", reconstruct_highpass.size(), "."
+                "FilterBank: reconstruct_lowpass and reconstruct_highpass kernels "
+                "must be single channel vectors of the same size. ",
+                "Got reconstruct_lowpass.size() = ", reconstruct_lowpass.size(),
+                " and reconstruct_highpass.size() = ", reconstruct_highpass.size(), ". ",
+                "Got reconstruct_lowpass.channels() = ", reconstruct_lowpass.channels(),
+                " and reconstruct_highpass.channels() = ", reconstruct_highpass.channels(), "."
             );
         }
     }
@@ -614,6 +694,180 @@ FilterBank FilterBank::reverse() const
         reconstruct_lowpass,
         reconstruct_highpass
     );
+}
+
+bool FilterBank::is_orthogonal() const
+{
+    auto decompose_kernels = this->decompose_kernels();
+    auto delta = cv::Mat::eye(filter_length() / 2, 1, depth());
+
+    //  "Wavelets and Filter Banks"" Nguyen & Strang - Equation 5.14
+    cv::Mat lowpass_correlation;
+    internal::strided_correlate(
+        decompose_kernels.lowpass(),
+        decompose_kernels.lowpass(),
+        lowpass_correlation,
+        2
+    );
+    if (!matrix_approx_equals(lowpass_correlation, delta))
+        return false;
+
+    //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 5.16
+    cv::Mat highpass_correlation;
+    internal::strided_correlate(
+        decompose_kernels.highpass(),
+        decompose_kernels.highpass(),
+        highpass_correlation,
+        2
+    );
+    if (!matrix_approx_equals(highpass_correlation, delta))
+        return false;
+
+    //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 5.15
+    cv::Mat cross_correlation;
+    internal::strided_correlate(
+        decompose_kernels.lowpass(),
+        decompose_kernels.highpass(),
+        cross_correlation,
+        2
+    );
+    if (!matrix_approx_zeros(cross_correlation))
+        return false;
+
+    return is_biorthogonal();
+}
+
+bool FilterBank::is_biorthogonal() const
+{
+    return satisfies_perfect_reconstruction(decompose_kernels(), reconstruct_kernels());
+}
+
+bool FilterBank::satisfies_perfect_reconstruction(
+    const KernelPair& decompose_kernels,
+    const KernelPair& reconstruct_kernels
+)
+{
+    return satisfies_alias_cancellation(decompose_kernels, reconstruct_kernels)
+        && satisfies_no_distortion(decompose_kernels, reconstruct_kernels);
+}
+
+bool FilterBank::satisfies_alias_cancellation() const
+{
+    return satisfies_alias_cancellation(decompose_kernels(), reconstruct_kernels());
+}
+
+bool FilterBank::satisfies_alias_cancellation(
+    const KernelPair& decompose_kernels,
+    const KernelPair& reconstruct_kernels
+)
+{
+    //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 4.5
+    cv::Mat decompose_lowpass_alternated_signs;
+    negate_even_indices(decompose_kernels.lowpass(), decompose_lowpass_alternated_signs);
+
+    cv::Mat decompose_highpass_alternated_signs;
+    negate_even_indices(decompose_kernels.highpass(), decompose_highpass_alternated_signs);
+
+    return matrix_approx_zeros(
+        internal::convolve(
+            reconstruct_kernels.lowpass(),
+            decompose_lowpass_alternated_signs
+        )
+        + internal::convolve(
+            reconstruct_kernels.highpass(),
+            decompose_highpass_alternated_signs
+        )
+    );
+}
+
+bool FilterBank::satisfies_no_distortion() const
+{
+    return satisfies_no_distortion(decompose_kernels(), reconstruct_kernels());
+}
+
+bool FilterBank::satisfies_no_distortion(
+    const KernelPair& decompose_kernels,
+    const KernelPair& reconstruct_kernels
+)
+{
+    //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 4.4
+    int depth = std::max(decompose_kernels.depth(), reconstruct_kernels.depth());
+    auto delta = cv::Mat::eye(reconstruct_kernels.lowpass().total(), 1, depth);
+    return matrix_approx_equals(
+        2 * delta,
+        internal::convolve(
+            reconstruct_kernels.lowpass(),
+            decompose_kernels.lowpass()
+        )
+        + internal::convolve(
+            reconstruct_kernels.highpass(),
+            decompose_kernels.highpass()
+        )
+    );
+}
+
+bool FilterBank::is_symmetric() const
+{
+    auto decompose_kernels = this->decompose_kernels();
+    auto reconstruct_kernels = this->reconstruct_kernels();
+    return is_symmetric(decompose_kernels.lowpass())
+        && is_symmetric(decompose_kernels.highpass())
+        && is_symmetric(reconstruct_kernels.lowpass())
+        && is_symmetric(reconstruct_kernels.highpass());
+}
+
+bool FilterBank::is_symmetric(cv::InputArray kernel)
+{
+    cv::Mat stripped_kernel;
+    internal::strip_zeros(kernel, stripped_kernel);
+
+    cv::Mat flipped_kernel;
+    cv::flip(stripped_kernel, flipped_kernel, -1);
+
+    return matrix_equals(stripped_kernel, flipped_kernel);
+}
+
+bool FilterBank::is_antisymmetric() const
+{
+    auto decompose_kernels = this->decompose_kernels();
+    auto reconstruct_kernels = this->reconstruct_kernels();
+    return is_antisymmetric(decompose_kernels.lowpass())
+        && is_antisymmetric(decompose_kernels.highpass())
+        && is_antisymmetric(reconstruct_kernels.lowpass())
+        && is_antisymmetric(reconstruct_kernels.highpass());
+}
+
+bool FilterBank::is_antisymmetric(cv::InputArray kernel)
+{
+    cv::Mat stripped_kernel;
+    internal::strip_zeros(kernel, stripped_kernel);
+
+    cv::Mat flipped_kernel;
+    cv::flip(stripped_kernel, flipped_kernel, -1);
+
+    return matrix_equals(stripped_kernel, -flipped_kernel);
+}
+
+bool FilterBank::is_linear_phase() const
+{
+    auto decompose_kernels = this->decompose_kernels();
+    auto reconstruct_kernels = this->reconstruct_kernels();
+    return is_linear_phase(decompose_kernels.lowpass())
+        && is_linear_phase(decompose_kernels.highpass())
+        && is_linear_phase(reconstruct_kernels.lowpass())
+        && is_linear_phase(reconstruct_kernels.highpass());
+}
+
+bool FilterBank::is_linear_phase(cv::InputArray kernel)
+{
+    cv::Mat stripped_kernel;
+    internal::strip_zeros(kernel, stripped_kernel);
+
+    cv::Mat flipped_kernel;
+    cv::flip(stripped_kernel, flipped_kernel, -1);
+
+    return matrix_equals(stripped_kernel, flipped_kernel)
+        || matrix_equals(stripped_kernel, -flipped_kernel);
 }
 
 FilterBank FilterBank::create_orthogonal_filter_bank(cv::InputArray reconstruct_lowpass_coeffs)

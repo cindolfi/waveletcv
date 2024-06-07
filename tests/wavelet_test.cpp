@@ -14,8 +14,7 @@ struct WaveletTestParam
 {
     int vanishing_moments_psi;
     int vanishing_moments_phi;
-    bool orthogonal;
-    bool biorthogonal;
+    Orthogonality orthogonality;
     Symmetry symmetry;
     std::string family;
     std::string name;
@@ -29,14 +28,19 @@ void from_json(const json& json_param, WaveletTestParam& param)
 {
     param.vanishing_moments_psi = json_param["vanishing_moments_psi"];
     param.vanishing_moments_phi = json_param["vanishing_moments_phi"];
-    param.orthogonal = json_param["orthogonal"];
-    param.biorthogonal = json_param["biorthogonal"];
+    if (json_param["orthogonal"].get<bool>())
+        param.orthogonality = Orthogonality::ORTHOGONAL;
+    else if (json_param["biorthogonal"].get<bool>())
+        param.orthogonality = Orthogonality::BIORTHOGONAL;
+    else
+        param.orthogonality = Orthogonality::NONE;
+
     if (json_param["symmetry"] == "symmetric")
         param.symmetry = Symmetry::SYMMETRIC;
     else if (json_param["symmetry"] == "asymmetric")
         param.symmetry = Symmetry::ASYMMETRIC;
     else if (json_param["symmetry"] == "near symmetric")
-        param.symmetry = Symmetry::NEAR_SYMMETRIC;
+        param.symmetry = Symmetry::NEARLY_SYMMETRIC;
     else
         assert(false);
     param.family = json_param["family"];
@@ -54,18 +58,30 @@ void PrintTo(const WaveletTestParam& param, std::ostream* stream)
     case Symmetry::ASYMMETRIC:
         symmetry = "ASYMMETRIC";
         break;
-    case Symmetry::NEAR_SYMMETRIC:
-        symmetry = "NEAR_SYMMETRIC";
+    case Symmetry::NEARLY_SYMMETRIC:
+        symmetry = "NEARLY_SYMMETRIC";
         break;
     case Symmetry::SYMMETRIC:
         symmetry = "SYMMETRIC";
         break;
     }
+
+    std::string orthogonality;
+    switch (param.orthogonality) {
+    case Orthogonality::ORTHOGONAL:
+        orthogonality = "ORTHOGONAL";
+        break;
+    case Orthogonality::BIORTHOGONAL:
+        orthogonality = "BIORTHOGONAL";
+        break;
+    case Orthogonality::NONE:
+        orthogonality = "NONE";
+    }
+
     *stream << "\n"
         << "vanishing_moments_psi: " << param.vanishing_moments_psi << "\n"
         << "vanishing_moments_phi: " << param.vanishing_moments_phi << "\n"
-        << "orthogonal: " << param.orthogonal << "\n"
-        << "biorthogonal: " << param.biorthogonal << "\n"
+        << "orthogonality: " << orthogonality << "\n"
         << "symmetry: " << symmetry << "\n"
         << "family: " << param.family << "\n"
         << "name: " << param.name << "\n";
@@ -95,48 +111,6 @@ public:
         return params;
     }
 };
-
-TEST_P(WaveletTest, VanisingMomentsPsi)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.vanishing_moments_psi(), param.vanishing_moments_psi);
-}
-
-TEST_P(WaveletTest, VanisingMomentsPhi)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.vanishing_moments_phi(), param.vanishing_moments_phi);
-}
-
-TEST_P(WaveletTest, Orthogonal)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.orthogonal(), param.orthogonal);
-}
-
-TEST_P(WaveletTest, Biorthogonal)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.biorthogonal(), param.biorthogonal);
-}
-
-TEST_P(WaveletTest, Symmetry)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.symmetry(), param.symmetry);
-}
-
-TEST_P(WaveletTest, Family)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.family(), param.family);
-}
-
-TEST_P(WaveletTest, Name)
-{
-    auto param = GetParam();
-    ASSERT_EQ(wavelet.name(), param.name);
-}
 
 TEST_P(WaveletTest, DecomposeLowpassCoeffs)
 {
@@ -172,6 +146,85 @@ TEST_P(WaveletTest, ReconstructHighpassCoeffs)
         wavelet.filter_bank().reconstruct_kernels().highpass(),
         MatrixFloatEq(cv::Mat(param.reconstruct_highpass))
     );
+}
+
+TEST_P(WaveletTest, Orthogonality)
+{
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.orthogonality(), param.orthogonality);
+}
+
+TEST_P(WaveletTest, IsOrthogonal)
+{
+    auto param = GetParam();
+    if (param.orthogonality == Orthogonality::ORTHOGONAL
+        || param.name == "bior1.1"
+        || param.name == "rbior1.1"
+        ) {
+        EXPECT_TRUE(wavelet.is_orthogonal());
+        EXPECT_TRUE(wavelet.filter_bank().is_orthogonal());
+    } else {
+        EXPECT_FALSE(wavelet.is_orthogonal());
+        EXPECT_FALSE(wavelet.filter_bank().is_orthogonal());
+    }
+}
+
+TEST_P(WaveletTest, IsBiorthogonal)
+{
+    auto param = GetParam();
+    if (param.orthogonality == Orthogonality::BIORTHOGONAL
+        || param.orthogonality == Orthogonality::ORTHOGONAL) {
+        EXPECT_TRUE(wavelet.is_biorthogonal());
+        EXPECT_TRUE(wavelet.filter_bank().is_biorthogonal());
+    } else {
+        EXPECT_FALSE(wavelet.is_biorthogonal());
+        EXPECT_FALSE(wavelet.filter_bank().is_biorthogonal());
+    }
+}
+
+TEST_P(WaveletTest, Symmetry)
+{
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.symmetry(), param.symmetry);
+}
+
+TEST_P(WaveletTest, IsSymmetric)
+{
+    auto param = GetParam();
+    if (param.symmetry == Symmetry::SYMMETRIC) {
+        EXPECT_TRUE(wavelet.is_symmetric());
+        EXPECT_TRUE(wavelet.filter_bank().is_linear_phase());
+    } else {
+        EXPECT_FALSE(wavelet.is_symmetric());
+        if (param.name == "haar" || param.name == "db1")
+            EXPECT_TRUE(wavelet.filter_bank().is_linear_phase());
+        else
+            EXPECT_FALSE(wavelet.filter_bank().is_linear_phase());
+    }
+}
+
+TEST_P(WaveletTest, Family)
+{
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.family(), param.family);
+}
+
+TEST_P(WaveletTest, Name)
+{
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.name(), param.name);
+}
+
+TEST_P(WaveletTest, VanisingMomentsPsi)
+{
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.vanishing_moments_psi(), param.vanishing_moments_psi);
+}
+
+TEST_P(WaveletTest, VanisingMomentsPhi)
+{
+    auto param = GetParam();
+    ASSERT_EQ(wavelet.vanishing_moments_phi(), param.vanishing_moments_phi);
 }
 
 

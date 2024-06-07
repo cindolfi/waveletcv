@@ -51,23 +51,38 @@ public:
             );
         }
     }
+
     /**
      * @brief The lowpass kernel coefficients.
      */
     cv::Mat lowpass() const { return _lowpass; }
+
     /**
      * @brief The highpass kernel coefficients.
      */
     cv::Mat highpass() const { return _highpass; }
+
     /**
      * @brief Returns true if both kernels are empty.
      */
     bool empty() const { return _lowpass.empty(); }
+
     /**
+     * @brief The element type.
+     */
+    int type() const { return _lowpass.type(); }
+
+    /**
+     * @brief The depth of the element type.
+     */
+    int depth() const { return _lowpass.depth(); }
+
+    /**
+     * @brief Returns true if both corresponding kernels are equal.
+     *
      * @see matrix_equals()
      */
     bool operator==(const KernelPair& other) const;
-
 private:
     cv::Mat _lowpass;
     cv::Mat _highpass;
@@ -193,8 +208,8 @@ struct FilterBankImpl
  *
  * This class is used as a building block to implement two dimensional multiscale
  * discrete wavelet transforms.
- * It provides both the decomposition (i.e. forward/analysis) and reconstruction
- * (i.e. inverse/synthesis) transformations at a single spatial scale.
+ * It provides both the decomposition (i.e. analysis) and reconstruction
+ * (i.e. synthesis) transformations at a single spatial scale.
  *
  * Decomposition is a cascade of two stages where each
  * stage consists of a lowpass filter \f$g_d[n]\f$ and a highpass
@@ -216,6 +231,33 @@ struct FilterBankImpl
  */
 class FilterBank
 {
+    /**
+     * @class common_perfect_reconstruction_contraints
+     *
+     * \f{align}{
+     *     g_r[n] * g_d[n] &+ h_r[n] * h_d[n] = 2 \delta[n] \tag{No Distortion} \\\\
+     *     g_r[n] * (-1)^n g_d[n] &+ h_r[n] * (-1)^n h_d[n] = 0 \tag{Alias Cancellation}
+     * \f}
+     */
+
+    /**
+     * @class common_perfect_reconstruction_zdomain_contraints
+     *
+     * \f{align}{
+     *     G_r(z) G_d(z) &+ H_r(z) H_r(z) = 2 z^{-1} \tag{No Distortion} \\\\
+     *     G_r(z) G_d(-z) &+ H_r(z) H_d(z) = 0 \tag{Alias Cancellation}
+     * \f}
+     */
+
+    /**
+     * @class common_orthogonal_contraints
+     *
+     * \f{align}{
+     *     \sum g_d[n] g_d[n - 2k] &= \delta[k] \\\\
+     *     \sum g_d[n] h_d[n - 2k] &= 0 \\\\
+     *     \sum h_d[n] h_d[n - 2k] &= \delta[k]
+     * \f}
+     */
 public:
     /**
      * @brief Construct an empty filter bank.
@@ -257,6 +299,12 @@ public:
      */
     int depth() const { return _p->decompose.depth(); }
     /**
+     * @brief Returns the filter kernels data type.
+     *
+     * @see cv::Mat::type()
+     */
+    int type() const { return _p->decompose.type(); }
+    /**
      * @brief Returns maximum number of kernel coefficients.
      *
      * This is equal to `std::max(decompose_kernels.filter_length(), reconstruct_kernels.filter_length()))`.
@@ -286,7 +334,7 @@ public:
      * The size of each output will be equal to subband_size().
      * Because full convolution requires extrapolating the image by
      * the filter_length() - 1 on all sides, the size of the outputs will
-     * generally be larger than half the `image.size()`.
+     * generally be larger than half the @pref{`image.size()`}.
      *
      * @param[in] image The image to decompose. This can be any type, single channel or multichannel.
      * @param[out] approx The approximation subband coefficients.
@@ -309,16 +357,17 @@ public:
     /**
      * @brief Reconstruct an image.
      *
-     * The coefficients `approx`, `horizontal_detail`, `vertical_detail`,
-     * and `diagonal_detail` must all be the same size, same depth, and have the
-     * same number of channels.  If not, an execption is thrown.
+     * The coefficients @pref{approx}, @pref{horizontal_detail},
+     * @pref{vertical_detail}, and @pref{diagonal_detail} must all be the same
+     * size, same depth, and have the same number of channels.  If not, an
+     * execption is thrown.
      *
      * The output will have the same number of channels as the coefficients
      * and depth equal to `max(approx.depth(), depth())`.
      *
      * The size of the reconstructed image must be provided explicitly via the
-     * `output_size` argument so that the extrapolated strip along the border
-     * added by decompose() can be discarded.
+     * @pref{output_size} argument so that the extrapolated strip along the
+     * border added by decompose() can be discarded.
      * The reconstructed image size cannot be computed from the size of the
      * coefficients because of the unknown integer truncation that occurs when
      * downsampling in decompose().
@@ -342,9 +391,9 @@ public:
     ) const;
 
     /**
-     * @brief Returns the size of each coefficient subband for the given image size.
+     * @brief Returns the size of each subband for the given image size.
      *
-     * @param[in] image_size The size of the image.
+     * @param[in] image_size The size of the decomposed/reconstructed image.
      */
     cv::Size subband_size(const cv::Size& image_size) const;
 
@@ -354,26 +403,113 @@ public:
     [[nodiscard]]
     FilterBank reverse() const;
 
-    //  Filter Bank Factories
+    /**
+     * @brief Returns true if this filter bank defines an orthogonal wavelet.
+     *
+     * An orthogonal filter bank statisfies the perfect reconstruction
+     * constraints (i.e. is_biorthogonal())
+     * @copydetails common_perfect_reconstruction_contraints
+     * and the double-shift orthogonality contstraints \cite WaveletsAndFilterBanks
+     * @copydetails common_orthogonal_contraints
+     */
+    bool is_orthogonal() const;
+
+    /**
+     * @brief Returns true if this filter bank defines a biorthogonal wavelet.
+     *
+     * A biorthogonal filter bank statisfies the perfect reconstruction
+     * constraints \cite WaveletsAndFilterBanks :
+     * @copydetails common_perfect_reconstruction_contraints
+     *
+     * In the z-domain these are
+     * @copydetailscommon_perfect_reconstruction_zdomain_contraints
+     *
+     * This function is equivalent to
+     * `satisfies_alias_cancellation() && satisfies_no_distortion()`.
+     */
+    bool is_biorthogonal() const;
+
+    /**
+     * @brief Returns true if this filter bank satisifies the alias cancellation constraint.
+     *
+     * The alias cancellation constraint \cite WaveletsAndFilterBanks is
+     * \f{equation}{
+     *     g_r[n] * (-1)^n g_d[n] + h_r[n] * (-1)^n h_d[n] = 0
+     * \f}
+     * In the z-domain this is
+     * \f{equation}{
+     *     G_r(z) G_d(-z) + H_r(z) H_d(z) = 0
+     * \f}
+     */
+    bool satisfies_alias_cancellation() const;
+
+    /**
+     * @brief Returns true if this filter bank satisifies the no distortion constraint.
+     *
+     * The no distortion constraint \cite WaveletsAndFilterBanks is
+     * \f{equation}{
+     *     g_r[n] * g_d[n] + h_r[n] * h_d[n] = 2 \delta[n]
+     * \f}
+     * In the z-domain this is
+     * \f{equation}{
+     *     G_r(z) G_d(z) + H_r(z) H_r(z) = 2 z^{-1}
+     * \f}
+     */
+    bool satisfies_no_distortion() const;
+
+    /**
+     * @brief Returns true if all the kernels are symmetric.
+     */
+    bool is_symmetric() const;
+
+    /**
+     * @brief Returns true if all the kernels are symmetric.
+     */
+    bool is_antisymmetric() const;
+
+    /**
+     * @brief Returns true if all the kernels are symmetric or antisymmetric.
+     */
+    bool is_linear_phase() const;
+
     /**@{*/
     /**
      * @brief Creates an orthogonal wavelet filter bank.
      *
-     * @param[in] reconstruct_lowpass_coeffs
+     * This factory creates a conjugate mirror filter bank from \f$g_r[n]\f$
+     * whose remaining kernels are defined to be
+     * \f{align}{
+     *     g_d[n] &= g_r[-n] \\\\
+     *     h_d[n] &= (-1^n) \, g_r[n] \\\\
+     *     h_r[n] &= (-1^{n + 1}) \, g_r[-n]
+     * \f}
+     *
+     * The resulting filter bank is_orthogonal().
+     *
+     * @param[in] reconstruct_lowpass_kernel The reconstruction lowpass kernel \f$g_r[n]\f$.
      */
     static FilterBank create_orthogonal_filter_bank(
-        cv::InputArray reconstruct_lowpass_coeffs
+        cv::InputArray reconstruct_lowpass_kernel
     );
 
     /**
      * @brief Creates a biorthogonal wavelet filter bank.
      *
-     * @param[in] reconstruct_lowpass_coeffs
-     * @param[in] decompose_lowpass_coeffs
+     * This factory creates a quadrature mirror filter bank from \f$g_d[n]\f$
+     * and \f$g_r[n]\f$ whose remaining kernels are defined to be
+     * \f{align}{
+     *     h_d[n] &= (-1^n) \, g_r[n] \\\\
+     *     h_r[n] &= (-1^{n + 1}) \, g_d[n]
+     * \f}
+     *
+     * The resulting filter bank is_biorthogonal().
+     *
+     * @param[in] reconstruct_lowpass_kernel The reconstruction lowpass kernel \f$g_r[n]\f$.
+     * @param[in] decompose_lowpass_kernel The decomposition lowpass kernel \f$g_d[n]\f$.
      */
     static FilterBank create_biorthogonal_filter_bank(
-        cv::InputArray reconstruct_lowpass_coeffs,
-        cv::InputArray decompose_lowpass_coeffs
+        cv::InputArray reconstruct_lowpass_kernel,
+        cv::InputArray decompose_lowpass_kernel
     );
     /**@}*/
 
@@ -412,6 +548,61 @@ protected:
         const cv::Mat& odd_kernel,
         const cv::Size& output_size
     ) const;
+
+    /**
+     * @brief Returns true if the kernel is symmetric
+     *
+     * @param kernel
+     */
+    static bool is_symmetric(cv::InputArray kernel);
+
+    /**
+     * @brief Returns true if the kernel is antsymmetric
+     *
+     * @param kernel
+     */
+    static bool is_antisymmetric(cv::InputArray kernel);
+
+    /**
+     * @brief Returns true if the kernel has a linear phase response.
+     *
+     * @param kernel
+     */
+    static bool is_linear_phase(cv::InputArray kernel);
+
+    /**
+     * @brief Returns true if the kernels satisfy the alias cancellation constraint.
+     *
+     * @param decompose_kernels The pair of decomposition kernels \f$g_d[n]\f$ and \f$h_d[n]\f$.
+     * @param reconstruct_kernels The pair of reconstruction kernels \f$g_r[n]\f$ and \f$h_r[n]\f$.
+     */
+    static bool satisfies_alias_cancellation(
+        const KernelPair& decompose_kernels,
+        const KernelPair& reconstruct_kernels
+    );
+
+    /**
+     * @brief Returns true if the kernels satisfy the no distortion constraint.
+     *
+     * @copydetails satisfies_alias_cancellation(const KernelPair&, const KernelPair&)
+     */
+    static bool satisfies_no_distortion(
+        const KernelPair& decompose_kernels,
+        const KernelPair& reconstruct_kernels
+    );
+
+    /**
+     * @brief Returns true if the kernels satisfy the perfect reconstruction constraints.
+     *
+     * This is equivalent to
+     * `satisfies_alias_cancellation(decompose_kernels, reconstruct_kernels) && satisfies_no_distortion(decompose_kernels, reconstruct_kernels)`
+     *
+     * @copydetails satisfies_alias_cancellation(const KernelPair&, const KernelPair&)
+     */
+    static bool satisfies_perfect_reconstruction(
+        const KernelPair& decompose_kernels,
+        const KernelPair& reconstruct_kernels
+    );
 
     //  Argument Checkers - these can be disabled by building with cmake
     //  option CVWT_ARGUMENT_CHECKING = OFF

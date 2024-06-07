@@ -8,6 +8,7 @@
 #include <opencv2/imgproc.hpp>
 #include <ranges>
 #include <functional>
+#include <sstream>
 
 namespace cvwt
 {
@@ -16,28 +17,116 @@ Wavelet::Wavelet() : _p(std::make_shared<WaveletImpl>())
 }
 
 Wavelet::Wavelet(
-    int vanishing_moments_psi,
-    int vanishing_moments_phi,
-    bool orthogonal,
-    bool biorthogonal,
+    const FilterBank& filter_bank,
+    Orthogonality orthogonality,
     Symmetry symmetry,
-    const std::string& family,
     const std::string& name,
-    const FilterBank& filter_bank
+    const std::string& family,
+    int vanishing_moments_psi,
+    int vanishing_moments_phi
 ) :
     _p(
         std::make_shared<WaveletImpl>(
-            vanishing_moments_psi,
-            vanishing_moments_phi,
-            orthogonal,
-            biorthogonal,
+            filter_bank,
+            orthogonality,
             symmetry,
             family,
             name,
-            filter_bank
+            vanishing_moments_psi,
+            vanishing_moments_phi
         )
     )
 {
+}
+
+Wavelet::Wavelet(
+    const FilterBank& filter_bank,
+    Orthogonality orthogonality,
+    const std::string& name,
+    const std::string& family,
+    int vanishing_moments_psi,
+    int vanishing_moments_phi
+) :
+    _p(
+        std::make_shared<WaveletImpl>(
+            filter_bank,
+            orthogonality,
+            infer_symmetry(filter_bank),
+            family,
+            name,
+            vanishing_moments_psi,
+            vanishing_moments_phi
+        )
+    )
+{
+}
+
+Wavelet::Wavelet(
+    const FilterBank& filter_bank,
+    Symmetry symmetry,
+    const std::string& name,
+    const std::string& family,
+    int vanishing_moments_psi,
+    int vanishing_moments_phi
+) :
+    _p(
+        std::make_shared<WaveletImpl>(
+            filter_bank,
+            infer_orthogonality(filter_bank),
+            symmetry,
+            name,
+            family,
+            vanishing_moments_psi,
+            vanishing_moments_phi
+        )
+    )
+{
+}
+
+Wavelet::Wavelet(
+    const FilterBank& filter_bank,
+    const std::string& name,
+    const std::string& family,
+    int vanishing_moments_psi,
+    int vanishing_moments_phi
+) :
+    _p(
+        std::make_shared<WaveletImpl>(
+            filter_bank,
+            infer_orthogonality(filter_bank),
+            infer_symmetry(filter_bank),
+            family,
+            name,
+            vanishing_moments_psi,
+            vanishing_moments_phi
+        )
+    )
+{
+}
+
+
+Orthogonality Wavelet::infer_orthogonality(const FilterBank& filter_bank) const
+{
+    Orthogonality orthogonality;
+    if (filter_bank.is_biorthogonal())
+        orthogonality = Orthogonality::BIORTHOGONAL;
+    else if (filter_bank.is_orthogonal())
+        orthogonality = Orthogonality::ORTHOGONAL;
+    else
+        orthogonality = Orthogonality::NONE;
+
+    return orthogonality;
+}
+
+Symmetry Wavelet::infer_symmetry(const FilterBank& filter_bank) const
+{
+    Symmetry symmetry;
+    if (filter_bank.is_symmetric())
+        symmetry = Symmetry::SYMMETRIC;
+    else
+        symmetry = Symmetry::ASYMMETRIC;
+
+    return symmetry;
 }
 
 bool Wavelet::operator==(const Wavelet& other) const
@@ -52,136 +141,122 @@ std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet)
     return stream;
 }
 
-Wavelet Wavelet::create(const std::string& name)
+std::set<std::string> Wavelet::available_wavelets()
 {
-    return _wavelet_factories.at(name)();
+    return _available_wavelets;
 }
 
-std::vector<std::string> Wavelet::available_wavelets()
-{
-    std::vector<std::string> keys;
-    std::transform(
-        _wavelet_factories.begin(),
-        _wavelet_factories.end(),
-        std::back_inserter(keys),
-        [](auto const& pair) { return pair.first; }
-    );
-
-    return keys;
-}
-
-
-std::map<std::string, std::function<Wavelet()>> Wavelet::_wavelet_factories{
-    {"haar", create_haar},
+std::set<std::string> Wavelet::_available_wavelets{
+    "haar",
     //  daubechies
-    {"db1", std::bind(create_daubechies, 1)},
-    {"db2", std::bind(create_daubechies, 2)},
-    {"db3", std::bind(create_daubechies, 3)},
-    {"db4", std::bind(create_daubechies, 4)},
-    {"db5", std::bind(create_daubechies, 5)},
-    {"db6", std::bind(create_daubechies, 6)},
-    {"db7", std::bind(create_daubechies, 7)},
-    {"db8", std::bind(create_daubechies, 8)},
-    {"db9", std::bind(create_daubechies, 9)},
-    {"db10", std::bind(create_daubechies, 10)},
-    {"db11", std::bind(create_daubechies, 11)},
-    {"db12", std::bind(create_daubechies, 12)},
-    {"db13", std::bind(create_daubechies, 13)},
-    {"db14", std::bind(create_daubechies, 14)},
-    {"db15", std::bind(create_daubechies, 15)},
-    {"db16", std::bind(create_daubechies, 16)},
-    {"db17", std::bind(create_daubechies, 17)},
-    {"db18", std::bind(create_daubechies, 18)},
-    {"db19", std::bind(create_daubechies, 19)},
-    {"db20", std::bind(create_daubechies, 20)},
-    {"db21", std::bind(create_daubechies, 21)},
-    {"db22", std::bind(create_daubechies, 22)},
-    {"db23", std::bind(create_daubechies, 23)},
-    {"db24", std::bind(create_daubechies, 24)},
-    {"db25", std::bind(create_daubechies, 25)},
-    {"db26", std::bind(create_daubechies, 26)},
-    {"db27", std::bind(create_daubechies, 27)},
-    {"db28", std::bind(create_daubechies, 28)},
-    {"db29", std::bind(create_daubechies, 29)},
-    {"db30", std::bind(create_daubechies, 30)},
-    {"db31", std::bind(create_daubechies, 31)},
-    {"db32", std::bind(create_daubechies, 32)},
-    {"db33", std::bind(create_daubechies, 33)},
-    {"db34", std::bind(create_daubechies, 34)},
-    {"db35", std::bind(create_daubechies, 35)},
-    {"db36", std::bind(create_daubechies, 36)},
-    {"db37", std::bind(create_daubechies, 37)},
-    {"db38", std::bind(create_daubechies, 38)},
+    "db1",
+    "db2",
+    "db3",
+    "db4",
+    "db5",
+    "db6",
+    "db7",
+    "db8",
+    "db9",
+    "db10",
+    "db11",
+    "db12",
+    "db13",
+    "db14",
+    "db15",
+    "db16",
+    "db17",
+    "db18",
+    "db19",
+    "db20",
+    "db21",
+    "db22",
+    "db23",
+    "db24",
+    "db25",
+    "db26",
+    "db27",
+    "db28",
+    "db29",
+    "db30",
+    "db31",
+    "db32",
+    "db33",
+    "db34",
+    "db35",
+    "db36",
+    "db37",
+    "db38",
     //  symlets
-    {"sym2", std::bind(create_symlets, 2)},
-    {"sym3", std::bind(create_symlets, 3)},
-    {"sym4", std::bind(create_symlets, 4)},
-    {"sym5", std::bind(create_symlets, 5)},
-    {"sym6", std::bind(create_symlets, 6)},
-    {"sym7", std::bind(create_symlets, 7)},
-    {"sym8", std::bind(create_symlets, 8)},
-    {"sym9", std::bind(create_symlets, 9)},
-    {"sym10", std::bind(create_symlets, 10)},
-    {"sym11", std::bind(create_symlets, 11)},
-    {"sym12", std::bind(create_symlets, 12)},
-    {"sym13", std::bind(create_symlets, 13)},
-    {"sym14", std::bind(create_symlets, 14)},
-    {"sym15", std::bind(create_symlets, 15)},
-    {"sym16", std::bind(create_symlets, 16)},
-    {"sym17", std::bind(create_symlets, 17)},
-    {"sym18", std::bind(create_symlets, 18)},
-    {"sym19", std::bind(create_symlets, 19)},
-    {"sym20", std::bind(create_symlets, 20)},
+    "sym2",
+    "sym3",
+    "sym4",
+    "sym5",
+    "sym6",
+    "sym7",
+    "sym8",
+    "sym9",
+    "sym10",
+    "sym11",
+    "sym12",
+    "sym13",
+    "sym14",
+    "sym15",
+    "sym16",
+    "sym17",
+    "sym18",
+    "sym19",
+    "sym20",
     //  coiflets
-    {"coif1", std::bind(create_coiflets, 1)},
-    {"coif2", std::bind(create_coiflets, 2)},
-    {"coif3", std::bind(create_coiflets, 3)},
-    {"coif4", std::bind(create_coiflets, 4)},
-    {"coif5", std::bind(create_coiflets, 5)},
-    {"coif6", std::bind(create_coiflets, 6)},
-    {"coif7", std::bind(create_coiflets, 7)},
-    {"coif8", std::bind(create_coiflets, 8)},
-    {"coif9", std::bind(create_coiflets, 9)},
-    {"coif10", std::bind(create_coiflets, 10)},
-    {"coif11", std::bind(create_coiflets, 11)},
-    {"coif12", std::bind(create_coiflets, 12)},
-    {"coif13", std::bind(create_coiflets, 13)},
-    {"coif14", std::bind(create_coiflets, 14)},
-    {"coif15", std::bind(create_coiflets, 15)},
-    {"coif16", std::bind(create_coiflets, 16)},
-    {"coif17", std::bind(create_coiflets, 17)},
+    "coif1",
+    "coif2",
+    "coif3",
+    "coif4",
+    "coif5",
+    "coif6",
+    "coif7",
+    "coif8",
+    "coif9",
+    "coif10",
+    "coif11",
+    "coif12",
+    "coif13",
+    "coif14",
+    "coif15",
+    "coif16",
+    "coif17",
     //  biorthongonal
-    {"bior1.1", std::bind(create_biorthogonal, 1, 1)},
-    {"bior1.3", std::bind(create_biorthogonal, 1, 3)},
-    {"bior1.5", std::bind(create_biorthogonal, 1, 5)},
-    {"bior2.2", std::bind(create_biorthogonal, 2, 2)},
-    {"bior2.4", std::bind(create_biorthogonal, 2, 4)},
-    {"bior2.6", std::bind(create_biorthogonal, 2, 6)},
-    {"bior2.8", std::bind(create_biorthogonal, 2, 8)},
-    {"bior3.1", std::bind(create_biorthogonal, 3, 1)},
-    {"bior3.3", std::bind(create_biorthogonal, 3, 3)},
-    {"bior3.5", std::bind(create_biorthogonal, 3, 5)},
-    {"bior3.7", std::bind(create_biorthogonal, 3, 7)},
-    {"bior3.9", std::bind(create_biorthogonal, 3, 9)},
-    {"bior4.4", std::bind(create_biorthogonal, 4, 4)},
-    {"bior5.5", std::bind(create_biorthogonal, 5, 5)},
-    {"bior6.8", std::bind(create_biorthogonal, 6, 8)},
+    "bior1.1",
+    "bior1.3",
+    "bior1.5",
+    "bior2.2",
+    "bior2.4",
+    "bior2.6",
+    "bior2.8",
+    "bior3.1",
+    "bior3.3",
+    "bior3.5",
+    "bior3.7",
+    "bior3.9",
+    "bior4.4",
+    "bior5.5",
+    "bior6.8",
     //  reverse biorthongonal
-    {"rbior1.1", std::bind(create_reverse_biorthogonal, 1, 1)},
-    {"rbior1.3", std::bind(create_reverse_biorthogonal, 1, 3)},
-    {"rbior1.5", std::bind(create_reverse_biorthogonal, 1, 5)},
-    {"rbior2.2", std::bind(create_reverse_biorthogonal, 2, 2)},
-    {"rbior2.4", std::bind(create_reverse_biorthogonal, 2, 4)},
-    {"rbior2.6", std::bind(create_reverse_biorthogonal, 2, 6)},
-    {"rbior2.8", std::bind(create_reverse_biorthogonal, 2, 8)},
-    {"rbior3.1", std::bind(create_reverse_biorthogonal, 3, 1)},
-    {"rbior3.3", std::bind(create_reverse_biorthogonal, 3, 3)},
-    {"rbior3.5", std::bind(create_reverse_biorthogonal, 3, 5)},
-    {"rbior3.7", std::bind(create_reverse_biorthogonal, 3, 7)},
-    {"rbior3.9", std::bind(create_reverse_biorthogonal, 3, 9)},
-    {"rbior4.4", std::bind(create_reverse_biorthogonal, 4, 4)},
-    {"rbior5.5", std::bind(create_reverse_biorthogonal, 5, 5)},
-    {"rbior6.8", std::bind(create_reverse_biorthogonal, 6, 8)},
+    "rbior1.1",
+    "rbior1.3",
+    "rbior1.5",
+    "rbior2.2",
+    "rbior2.4",
+    "rbior2.6",
+    "rbior2.8",
+    "rbior3.1",
+    "rbior3.3",
+    "rbior3.5",
+    "rbior3.7",
+    "rbior3.9",
+    "rbior4.4",
+    "rbior5.5",
+    "rbior6.8",
 };
 
 
@@ -190,25 +265,22 @@ std::map<std::string, std::function<Wavelet()>> Wavelet::_wavelet_factories{
 //  ----------------------------------------------------------------------------
 Wavelet create_haar()
 {
-    auto filter_bank = FilterBank::create_orthogonal_filter_bank(
-        cv::Mat(internal::DAUBECHIES_FILTER_COEFFS["db1"])
-    );
-
     return Wavelet(
+        FilterBank::create_orthogonal_filter_bank(
+            cv::Mat(internal::DAUBECHIES_FILTER_COEFFS["db1"])
+        ),
+        Orthogonality::ORTHOGONAL,
+        Symmetry::ASYMMETRIC,
+        "haar",
+        "Haar",
         1, // vanishing_moments_psi
-        0, // vanishing_moments_phi
-        true, // orthogonal
-        true, // biorthogonal
-        Symmetry::ASYMMETRIC, // symmetry
-        "Haar", // family
-        "haar", // name
-        filter_bank // filter bank
+        0  // vanishing_moments_phi
     );
 }
 
 Wavelet create_daubechies(int order)
 {
-    auto name = internal::get_orthogonal_name(
+    auto name = internal::make_orthogonal_name(
         internal::DAUBECHIES_NAME,
         order
     );
@@ -217,73 +289,74 @@ Wavelet create_daubechies(int order)
         internal::DAUBECHIES_FAMILY,
         internal::DAUBECHIES_FILTER_COEFFS
     );
-    auto filter_bank = FilterBank::create_orthogonal_filter_bank(
-        cv::Mat(internal::DAUBECHIES_FILTER_COEFFS[name])
-    );
 
     return Wavelet(
+        FilterBank::create_orthogonal_filter_bank(
+            cv::Mat(internal::DAUBECHIES_FILTER_COEFFS[name])
+        ),
+        Orthogonality::ORTHOGONAL,
+        // (order > 1) ? Symmetry::ASYMMETRIC : Symmetry::SYMMETRIC,
+        Symmetry::ASYMMETRIC,
+        name,
+        internal::DAUBECHIES_FAMILY,
         order, // vanishing_moments_psi
-        0, // vanishing_moments_phi
-        true, // orthogonal
-        true, // biorthogonal
-        Symmetry::ASYMMETRIC, // symmetry
-        internal::DAUBECHIES_FAMILY, // family
-        name, // name
-        filter_bank // filter bank
+        0      // vanishing_moments_phi
     );
 }
 
 Wavelet create_symlets(int order)
 {
-    auto name = internal::get_orthogonal_name(internal::SYMLETS_NAME, order);
+    auto name = internal::make_orthogonal_name(
+        internal::SYMLETS_NAME,
+        order
+    );
     internal::throw_if_invalid_wavelet_name(
         name,
         internal::SYMLETS_FAMILY,
         internal::SYMLETS_FILTER_COEFFS
     );
-    auto filter_bank = FilterBank::create_orthogonal_filter_bank(
-        cv::Mat(internal::SYMLETS_FILTER_COEFFS[name])
-    );
 
     return Wavelet(
+        FilterBank::create_orthogonal_filter_bank(
+            cv::Mat(internal::SYMLETS_FILTER_COEFFS[name])
+        ),
+        Orthogonality::ORTHOGONAL,
+        Symmetry::NEARLY_SYMMETRIC,
+        name,
+        internal::SYMLETS_FAMILY,
         order, // vanishing_moments_psi
-        0, // vanishing_moments_phi
-        true, // orthogonal
-        true, // biorthogonal
-        Symmetry::NEAR_SYMMETRIC, // symmetry
-        internal::SYMLETS_FAMILY, // family
-        name, // name
-        filter_bank // filter bank
+        0      // vanishing_moments_phi
     );
 }
 
 Wavelet create_coiflets(int order)
 {
-    auto name = internal::get_orthogonal_name(internal::COIFLETS_NAME, order);
+    auto name = internal::make_orthogonal_name(
+        internal::COIFLETS_NAME,
+        order
+    );
     internal::throw_if_invalid_wavelet_name(
         name,
         internal::COIFLETS_FAMILY,
         internal::COIFLETS_FILTER_COEFFS
     );
-    auto filter_bank = FilterBank::create_orthogonal_filter_bank(
-        cv::Mat(internal::COIFLETS_FILTER_COEFFS[name])
-    );
 
     return Wavelet(
-        2 * order, // vanishing_moments_psi
-        2 * order - 1, // vanishing_moments_phi
-        true, // orthogonal
-        true, // biorthogonal
-        Symmetry::NEAR_SYMMETRIC, // symmetry
-        internal::COIFLETS_FAMILY, // family
-        name, // name
-        filter_bank // filter bank
+        FilterBank::create_orthogonal_filter_bank(
+            cv::Mat(internal::COIFLETS_FILTER_COEFFS[name])
+        ),
+        Orthogonality::ORTHOGONAL,
+        Symmetry::NEARLY_SYMMETRIC,
+        name,
+        internal::COIFLETS_FAMILY,
+        2 * order,     // vanishing_moments_psi
+        2 * order - 1  // vanishing_moments_phi
     );
 }
 
 Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
 {
-    auto name = internal::get_biorthogonal_name(
+    auto name = internal::make_biorthogonal_name(
         internal::BIORTHOGONAL_NAME,
         vanishing_moments_psi,
         vanishing_moments_phi
@@ -293,26 +366,24 @@ Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi
         internal::BIORTHOGONAL_FAMILY,
         internal::BIORTHOGONAL_FILTER_COEFFS
     );
-    auto filter_bank = FilterBank::create_biorthogonal_filter_bank(
-        cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).first),
-        cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second)
-    );
 
     return Wavelet(
-        vanishing_moments_psi, // vanishing_moments_psi
-        vanishing_moments_phi, // vanishing_moments_phi
-        false, // orthogonal
-        true, // biorthogonal
-        Symmetry::SYMMETRIC, // symmetry
-        internal::BIORTHOGONAL_FAMILY, // family
-        name, // name
-        filter_bank // filter bank
+        FilterBank::create_biorthogonal_filter_bank(
+            cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).first),
+            cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second)
+        ),
+        Orthogonality::BIORTHOGONAL,
+        Symmetry::SYMMETRIC,
+        name,
+        internal::BIORTHOGONAL_FAMILY,
+        vanishing_moments_psi,
+        vanishing_moments_phi
     );
 }
 
 Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
 {
-    auto name = internal::get_biorthogonal_name(
+    auto name = internal::make_biorthogonal_name(
         internal::BIORTHOGONAL_NAME,
         vanishing_moments_psi,
         vanishing_moments_phi
@@ -330,31 +401,36 @@ Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_mom
     );
 
     return Wavelet(
-        vanishing_moments_psi, // vanishing_moments_psi
-        vanishing_moments_phi, // vanishing_moments_phi
-        false, // orthogonal
-        true, // biorthogonal
-        Symmetry::SYMMETRIC, // symmetry
-        family, // family
-        "r" + name, // name
-        biorthogonal_filter_bank.reverse() // filter bank
+        biorthogonal_filter_bank.reverse(),
+        Orthogonality::BIORTHOGONAL,
+        Symmetry::SYMMETRIC,
+        "r" + name,
+        family,
+        vanishing_moments_psi,
+        vanishing_moments_phi
     );
 }
 
 namespace internal
 {
-std::string get_orthogonal_name(const std::string& prefix, int order)
+std::string make_orthogonal_name(const std::string& prefix, int order)
 {
-    return prefix + std::to_string(order);
+    std::stringstream stream;
+    stream << prefix << order;
+    return stream.str();
+    // return prefix + std::to_string(order);
 }
 
-std::string get_biorthogonal_name(
+std::string make_biorthogonal_name(
     const std::string& prefix,
     int vanishing_moments_psi,
     int vanishing_moments_phi
 )
 {
-    return prefix + std::to_string(vanishing_moments_psi) + "." + std::to_string(vanishing_moments_phi);
+    std::stringstream stream;
+    stream << prefix << vanishing_moments_psi << "." << vanishing_moments_phi;
+    return stream.str();
+    // return prefix + std::to_string(vanishing_moments_psi) + "." + std::to_string(vanishing_moments_phi);
 }
 
 #if CVWT_ARGUMENT_CHECKING_ENABLED
