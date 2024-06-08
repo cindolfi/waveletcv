@@ -71,10 +71,10 @@ struct CollectMasked
     }
 };
 
-template <typename T, int N>
+template <typename T, int CHANNELS>
 struct Median
 {
-    using Pixel = cv::Vec<T, N>;
+    using Pixel = cv::Vec<T, CHANNELS>;
 
     cv::Scalar operator()(cv::InputArray array) const
     {
@@ -105,7 +105,7 @@ struct Median
 private:
     Pixel compute_median(cv::Mat& array) const
     {
-        assert(array.channels() == N);
+        assert(array.channels() == CHANNELS);
         assert(!array.empty());
         assert(array.isContinuous());
 
@@ -115,13 +115,13 @@ private:
             return 0.5 * (array.at<Pixel>(0) + array.at<Pixel>(1));
         } else {
             Pixel result;
-            if constexpr (N == 1) {
+            if constexpr (CHANNELS == 1) {
                 result[0] = single_channel_median(array);
             } else {
-                cv::Mat array_channels[N];
+                cv::Mat array_channels[CHANNELS];
                 cv::split(array, array_channels);
                 cv::parallel_for_(
-                    cv::Range(0, N),
+                    cv::Range(0, CHANNELS),
                     [&](const cv::Range& range) {
                         for (int i = range.start; i < range.end; ++i)
                             result[i] = single_channel_median(array_channels[i]);
@@ -178,16 +178,6 @@ struct NegateEveryOther
                 }
             }
         );
-
-        // array.getMat().forEach<T>(
-        //     [&](const auto& coeff, const auto index) {
-        //         int i = index[0];
-        //         T sign = i % 2 == EVEN_OR_ODD ? -1 : 1;
-        //         auto y = output_matrix.ptr<T>(i);
-        //         for (int k = 0; k < channels; ++k)
-        //             y[k] = sign * x[k]
-        //     }
-        // );
     }
 };
 

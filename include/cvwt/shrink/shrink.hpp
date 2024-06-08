@@ -39,23 +39,23 @@ using StdDevFunction = std::function<cv::Scalar(cv::InputArray)>;
 
 namespace internal
 {
-template <typename T, int N, typename ThresholdFunctor>
+template <typename T, int CHANNELS, typename ThresholdFunctor>
 struct Threshold
 {
-    using Pixel = cv::Vec<T, N>;
+    using Pixel = cv::Vec<T, CHANNELS>;
     Threshold() : threshold_function() {}
     Threshold(ThresholdFunctor threshold_function) : threshold_function(threshold_function) {}
 
     void operator()(cv::InputArray input, cv::OutputArray output, cv::Scalar threshold) const
     {
-        assert(input.channels() == N);
+        assert(input.channels() == CHANNELS);
 
         output.create(input.size(), input.type());
         auto result = output.getMat();
         input.getMat().forEach<Pixel>(
             [&](const auto& pixel, const auto position) {
                 auto& result_pixel = result.at<Pixel>(position);
-                for (int i = 0; i < N; ++i)
+                for (int i = 0; i < CHANNELS; ++i)
                     result_pixel[i] = threshold_function(pixel[i], threshold[i]);
             }
         );
@@ -68,7 +68,7 @@ struct Threshold
         cv::InputArray mask
     ) const
     {
-        assert(input.channels() == N);
+        assert(input.channels() == CHANNELS);
         throw_if_bad_mask_type(mask);
 
         output.create(input.size(), input.type());
@@ -78,7 +78,7 @@ struct Threshold
             [&](const auto& pixel, const auto position) {
                 if (mask_matrix.at<uchar>(position)) {
                     auto& result_pixel = result.at<Pixel>(position);
-                    for (int i = 0; i < N; ++i)
+                    for (int i = 0; i < CHANNELS; ++i)
                         result_pixel[i] = threshold_function(pixel[i], threshold[i]);
                 } else {
                     result.at<Pixel>(position) = pixel;
@@ -101,8 +101,8 @@ struct SoftThresholdFunctor
     }
 };
 
-template <typename T, int N>
-using SoftThreshold = Threshold<T, N, SoftThresholdFunctor>;
+template <typename T, int CHANNELS>
+using SoftThreshold = Threshold<T, CHANNELS, SoftThresholdFunctor>;
 
 struct HardThresholdFunctor
 {
@@ -114,8 +114,8 @@ struct HardThresholdFunctor
     }
 };
 
-template <typename T, int N>
-using HardThreshold = Threshold<T, N, HardThresholdFunctor>;
+template <typename T, int CHANNELS>
+using HardThreshold = Threshold<T, CHANNELS, HardThresholdFunctor>;
 
 template <typename T, typename W>
 struct WrappedThresholdFunctor
@@ -134,13 +134,13 @@ private:
     PrimitiveShrinkFunction<T, W> _threshold_function;
 };
 
-template <typename T, int N, typename W>
-struct WrappedThreshold : public Threshold<T, N, WrappedThresholdFunctor<T, W>>
+template <typename T, int CHANNELS, typename W>
+struct WrappedThreshold : public Threshold<T, CHANNELS, WrappedThresholdFunctor<T, W>>
 {
     WrappedThreshold(
         PrimitiveShrinkFunction<T, W> threshold_function
     ) :
-        Threshold<T, N, WrappedThresholdFunctor<T, W>>(
+        Threshold<T, CHANNELS, WrappedThresholdFunctor<T, W>>(
             WrappedThresholdFunctor(threshold_function)
         )
     {}

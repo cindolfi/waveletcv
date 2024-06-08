@@ -38,7 +38,7 @@ struct SingleChannelComputeSureRisk
     }
 };
 
-template <typename T, int N>
+template <typename T, int CHANNELS>
 struct ComputeSureRisk
 {
     cv::Scalar operator()(
@@ -47,15 +47,15 @@ struct ComputeSureRisk
         const cv::Scalar& stdev
     ) const
     {
-        assert(coeffs.channels() == N);
+        assert(coeffs.channels() == CHANNELS);
         SingleChannelComputeSureRisk<T> compute_single_channel_sure_risk;
-        if constexpr (N == 1) {
+        if constexpr (CHANNELS == 1) {
             return compute_single_channel_sure_risk(coeffs, threshold[0], stdev[0]);
         } else {
             cv::Scalar result;
-            cv::Mat coeffs_channels[N];
+            cv::Mat coeffs_channels[CHANNELS];
             cv::split(coeffs.getMat(), coeffs_channels);
-            for (int i = 0; i < N; ++i)
+            for (int i = 0; i < CHANNELS; ++i)
                 result[i] = compute_single_channel_sure_risk(
                     coeffs_channels[i],
                     threshold[i],
@@ -73,7 +73,7 @@ struct ComputeSureRisk
         cv::InputArray mask
     ) const
     {
-        assert(coeffs.channels() == N);
+        assert(coeffs.channels() == CHANNELS);
         cv::Mat masked_coeffs;
         collect_masked(coeffs, masked_coeffs, mask);
         return this->operator()(masked_coeffs, threshold, stdev);
@@ -307,7 +307,7 @@ double nlopt_sure_threshold_objective(
 };
 
 
-template <typename T, int N>
+template <typename T, int CHANNELS>
 struct ComputeSureThreshold
 {
     cv::Scalar operator()(
@@ -318,12 +318,12 @@ struct ComputeSureThreshold
         const SureShrink::OptimizerStopConditions& stop_conditions
     ) const
     {
-        assert(coeffs.channels() == N);
+        assert(coeffs.channels() == CHANNELS);
         SingleChannelComputeSureThreshold<T> compute_single_channel_sure_threshold;
-        cv::Mat coeffs_channels[N];
+        cv::Mat coeffs_channels[CHANNELS];
         cv::split(coeffs.getMat(), coeffs_channels);
         cv::Scalar result;
-        for (int i = 0; i < N; ++i) {
+        for (int i = 0; i < CHANNELS; ++i) {
             CV_LOG_DEBUG(NULL, "computing channel " << i);
             result[i] = compute_single_channel_sure_threshold(
                 coeffs_channels[i],
@@ -346,7 +346,7 @@ struct ComputeSureThreshold
         const SureShrink::OptimizerStopConditions& stop_conditions
     ) const
     {
-        assert(coeffs.channels() == N);
+        assert(coeffs.channels() == CHANNELS);
         cv::Mat masked_coeffs;
         collect_masked(coeffs, masked_coeffs, mask);
 

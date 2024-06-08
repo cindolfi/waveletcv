@@ -310,10 +310,10 @@ bool float_equals(T a, T b, int num_ulps, T zero_tolerance=0.0)
     return result;
 }
 
-template <typename T, int N>
+template <typename T, int CHANNELS>
 struct PermuteMatrix
 {
-    using Pixel = cv::Vec<T, N>;
+    using Pixel = cv::Vec<T, CHANNELS>;
     cv::Mat operator()(const cv::Mat& matrix, const std::vector<int>& permutation) const
     {
         cv::Mat permuted_matrix(matrix.total(), 1, matrix.type());
