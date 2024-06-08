@@ -122,17 +122,41 @@ void main_program(const cxxopts::ParseResult& args)
     if (shrink_method == "visu")
         shrinker = std::make_unique<VisuShrink>();
     else if (shrink_method == "sure")
-        shrinker = std::make_unique<SureShrink>(SureShrink::SUBBANDS, SureShrink::HYBRID, optimizer);
+        shrinker = std::make_unique<SureShrink>(
+            SureShrink::SUBBANDS,
+            SureShrink::HYBRID,
+            optimizer
+        );
     else if (shrink_method == "sure-levelwise")
-        shrinker = std::make_unique<SureShrink>(Shrink::LEVELS, SureShrink::HYBRID, optimizer);
+        shrinker = std::make_unique<SureShrink>(
+            Shrink::LEVELS,
+            SureShrink::HYBRID,
+            optimizer
+        );
     else if (shrink_method == "sure-global")
-        shrinker = std::make_unique<SureShrink>(Shrink::GLOBALLY, SureShrink::HYBRID, optimizer);
+        shrinker = std::make_unique<SureShrink>(
+            Shrink::GLOBALLY,
+            SureShrink::HYBRID,
+            optimizer
+        );
     else if (shrink_method == "sure-strict")
-        shrinker = std::make_unique<SureShrink>(SureShrink::SUBBANDS, SureShrink::STRICT, optimizer);
+        shrinker = std::make_unique<SureShrink>(
+            SureShrink::SUBBANDS,
+            SureShrink::STRICT,
+            optimizer
+        );
     else if (shrink_method == "sure-strict-levelwise")
-        shrinker = std::make_unique<SureShrink>(Shrink::LEVELS, SureShrink::STRICT, optimizer);
+        shrinker = std::make_unique<SureShrink>(
+            Shrink::LEVELS,
+            SureShrink::STRICT,
+            optimizer
+        );
     else if (shrink_method == "sure-strict-global")
-        shrinker = std::make_unique<SureShrink>(Shrink::GLOBALLY, SureShrink::STRICT, optimizer);
+        shrinker = std::make_unique<SureShrink>(
+            Shrink::GLOBALLY,
+            SureShrink::STRICT,
+            optimizer
+        );
     else if (shrink_method == "bayes")
         shrinker = std::make_unique<BayesShrink>();
     else if (shrink_method == "bayes-levelwise")
