@@ -386,7 +386,7 @@ void _throw_if_not_vector(
     auto... message_parts
 )
 {
-    if (!is_vector(array, channels)) {
+    if (!is_vector(array, channels <= 0 ? array.channels() : channels)) {
         if constexpr (sizeof...(message_parts) == 0)
             _throw_bad_size(
                 function, file, line,

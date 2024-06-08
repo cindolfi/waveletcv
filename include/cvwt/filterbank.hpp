@@ -78,9 +78,9 @@ public:
     int depth() const { return _lowpass.depth(); }
 
     /**
-     * @brief Returns true if both corresponding kernels are equal.
+     * @brief Returns true if the lowpass kernels are equal and the highpass kernels are equal.
      *
-     * @see matrix_equals()
+     * @see is_equal()
      */
     bool operator==(const KernelPair& other) const;
 private:
@@ -378,8 +378,8 @@ public:
      * @param[in] diagonal_detail The diagonal detail subband coefficients.
      * @param[out] image The reconstructed image.
      * @param[in] image_size The size of the reconstructed image.
-     *                        This must be the size of the image passed to
-     *                        decompose().
+     *                       This must be the size of the image passed to
+     *                       decompose().
      */
     void reconstruct(
         cv::InputArray approx,

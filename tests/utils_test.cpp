@@ -1078,14 +1078,14 @@ INSTANTIATE_TEST_CASE_P(
 //  ----------------------------------------------------------------------------
 //  Is No Array
 //  ----------------------------------------------------------------------------
-TEST(IsNoArrayTest, IsArray)
+TEST(IsNotArrayTest, IsArray)
 {
-    EXPECT_FALSE(is_no_array(cv::Mat()));
+    EXPECT_FALSE(is_not_array(cv::Mat()));
 }
 
-TEST(IsNoArrayTest, IsNotArray)
+TEST(IsNotArrayTest, IsNotArray)
 {
-    EXPECT_TRUE(is_no_array(cv::noArray()));
+    EXPECT_TRUE(is_not_array(cv::noArray()));
 }
 
 

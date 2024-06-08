@@ -370,7 +370,7 @@ cv::Scalar SureShrink::compute_sure_threshold(
     cv::InputArray mask
 ) const
 {
-    if (is_no_array(mask)) {
+    if (is_not_array(mask)) {
         return internal::dispatch_on_pixel_type<internal::ComputeSureThreshold>(
             detail_coeffs.type(),
             detail_coeffs,
@@ -400,7 +400,7 @@ cv::Scalar SureShrink::compute_sure_risk(
 )
 {
 
-    if (is_no_array(mask)) {
+    if (is_not_array(mask)) {
         return internal::dispatch_on_pixel_type<internal::ComputeSureRisk>(
             coeffs.type(), coeffs, threshold, stdev
         );

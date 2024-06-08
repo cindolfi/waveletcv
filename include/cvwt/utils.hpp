@@ -15,107 +15,6 @@ namespace cvwt
 {
 namespace internal
 {
-template <std::floating_point T>
-inline constexpr T sqrt_epsilon = std::sqrt(std::numeric_limits<T>::epsilon());
-
-template <typename... T>
-using promote_types = decltype((std::declval<T>() + ...));
-}
-
-/**
- * @brief Returns true if the floating point value is approximately zero.
- *
- * @param[in] x
- * @param[in] absolute_tolerance
- */
-template <typename T>
-requires std::floating_point<std::remove_cvref_t<T>>
-bool is_approx_zero(T x, double absolute_tolerance)
-{
-    return std::abs(x) < static_cast<T>(absolute_tolerance);
-}
-
-/**
- * @overload
- */
-template <typename T>
-requires std::floating_point<std::remove_cvref_t<T>>
-bool is_approx_zero(T x)
-{
-    return is_approx_zero(x, internal::sqrt_epsilon<T>);
-}
-
-/**
- * @brief Returns true if the two floating point values are approximately equal.
- *
- * @param[in] x
- * @param[in] y
- * @param[in] relative_tolerance
- * @param[in] zero_absolute_tolerance
- */
-template <typename T1, typename T2>
-requires std::floating_point<std::remove_cvref_t<T1>>
-    && std::floating_point<std::remove_cvref_t<T2>>
-constexpr bool is_approx_equal(
-    T1 x,
-    T2 y,
-    double relative_tolerance,
-    double zero_absolute_tolerance
-)
-{
-    using T = internal::promote_types<T1, T2>;
-
-    //  https://www.reidatcheson.com/floating%20point/comparison/2019/03/20/floating-point-comparison.html
-    if (x == 0.0)
-        return is_approx_zero(y, zero_absolute_tolerance);
-
-    if (y == 0.0)
-        return is_approx_zero(x, zero_absolute_tolerance);
-
-    T min = std::max(
-        std::min(std::abs(x), std::abs(y)),
-        std::numeric_limits<T>::min()
-    );
-    return std::abs(x - y) / min < static_cast<T>(relative_tolerance);
-}
-
-/**
- * @overload
- */
-template <typename T1, typename T2>
-requires std::floating_point<std::remove_cvref_t<T1>>
-    && std::floating_point<std::remove_cvref_t<T2>>
-constexpr bool is_approx_equal(T1 x, T2 y, double relative_tolerance)
-{
-    using T = internal::promote_types<T1, T2>;
-
-    return is_approx_equal(
-        x, y,
-        static_cast<T>(relative_tolerance),
-        internal::sqrt_epsilon<T>
-    );
-}
-
-/**
- * @overload
- */
-template <typename T1, typename T2>
-requires std::floating_point<std::remove_cvref_t<T1>>
-    && std::floating_point<std::remove_cvref_t<T2>>
-constexpr bool is_approx_equal(T1 x, T2 y)
-{
-    using T = internal::promote_types<T1, T2>;
-
-    return is_approx_equal(
-        x, y,
-        internal::sqrt_epsilon<T>,
-        internal::sqrt_epsilon<T>
-    );
-}
-
-
-namespace internal
-{
 std::string get_type_name(int type);
 cv::Scalar set_unused_channels(const cv::Scalar& scalar, int channels, double value = 0.0);
 struct Index {
@@ -129,6 +28,12 @@ inline Index unravel_index(const cv::Mat& array, int flat_index)
         .col = flat_index % array.cols
     };
 }
+
+template <std::floating_point T>
+inline constexpr T sqrt_epsilon = std::sqrt(std::numeric_limits<T>::epsilon());
+
+template <typename... T>
+using promote_types = decltype((std::declval<T>() + ...));
 
 template <template <typename T, int CHANNELS, auto ...> typename Functor, auto ...TemplateArgs>
 auto dispatch_on_pixel_type(int type, auto&&... args)
@@ -437,49 +342,141 @@ auto dispatch_on_pixel_depths(int type1, int type2, auto&&... args)
 void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputArray mask);
 
 /**
- * @brief Returns true if all values two matrices are equal.
+ * @brief Returns true if the floating point value is approximately zero.
  *
- * @param[in] a
- * @param[in] b
+ * @param[in] x
+ * @param[in] absolute_tolerance
  */
-bool matrix_equals(cv::InputArray a, cv::InputArray b);
-
+template <typename T>
+requires std::floating_point<std::remove_cvref_t<T>>
+bool is_approx_zero(T x, double absolute_tolerance)
+{
+    return std::abs(x) < static_cast<T>(absolute_tolerance);
+}
 
 /**
- * @brief Returns true if all corresponding values in two matrices are approximately equal.
+ * @overload
+ */
+template <typename T>
+requires std::floating_point<std::remove_cvref_t<T>>
+bool is_approx_zero(T x)
+{
+    return is_approx_zero(x, internal::sqrt_epsilon<T>);
+}
+
+/**
+ * @brief Returns true if all values are approximately zero.
+ *
+ * @param[in] a
+ * @param[in] absolute_tolerance
+ */
+bool is_approx_zero(cv::InputArray a, double absolute_tolerance);
+
+/**
+ * @overload
+ */
+bool is_approx_zero(cv::InputArray a);
+
+/**
+ * @brief Returns true if two floating point values are approximately equal.
+ *
+ * @param[in] x
+ * @param[in] y
+ * @param[in] relative_tolerance
+ * @param[in] zero_absolute_tolerance
+ */
+template <typename T1, typename T2>
+requires std::floating_point<std::remove_cvref_t<T1>>
+    && std::floating_point<std::remove_cvref_t<T2>>
+constexpr bool is_approx_equal(
+    T1 x,
+    T2 y,
+    double relative_tolerance,
+    double zero_absolute_tolerance
+)
+{
+    using T = internal::promote_types<T1, T2>;
+
+    //  https://www.reidatcheson.com/floating%20point/comparison/2019/03/20/floating-point-comparison.html
+    if (x == 0.0)
+        return is_approx_zero(y, zero_absolute_tolerance);
+
+    if (y == 0.0)
+        return is_approx_zero(x, zero_absolute_tolerance);
+
+    T min = std::max(
+        std::min(std::abs(x), std::abs(y)),
+        std::numeric_limits<T>::min()
+    );
+    return std::abs(x - y) / min < static_cast<T>(relative_tolerance);
+}
+
+/**
+ * @overload
+ */
+template <typename T1, typename T2>
+requires std::floating_point<std::remove_cvref_t<T1>>
+    && std::floating_point<std::remove_cvref_t<T2>>
+constexpr bool is_approx_equal(T1 x, T2 y, double relative_tolerance)
+{
+    using T = internal::promote_types<T1, T2>;
+
+    return is_approx_equal(
+        x, y,
+        static_cast<T>(relative_tolerance),
+        internal::sqrt_epsilon<T>
+    );
+}
+
+/**
+ * @overload
+ */
+template <typename T1, typename T2>
+requires std::floating_point<std::remove_cvref_t<T1>>
+    && std::floating_point<std::remove_cvref_t<T2>>
+constexpr bool is_approx_equal(T1 x, T2 y)
+{
+    using T = internal::promote_types<T1, T2>;
+
+    return is_approx_equal(
+        x, y,
+        internal::sqrt_epsilon<T>,
+        internal::sqrt_epsilon<T>
+    );
+}
+
+/**
+ * @brief Returns true if all corresponding array elements are approximately equal.
  *
  * @param[in] a
  * @param[in] b
  * @param[in] relative_tolerance
  * @param[in] zero_absolute_tolerance
  */
-bool approx_equals(
+bool is_approx_equal(
     cv::InputArray a,
     cv::InputArray b,
     double relative_tolerance,
     double zero_absolute_tolerance
 );
-/**
- * @overload
- */
-bool approx_equals(cv::InputArray a, cv::InputArray b, double relative_tolerance);
-/**
- * @overload
- */
-bool approx_equals(cv::InputArray a, cv::InputArray b);
 
 /**
- * @brief Returns true if all corresponding values in two matrices are approximately equal.
+ * @overload
+ */
+bool is_approx_equal(cv::InputArray a, cv::InputArray b, double relative_tolerance);
+
+/**
+ * @overload
+ */
+bool is_approx_equal(cv::InputArray a, cv::InputArray b);
+
+/**
+ * @brief Returns true if all values two matrices are equal.
  *
  * @param[in] a
- * @param[in] absolute_tolerance
+ * @param[in] b
  */
-bool approx_zeros(cv::InputArray a, double absolute_tolerance);
-/**
- * @overload
- */
-bool approx_zeros(cv::InputArray a);
-
+bool is_equal(cv::InputArray a, cv::InputArray b);
 
 /**
  * @brief Returns true if two matrices refer to the same data and are equal.
@@ -487,7 +484,7 @@ bool approx_zeros(cv::InputArray a);
  * @param[in] a
  * @param[in] b
  */
-bool identical(const cv::Mat& a, const cv::Mat& b);
+bool is_identical(cv::InputArray a, cv::InputArray b);
 
 /**
  * @brief Returns true if the two matrices refer to the same data.
@@ -495,7 +492,7 @@ bool identical(const cv::Mat& a, const cv::Mat& b);
  * @param[in] a
  * @param[in] b
  */
-bool shares_data(const cv::Mat& a, const cv::Mat& b);
+bool is_data_shared(cv::InputArray a, cv::InputArray b);
 
 /**
  * @brief Negates all even indexed values.
@@ -518,7 +515,7 @@ void negate_odd_indices(cv::InputArray vector, cv::OutputArray result);
  *
  * @param[in] array
  */
-bool is_no_array(cv::InputArray array);
+bool is_not_array(cv::InputArray array);
 
 /**
  * @brief Returns the maximum absolute value over all channels.

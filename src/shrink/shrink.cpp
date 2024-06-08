@@ -20,7 +20,7 @@ void soft_threshold(
     cv::InputArray mask
 )
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         internal::dispatch_on_pixel_type<internal::SoftThreshold>(
             array.type(), array, result, threshold
         );
@@ -37,7 +37,7 @@ void hard_threshold(
     cv::InputArray mask
 )
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         internal::dispatch_on_pixel_type<internal::HardThreshold>(
             array.type(), array, result, threshold
         );
@@ -125,7 +125,7 @@ void Shrink::shrink(
     PartitioningContext context(this, coeffs, levels, stdev, &shrunk_coeffs, &subset_thresholds);
 
     subset_thresholds = compute_partition_thresholds(coeffs, levels, stdev);
-    if (!is_no_array(thresholds))
+    if (!is_not_array(thresholds))
         thresholds.assign(subset_thresholds);
 
     switch (partition()) {
@@ -153,7 +153,7 @@ void Shrink::shrink(
 
     // try {
     //     subset_thresholds = compute_partition_thresholds(coeffs, levels, stdev);
-    //     if (!is_no_array(thresholds))
+    //     if (!is_not_array(thresholds))
     //         thresholds.assign(subset_thresholds);
 
     //     switch (partition()) {

@@ -429,7 +429,7 @@ DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
 
     scale_output = map_detail_to_unit_interval_scale(read_mask);
     cv::Mat normalized_coeffs_matrix = scale_output * _p->coeff_matrix + 0.5;
-    if (is_no_array(write_mask)) {
+    if (is_not_array(write_mask)) {
         normalized_coeffs = empty_clone();
         normalized_coeffs._p->coeff_matrix = normalized_coeffs_matrix;
         normalized_coeffs.set_approx(approx());
@@ -468,7 +468,7 @@ DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
 
 //     double alpha = map_detail_to_unit_interval_scale(read_mask);
 //     cv::Mat normalized_coeffs_matrix = alpha * _p->coeff_matrix + 0.5;
-//     if (is_no_array(write_mask)) {
+//     if (is_not_array(write_mask)) {
 //         normalized_coeffs = empty_clone();
 //         normalized_coeffs._p->coeff_matrix = normalized_coeffs_matrix;
 //         normalized_coeffs.set_approx(approx());
@@ -495,7 +495,7 @@ DWT2D::Coeffs DWT2D::Coeffs::map_details_from_unit_interval(
 
     cv::Mat unnormalized_coeffs_matrix = (_p->coeff_matrix - 0.5) / scale;
 
-    if (is_no_array(write_mask)) {
+    if (is_not_array(write_mask)) {
         auto unnormalized_coeffs = empty_clone();
         unnormalized_coeffs._p->coeff_matrix = unnormalized_coeffs_matrix;
         unnormalized_coeffs.set_approx(approx());
@@ -520,7 +520,7 @@ double DWT2D::Coeffs::map_detail_to_unit_interval_scale(cv::InputArray read_mask
     throw_if_bad_mask_for_normalize(read_mask, "read");
     double max_value = maximum_abs_value(
         _p->coeff_matrix,
-        is_no_array(read_mask) ? read_mask : detail_mask()
+        is_not_array(read_mask) ? read_mask : detail_mask()
     );
 
     return 0.5 / max_value;
@@ -553,7 +553,7 @@ void DWT2D::Coeffs::throw_if_bad_mask_for_normalize(
     const std::string mask_name
 ) const
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         return;
 
     internal::throw_if_bad_mask_type(

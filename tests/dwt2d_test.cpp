@@ -314,7 +314,7 @@ TEST_P(Dwt2dCoeffsTest, CastToMatrix)
     ) << "matrix is not equal to coeffs";
 
     EXPECT_TRUE(
-        shares_data(coeffs, matrix)
+        is_data_shared(coeffs, matrix)
     ) << "matrix does not share data with coeffs";
 }
 
@@ -380,7 +380,7 @@ TEST_P(Dwt2dCoeffsTest, CloneCopiesData)
     ) << "cloned coeffs does not equal original";
 
     EXPECT_FALSE(
-        shares_data(coeffs, cloned_coeffs)
+        is_data_shared(coeffs, cloned_coeffs)
     ) << "cloned coeffs shares data with original";
 }
 
@@ -394,7 +394,7 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrix)
     new_coeffs = expected_matrix;
 
     EXPECT_THAT(new_coeffs, MatrixEq(expected_matrix));
-    EXPECT_FALSE(shares_data(new_coeffs, expected_matrix));
+    EXPECT_FALSE(is_data_shared(new_coeffs, expected_matrix));
 }
 
 TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrixExpr)
@@ -408,7 +408,7 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrixExpr)
     cv::Mat h = 1 + expected_matrix;
 
     EXPECT_THAT(new_coeffs, MatrixEq(h));
-    EXPECT_FALSE(shares_data(new_coeffs, expected_matrix));
+    EXPECT_FALSE(is_data_shared(new_coeffs, expected_matrix));
 }
 
 TEST_P(Dwt2dCoeffsTest, AssignmentFromScalar)
@@ -641,7 +641,7 @@ protected:
     )
     {
         EXPECT_TRUE(
-            shares_data(coeffs, actual_detail)
+            is_data_shared(coeffs, actual_detail)
         ) << "collected detail was copied from coeffs";
 
         EXPECT_THAT(
@@ -819,19 +819,19 @@ protected:
     )
     {
         EXPECT_TRUE(
-            shares_data(full_coeffs, approx_from_full_coeffs_before_assign)
+            is_data_shared(full_coeffs, approx_from_full_coeffs_before_assign)
         ) << " approx from full coeffs created before set_approx() is a copy";
 
         EXPECT_TRUE(
-            shares_data(full_coeffs, approx_from_full_coeffs_after_assign)
+            is_data_shared(full_coeffs, approx_from_full_coeffs_after_assign)
         ) << " approx from full coeffs created after set_approx() is a copy";
 
         EXPECT_TRUE(
-            shares_data(full_coeffs, approx_from_level_coeffs_before_assign)
+            is_data_shared(full_coeffs, approx_from_level_coeffs_before_assign)
         ) << " approx from level view created before set_approx() is a copy";
 
         EXPECT_TRUE(
-            shares_data(full_coeffs, approx_from_level_coeffs_after_assign)
+            is_data_shared(full_coeffs, approx_from_level_coeffs_after_assign)
         ) << " approx from level view created after set_approx() is a copy";
     }
 
@@ -923,19 +923,19 @@ protected:
     )
     {
         EXPECT_TRUE(
-            shares_data(full_coeffs, detail_from_full_coeffs_before_assign)
+            is_data_shared(full_coeffs, detail_from_full_coeffs_before_assign)
         ) << subband_name << " detail from full coeffs created before set_details() is a copy";
 
         EXPECT_TRUE(
-            shares_data(full_coeffs, detail_from_full_coeffs_after_assign)
+            is_data_shared(full_coeffs, detail_from_full_coeffs_after_assign)
         ) << subband_name << " detail from full coeffs created after set_details() is a copy";
 
         EXPECT_TRUE(
-            shares_data(full_coeffs, detail_from_level_coeffs_before_assign)
+            is_data_shared(full_coeffs, detail_from_level_coeffs_before_assign)
         ) << subband_name << " detail from level view created before set_details() is a copy";
 
         EXPECT_TRUE(
-            shares_data(full_coeffs, detail_from_level_coeffs_after_assign)
+            is_data_shared(full_coeffs, detail_from_level_coeffs_after_assign)
         ) << subband_name << " detail from level view created after set_details() is a copy";
     }
 
@@ -1039,7 +1039,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAccessDoesNotCauseCopy)
     auto level_coeffs = coeffs.at_level(level);
 
     EXPECT_TRUE(
-        shares_data(level_coeffs, coeffs)
+        is_data_shared(level_coeffs, coeffs)
     ) << "coeffs.at(" << level << ") copied underlying matrix data";
 }
 
@@ -1056,7 +1056,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAccessIsTransitive)
         ) << "coeffs.at(" << i << ").at(" << j << ") != " << "coeffs.at(" << i + j << ")";
 
         EXPECT_TRUE(
-            shares_data(level_coeffs1, level_coeffs2)
+            is_data_shared(level_coeffs1, level_coeffs2)
         ) << "coeffs.at(" << i << ").at(" << j << ") does not share data with " << "coeffs.at(" << i + j << ")";
     }
 }
@@ -1124,7 +1124,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelWritesIntoOriginalCoeffs)
     coeffs.set_level(level, expected_level_matrix);
 
     EXPECT_TRUE(
-        shares_data(level_coeffs, coeffs)
+        is_data_shared(level_coeffs, coeffs)
     ) << "assignment to level caused copy of original coeffs";
 
     EXPECT_THAT(
@@ -1153,7 +1153,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentWritesIntoOriginalCoeffs)
     ) << "assignment to level has wrong levels";
 
     EXPECT_TRUE(
-        shares_data(level_coeffs, coeffs)
+        is_data_shared(level_coeffs, coeffs)
     ) << "assignment to level caused copy of original coeffs";
 
     EXPECT_THAT(
@@ -1250,21 +1250,21 @@ TEST_P(Dwt2dCoeffsLevelsTest, DiagonalDetailValues)
 TEST_P(Dwt2dCoeffsLevelsTest, HorizontalDetailSharesDataWithCoeffs)
 {
     EXPECT_TRUE(
-        shares_data(coeffs, coeffs.horizontal_detail(level))
+        is_data_shared(coeffs, coeffs.horizontal_detail(level))
     );
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, VerticalDetailSharesDataWithCoeffs)
 {
     EXPECT_TRUE(
-        shares_data(coeffs, coeffs.vertical_detail(level))
+        is_data_shared(coeffs, coeffs.vertical_detail(level))
     );
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, DiagonalDetailSharesDataWithCoeffs)
 {
     EXPECT_TRUE(
-        shares_data(coeffs, coeffs.diagonal_detail(level))
+        is_data_shared(coeffs, coeffs.diagonal_detail(level))
     );
 }
 

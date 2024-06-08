@@ -8,7 +8,6 @@
 
 namespace cvwt
 {
-
 namespace internal
 {
 std::string get_type_name(int type)
@@ -162,13 +161,33 @@ struct NegateEveryOther
         if (array.empty())
             return;
 
+        throw_if_not_vector(array, -1);
+
+        const int channels = array.channels();
+        cv::Mat array_matrix = array.getMat();
         cv::Mat output_matrix = output.getMat();
-        array.getMat().forEach<T>(
-            [&](const auto& coeff, const auto index) {
-                int i = index[0];
-                output_matrix.at<T>(i) = (i % 2 == EVEN_OR_ODD ? -1 : 1) * coeff;
+        cv::parallel_for_(
+            cv::Range(0, array.total()),
+            [&](const cv::Range& range) {
+                for (int i = range.start; i < range.end; ++i) {
+                    T sign = (i % 2 == EVEN_OR_ODD) ? -1 : 1;
+                    auto y = output_matrix.ptr<T>(i);
+                    auto x = array_matrix.ptr<T>(i);
+                    for (int k = 0; k < channels; ++k)
+                        y[k] = sign * x[k];
+                }
             }
         );
+
+        // array.getMat().forEach<T>(
+        //     [&](const auto& coeff, const auto index) {
+        //         int i = index[0];
+        //         T sign = i % 2 == EVEN_OR_ODD ? -1 : 1;
+        //         auto y = output_matrix.ptr<T>(i);
+        //         for (int k = 0; k < channels; ++k)
+        //             y[k] = sign * x[k]
+        //     }
+        // );
     }
 };
 
@@ -663,7 +682,7 @@ struct Compare
 };
 
 template <typename T1, typename T2>
-struct MatrixApproxEquals
+struct IsApproxEqual
 {
     using Float = promote_types<T1, T2, float>;
 
@@ -674,7 +693,7 @@ struct MatrixApproxEquals
         double zero_absolute_tolerance
     ) const
     {
-        auto is_approx_equal = [&](T1 x, T2 y) {
+        auto _is_approx_equal = [&](T1 x, T2 y) {
             return is_approx_equal<Float, Float>(
                 x,
                 y,
@@ -683,7 +702,7 @@ struct MatrixApproxEquals
             );
         };
 
-        return compare_approx_equal(a, b, is_approx_equal);
+        return compare_approx_equal(a, b, _is_approx_equal);
     }
 
     bool operator()(
@@ -692,7 +711,7 @@ struct MatrixApproxEquals
         double relative_tolerance
     ) const
     {
-        auto is_approx_equal = [&](T1 x, T2 y) {
+        auto _is_approx_equal = [&](T1 x, T2 y) {
             return is_approx_equal<Float, Float>(
                 x,
                 y,
@@ -700,7 +719,7 @@ struct MatrixApproxEquals
             );
         };
 
-        return compare_approx_equal(a, b, is_approx_equal);
+        return compare_approx_equal(a, b, _is_approx_equal);
     }
 
     bool operator()(
@@ -708,11 +727,11 @@ struct MatrixApproxEquals
         cv::InputArray b
     ) const
     {
-        auto is_approx_equal = [&](T1 x, T2 y) {
+        auto _is_approx_equal = [&](T1 x, T2 y) {
             return is_approx_equal<Float, Float>(x, y);
         };
 
-        return compare_approx_equal(a, b, is_approx_equal);
+        return compare_approx_equal(a, b, _is_approx_equal);
     }
 
 protected:
@@ -751,26 +770,26 @@ protected:
 };
 
 template <typename T>
-struct MatrixApproxZero
+struct IsApproxZero
 {
     using Float = promote_types<T, float>;
 
     bool operator()(cv::InputArray a, double zero_absolute_tolerance) const
     {
-        auto is_approx_zero = [&](T x) {
+        auto _is_approx_zero = [&](T x) {
             return is_approx_zero<Float>(x, zero_absolute_tolerance);
         };
 
-        return compare_approx_zero(a, is_approx_zero);
+        return compare_approx_zero(a, _is_approx_zero);
     }
 
     bool operator()(cv::InputArray a) const
     {
-        auto is_approx_zero = [&](T x) {
+        auto _is_approx_zero = [&](T x) {
             return is_approx_zero<Float>(x);
         };
 
-        return compare_approx_zero(a, is_approx_zero);
+        return compare_approx_zero(a, _is_approx_zero);
     }
 
 protected:
@@ -811,7 +830,7 @@ void collect_masked(cv::InputArray array, cv::OutputArray collected, cv::InputAr
     );
 }
 
-bool matrix_equals(cv::InputArray a, cv::InputArray b)
+bool is_equal(cv::InputArray a, cv::InputArray b)
 {
     if (a.dims() != b.dims() || a.size() != b.size() || a.channels() != b.channels())
         return false;
@@ -828,64 +847,65 @@ bool matrix_equals(cv::InputArray a, cv::InputArray b)
     return true;
 }
 
-bool approx_equals(
+bool is_approx_equal(
     cv::InputArray a,
     cv::InputArray b,
     double relative_tolerance,
     double zero_absolute_tolerance
 )
 {
-    return internal::dispatch_on_pixel_depths<internal::MatrixApproxEquals>(
+    return internal::dispatch_on_pixel_depths<internal::IsApproxEqual>(
         a.depth(), b.depth(), a, b, relative_tolerance, zero_absolute_tolerance
     );
 }
 
-bool approx_equals(cv::InputArray a, cv::InputArray b, double relative_tolerance)
+bool is_approx_equal(cv::InputArray a, cv::InputArray b, double relative_tolerance)
 {
-    return internal::dispatch_on_pixel_depths<internal::MatrixApproxEquals>(
+    return internal::dispatch_on_pixel_depths<internal::IsApproxEqual>(
         a.depth(), b.depth(), a, b, relative_tolerance
     );
 }
 
-bool approx_equals(cv::InputArray a, cv::InputArray b)
+bool is_approx_equal(cv::InputArray a, cv::InputArray b)
 {
-    return internal::dispatch_on_pixel_depths<internal::MatrixApproxEquals>(
+    return internal::dispatch_on_pixel_depths<internal::IsApproxEqual>(
         a.depth(), b.depth(), a, b
     );
 }
 
-
-bool approx_zeros(cv::InputArray a, double absolute_tolerance)
+bool is_approx_zero(cv::InputArray a, double absolute_tolerance)
 {
-    return internal::dispatch_on_pixel_depth<internal::MatrixApproxZero>(
+    return internal::dispatch_on_pixel_depth<internal::IsApproxZero>(
         a.depth(), a, absolute_tolerance
     );
 }
 
-bool approx_zeros(cv::InputArray a)
+bool is_approx_zero(cv::InputArray a)
 {
-    return internal::dispatch_on_pixel_depth<internal::MatrixApproxZero>(
+    return internal::dispatch_on_pixel_depth<internal::IsApproxZero>(
         a.depth(), a
     );
 }
 
-bool identical(const cv::Mat& a, const cv::Mat& b)
+bool is_identical(cv::InputArray a, cv::InputArray b)
 {
-    return a.data == b.data
+    cv::Mat matrix_a = a.getMat();
+    cv::Mat matrix_b = b.getMat();
+    return matrix_a.data == matrix_b.data
         && std::ranges::equal(
-            std::ranges::subrange(a.step.p, a.step.p + a.dims),
-            std::ranges::subrange(b.step.p, b.step.p + b.dims)
+            std::ranges::subrange(matrix_a.step.p, matrix_a.step.p + matrix_a.dims),
+            std::ranges::subrange(matrix_b.step.p, matrix_b.step.p + matrix_b.dims)
         );
 }
 
-bool shares_data(const cv::Mat& a, const cv::Mat& b)
+bool is_data_shared(cv::InputArray a, cv::InputArray b)
 {
-    return a.datastart == b.datastart;
+    return a.getMat().datastart == b.getMat().datastart;
 }
 
 cv::Scalar median(cv::InputArray array, cv::InputArray mask)
 {
-    if (is_no_array(mask)) {
+    if (is_not_array(mask)) {
         return internal::dispatch_on_pixel_type<internal::Median>(
             array.type(),
             array
@@ -928,7 +948,7 @@ void negate_odd_indices(cv::InputArray vector, cv::OutputArray result)
     );
 }
 
-bool is_no_array(cv::InputArray array)
+bool is_not_array(cv::InputArray array)
 {
     return array.kind() == cv::_InputArray::NONE;
 }
@@ -1007,7 +1027,7 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
     };
 
     double result = 0.0;
-    if (is_no_array(mask)) {
+    if (is_not_array(mask)) {
         if (array.channels() == 1) {
             result = abs_max(array, cv::noArray());
         } else {
@@ -1072,7 +1092,7 @@ void less_than(
     cv::InputArray mask
 )
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LT>(
             a.depth(), b.depth(), a, b, result
         );
@@ -1089,7 +1109,7 @@ void less_than_or_equal(
     cv::InputArray mask
 )
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_LE>(
             a.depth(), b.depth(), a, b, result
         );
@@ -1106,7 +1126,7 @@ void greater_than(
     cv::InputArray mask
 )
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GT>(
             a.depth(), b.depth(), a, b, result
         );
@@ -1123,7 +1143,7 @@ void greater_than_or_equal(
     cv::InputArray mask
 )
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_GE>(
             a.depth(), b.depth(), a, b, result
         );
@@ -1140,7 +1160,7 @@ void equal(
     cv::InputArray mask
 )
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_EQ>(
             a.depth(), b.depth(), a, b, result
         );
@@ -1157,7 +1177,7 @@ void not_equal(
     cv::InputArray mask
 )
 {
-    if (is_no_array(mask))
+    if (is_not_array(mask))
         internal::dispatch_on_pixel_depths<internal::Compare, cv::CMP_NE>(
             a.depth(), b.depth(), a, b, result
         );

@@ -515,8 +515,8 @@ void FilterBankImpl::throw_if_wrong_size(
 bool KernelPair::operator==(const KernelPair& other) const
 {
     return this == &other || (
-        matrix_equals(_lowpass, other._lowpass)
-        && matrix_equals(_highpass, other._highpass)
+        is_equal(_lowpass, other._lowpass)
+        && is_equal(_highpass, other._highpass)
     );
 }
 
@@ -709,7 +709,7 @@ bool FilterBank::is_orthogonal() const
         lowpass_correlation,
         2
     );
-    if (!approx_equals(lowpass_correlation, delta))
+    if (!is_approx_equal(lowpass_correlation, delta))
         return false;
 
     //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 5.16
@@ -720,7 +720,7 @@ bool FilterBank::is_orthogonal() const
         highpass_correlation,
         2
     );
-    if (!approx_equals(highpass_correlation, delta))
+    if (!is_approx_equal(highpass_correlation, delta))
         return false;
 
     //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 5.15
@@ -731,7 +731,7 @@ bool FilterBank::is_orthogonal() const
         cross_correlation,
         2
     );
-    if (!approx_zeros(cross_correlation))
+    if (!is_approx_zero(cross_correlation))
         return false;
 
     return is_biorthogonal();
@@ -768,7 +768,7 @@ bool FilterBank::satisfies_alias_cancellation(
     cv::Mat decompose_highpass_alternated_signs;
     negate_even_indices(decompose_kernels.highpass(), decompose_highpass_alternated_signs);
 
-    return approx_zeros(
+    return is_approx_zero(
         internal::convolve(
             reconstruct_kernels.lowpass(),
             decompose_lowpass_alternated_signs
@@ -793,7 +793,7 @@ bool FilterBank::satisfies_no_distortion(
     //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 4.4
     int depth = std::max(decompose_kernels.depth(), reconstruct_kernels.depth());
     auto delta = cv::Mat::eye(reconstruct_kernels.lowpass().total(), 1, depth);
-    return approx_equals(
+    return is_approx_equal(
         2 * delta,
         internal::convolve(
             reconstruct_kernels.lowpass(),
@@ -824,7 +824,7 @@ bool FilterBank::is_symmetric(cv::InputArray kernel)
     cv::Mat flipped_kernel;
     cv::flip(stripped_kernel, flipped_kernel, -1);
 
-    return matrix_equals(stripped_kernel, flipped_kernel);
+    return is_equal(stripped_kernel, flipped_kernel);
 }
 
 bool FilterBank::is_antisymmetric() const
@@ -845,7 +845,7 @@ bool FilterBank::is_antisymmetric(cv::InputArray kernel)
     cv::Mat flipped_kernel;
     cv::flip(stripped_kernel, flipped_kernel, -1);
 
-    return matrix_equals(stripped_kernel, -flipped_kernel);
+    return is_equal(stripped_kernel, -flipped_kernel);
 }
 
 bool FilterBank::is_linear_phase() const
@@ -866,8 +866,8 @@ bool FilterBank::is_linear_phase(cv::InputArray kernel)
     cv::Mat flipped_kernel;
     cv::flip(stripped_kernel, flipped_kernel, -1);
 
-    return matrix_equals(stripped_kernel, flipped_kernel)
-        || matrix_equals(stripped_kernel, -flipped_kernel);
+    return is_equal(stripped_kernel, flipped_kernel)
+        || is_equal(stripped_kernel, -flipped_kernel);
 }
 
 FilterBank FilterBank::create_orthogonal_filter_bank(cv::InputArray reconstruct_lowpass_coeffs)
@@ -1000,12 +1000,12 @@ void FilterBank::upsample_rows_and_convolve_cols(
 bool FilterBank::operator==(const FilterBank& other) const
 {
     return this == &other || (
-        matrix_equals(_p->decompose.lowpass, other._p->decompose.lowpass)
-        && matrix_equals(_p->decompose.highpass, other._p->decompose.highpass)
-        && matrix_equals(_p->reconstruct.even_lowpass, other._p->reconstruct.even_lowpass)
-        && matrix_equals(_p->reconstruct.odd_lowpass, other._p->reconstruct.odd_lowpass)
-        && matrix_equals(_p->reconstruct.even_highpass, other._p->reconstruct.even_highpass)
-        && matrix_equals(_p->reconstruct.odd_highpass, other._p->reconstruct.odd_highpass)
+        is_equal(_p->decompose.lowpass, other._p->decompose.lowpass)
+        && is_equal(_p->decompose.highpass, other._p->decompose.highpass)
+        && is_equal(_p->reconstruct.even_lowpass, other._p->reconstruct.even_lowpass)
+        && is_equal(_p->reconstruct.odd_lowpass, other._p->reconstruct.odd_lowpass)
+        && is_equal(_p->reconstruct.even_highpass, other._p->reconstruct.even_highpass)
+        && is_equal(_p->reconstruct.odd_highpass, other._p->reconstruct.odd_highpass)
     );
 }
 
