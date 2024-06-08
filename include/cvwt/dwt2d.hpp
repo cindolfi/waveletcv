@@ -215,8 +215,7 @@ public:
      * any OpenCV function and acted on like a normal cv::Mat.**
      *
      * In addition to the coefficients matrix, a DWT2D::Coeffs object contains
-     * additional metadata defining the structure of subband submatrices and
-     * DWT2D object.
+     * metadata defining the structure of subband submatrices and DWT2D object.
      * In cases where an empty DWT2D::Coeffs object is needed it should be
      * created from an existing DWT2D::Coeffs with empty_clone() so that the
      * metadata is retained.

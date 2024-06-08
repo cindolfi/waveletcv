@@ -31,6 +31,8 @@ if (DOXYGEN_FOUND)
         "cvv"
         "cvflann"
         "simd512"
+        "common_*"
+        "CoeffsExpr"
     )
     set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
     # set(DOXYGEN_WARNINGS NO)
@@ -41,7 +43,6 @@ if (DOXYGEN_FOUND)
     # set(DOXYGEN_FORMULA_FONTSIZE 24)
     set(DOXYGEN_USE_MATHJAX YES)
     set(DOXYGEN_BUILTIN_STL_SUPPORT YES)
-    set(DOXYGEN_EXCLUDE_SYMBOLS common_*)
 
     set(DOXYGEN_SHOW_GROUPED_MEMB_INC YES)
     set(DOXYGEN_SORT_MEMBER_DOCS NO)
