@@ -119,7 +119,6 @@ void Shrink::shrink(
     cv::OutputArray thresholds
 ) const
 {
-    // const std::lock_guard<std::mutex> lock(_mutex);
     cv::Mat4d subset_thresholds;
     shrunk_coeffs = coeffs.clone();
     PartitioningContext context(this, coeffs, levels, stdev, &shrunk_coeffs, &subset_thresholds);
@@ -147,40 +146,6 @@ void Shrink::shrink(
         shrink_subsets(shrunk_coeffs, subset_thresholds, levels);
         break;
     }
-
-
-    // start(coeffs, levels, stdev);
-
-    // try {
-    //     subset_thresholds = compute_partition_thresholds(coeffs, levels, stdev);
-    //     if (!is_not_array(thresholds))
-    //         thresholds.assign(subset_thresholds);
-
-    //     switch (partition()) {
-    //     case Shrink::GLOBALLY:
-    //         cvwt::shrink_globally(
-    //             shrunk_coeffs,
-    //             subset_thresholds.at<cv::Scalar>(0, 0),
-    //             threshold_function(),
-    //             levels
-    //         );
-    //         break;
-    //     case Shrink::LEVELS:
-    //         cvwt::shrink_levels(shrunk_coeffs, subset_thresholds, threshold_function(), levels);
-    //         break;
-    //     case Shrink::SUBBANDS:
-    //         cvwt::shrink_subbands(shrunk_coeffs, subset_thresholds, threshold_function(), levels);
-    //         break;
-    //     case Shrink::SUBSETS:
-    //         shrink_subsets(shrunk_coeffs, subset_thresholds, levels);
-    //         break;
-    //     }
-    // } catch (...) {
-    //     finish(coeffs, levels, stdev, shrunk_coeffs, subset_thresholds);
-    //     throw;
-    // }
-
-    // finish(coeffs, levels, stdev, shrunk_coeffs, subset_thresholds);
 }
 
 
@@ -230,21 +195,10 @@ cv::Mat4d Shrink::compute_thresholds(
     const cv::Scalar& stdev
 ) const
 {
-    // const std::lock_guard<std::mutex> lock(_mutex);
     cv::Mat4d subset_thresholds;
     PartitioningContext context(this, coeffs, levels, stdev, nullptr, &subset_thresholds);
 
     subset_thresholds = compute_partition_thresholds(coeffs, levels, stdev);
-
-    // start(coeffs, levels, stdev);
-    // try {
-    //     subset_thresholds = compute_partition_thresholds(coeffs, levels, stdev);
-    // } catch (...) {
-    //     finish(coeffs, levels, stdev, DWT2D::Coeffs(), subset_thresholds);
-    //     throw;
-    // }
-
-    // finish(coeffs, levels, stdev, DWT2D::Coeffs(), subset_thresholds);
 
     return subset_thresholds;
 }
