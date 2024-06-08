@@ -176,23 +176,14 @@ struct FilterBankImpl
     KernelPair reconstruct_kernels() const;
 
     //  Argument Checkers - these can be disabled by building with cmake
-    //  option CVWT_ARGUMENT_CHECKING = OFF
-    #if CVWT_ARGUMENT_CHECKING_ENABLED
+    //  option CVWT_FILTER_BANK_EXCEPTIONS_ENABLED = OFF
     void throw_if_wrong_size(
         const cv::Mat& reconstruct_lowpass,
         const cv::Mat& reconstruct_highpass,
         const cv::Mat& decompose_lowpass,
         const cv::Mat& decompose_highpass
-    ) const;
-    #else
-    void throw_if_wrong_size(
-        const cv::Mat& reconstruct_lowpass,
-        const cv::Mat& reconstruct_highpass,
-        const cv::Mat& decompose_lowpass,
-        const cv::Mat& decompose_highpass
-    ) const noexcept
-    {}
-    #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+    ) const CVWT_FILTER_BANK_NOEXCEPT;
+
 
     int filter_length;
     DecomposeKernels decompose;
@@ -604,31 +595,18 @@ protected:
         const KernelPair& reconstruct_kernels
     );
 
+private:
     //  Argument Checkers - these can be disabled by building with cmake
-    //  option CVWT_ARGUMENT_CHECKING = OFF
-    #if CVWT_ARGUMENT_CHECKING_ENABLED
+    //  option CVWT_FILTER_BANK_EXCEPTIONS_ENABLED = OFF
     void throw_if_decompose_image_is_wrong_size(
         cv::InputArray image
-    ) const;
+    ) const CVWT_FILTER_BANK_NOEXCEPT;
     void throw_if_reconstruct_coeffs_are_wrong_size(
         cv::InputArray approx,
         cv::InputArray horizontal_detail,
         cv::InputArray vertical_detail,
         cv::InputArray diagonal_detail
-    ) const;
-    #else
-    void throw_if_decompose_image_is_wrong_size(
-        cv::InputArray image
-    ) const noexcept
-    {}
-    void throw_if_reconstruct_coeffs_are_wrong_size(
-        cv::InputArray approx,
-        cv::InputArray horizontal_detail,
-        cv::InputArray vertical_detail,
-        cv::InputArray diagonal_detail
-    ) const noexcept
-    {}
-    #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+    ) const CVWT_FILTER_BANK_NOEXCEPT;
 
 private:
     std::shared_ptr<internal::FilterBankImpl> _p;

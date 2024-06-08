@@ -324,12 +324,10 @@ public:
      * @param[in] args The unbound arguments of the wavelet factory
      *                 registered with register_factory().
      */
-    // static Wavelet create(const std::string& name);
     static Wavelet create(const std::string& name, auto&&... args)
     {
         auto factory = _wavelet_factories<decltype(args)...>.at(name);
         return factory(std::forward<decltype(args)>(args)...);
-        // return _wavelet_factories<decltype(args)...>.at(name)(std::forward<decltype(args)>(args)...);
     }
 
     /**
@@ -424,13 +422,15 @@ private:
     Symmetry infer_symmetry(const FilterBank& filter_bank) const;
 
     template <typename... CallArgs>
-    static void throw_if_already_registered(const std::string& name)
+    static void throw_if_already_registered(const std::string& name) CVWT_WAVELET_NOEXCEPT
     {
+    #if CVWT_WAVELET_EXCEPTIONS_ENABLED
         if (_wavelet_factories<CallArgs...>.contains(name)) {
             throw_bad_arg(
                 "A wavelet factory has already been registered to `", name, "`."
             );
         }
+    #endif
     }
 
     template <typename... CallArgs>
@@ -641,24 +641,15 @@ namespace internal
         int vanishing_moments_psi,
         int vanishing_moments_phi
     );
-    #if CVWT_ARGUMENT_CHECKING_ENABLED
+
     template <typename V>
     void throw_if_invalid_wavelet_name(
         const std::string& name,
         const std::string& family,
         const std::map<std::string, V>& filter_coeffs,
         const std::string& name_prefix = ""
-    );
-    #else
-    template <typename V>
-    void throw_if_invalid_wavelet_name(
-        const std::string& name,
-        const std::string& family,
-        const std::map<std::string, V>& filter_coeffs,
-        const std::string& name_prefix = ""
-    ) noexcept
-    {}
-    #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+    ) CVWT_WAVELET_NOEXCEPT;
+
 } // namespace internal
 } // namespace cvwt
 

@@ -73,38 +73,11 @@ void DWT2D::Coeffs::reset(
     _p->build_diagonal_subband_rects(subband_sizes);
 }
 
-CoeffsExpr DWT2D::Coeffs::mul(cv::InputArray matrix, double scale) const
+DWT2D::Coeffs& DWT2D::Coeffs::operator=(cv::InputArray coeffs)
 {
-    return CoeffsExpr(*this, _p->coeff_matrix.mul(matrix, scale));
-}
-
-CoeffsExpr DWT2D::Coeffs::mul(const CoeffsExpr& expression, double scale) const
-{
-    return expression.mul(*this, scale);
-}
-
-CoeffsExpr DWT2D::Coeffs::mul(const Coeffs& coeffs, double scale) const
-{
-    return CoeffsExpr(
-        *this,
-        coeffs,
-        _p->coeff_matrix.mul(coeffs._p->coeff_matrix, scale)
-    );
-}
-
-DWT2D DWT2D::Coeffs::dwt() const
-{
-    return DWT2D(wavelet(), border_type());
-}
-
-cv::Mat DWT2D::Coeffs::reconstruct() const
-{
-    return dwt().reconstruct(*this);
-}
-
-void DWT2D::Coeffs::reconstruct(cv::OutputArray image) const
-{
-    dwt().reconstruct(*this, image);
+    throw_if_wrong_size_for_assignment(coeffs);
+    convert_and_copy(coeffs, _p->coeff_matrix);
+    return *this;
 }
 
 DWT2D::Coeffs DWT2D::Coeffs::clone() const
@@ -177,6 +150,18 @@ DWT2D::Coeffs DWT2D::Coeffs::at_level(int level) const
     );
 }
 
+void DWT2D::Coeffs::set_level(int level, cv::InputArray coeffs)
+{
+    throw_if_wrong_size_for_set_level(coeffs, level);
+    convert_and_copy(coeffs, _p->coeff_matrix(level_rect(level)));
+}
+
+void DWT2D::Coeffs::set_approx(cv::InputArray coeffs)
+{
+    throw_if_wrong_size_for_set_approx(coeffs);
+    convert_and_copy(coeffs, approx());
+}
+
 cv::Mat DWT2D::Coeffs::detail(int level, int subband) const
 {
     throw_if_invalid_subband(subband);
@@ -187,6 +172,37 @@ cv::Mat DWT2D::Coeffs::detail(int level, int subband) const
     }
 
     return cv::Mat();
+}
+
+void DWT2D::Coeffs::set_all_detail_levels(cv::InputArray coeffs)
+{
+    throw_if_wrong_size_for_set_all_detail_levels(coeffs);
+    convert_and_copy(coeffs, _p->coeff_matrix, detail_mask());
+}
+
+void DWT2D::Coeffs::set_detail(int level, int subband, cv::InputArray coeffs)
+{
+    throw_if_wrong_size_for_set_detail(coeffs, level, subband);
+    throw_if_invalid_subband(subband);
+    convert_and_copy(coeffs, detail(level, subband));
+}
+
+void DWT2D::Coeffs::set_horizontal_detail(int level, cv::InputArray coeffs)
+{
+    throw_if_wrong_size_for_set_detail(coeffs, level, HORIZONTAL);
+    convert_and_copy(coeffs, horizontal_detail(level));
+}
+
+void DWT2D::Coeffs::set_vertical_detail(int level, cv::InputArray coeffs)
+{
+    throw_if_wrong_size_for_set_detail(coeffs, level, VERTICAL);
+    convert_and_copy(coeffs, vertical_detail(level));
+}
+
+void DWT2D::Coeffs::set_diagonal_detail(int level, cv::InputArray coeffs)
+{
+    throw_if_wrong_size_for_set_detail(coeffs, level, DIAGONAL);
+    convert_and_copy(coeffs, diagonal_detail(level));
 }
 
 cv::Size DWT2D::Coeffs::level_size(int level) const
@@ -407,6 +423,40 @@ cv::Mat DWT2D::Coeffs::diagonal_detail_mask(int lower_level, int upper_level) co
     return detail_mask(lower_level, upper_level, DIAGONAL);
 }
 
+CoeffsExpr DWT2D::Coeffs::mul(cv::InputArray matrix, double scale) const
+{
+    return CoeffsExpr(*this, _p->coeff_matrix.mul(matrix, scale));
+}
+
+CoeffsExpr DWT2D::Coeffs::mul(const CoeffsExpr& expression, double scale) const
+{
+    return expression.mul(*this, scale);
+}
+
+CoeffsExpr DWT2D::Coeffs::mul(const Coeffs& coeffs, double scale) const
+{
+    return CoeffsExpr(
+        *this,
+        coeffs,
+        _p->coeff_matrix.mul(coeffs._p->coeff_matrix, scale)
+    );
+}
+
+DWT2D DWT2D::Coeffs::dwt() const
+{
+    return DWT2D(wavelet(), border_type());
+}
+
+cv::Mat DWT2D::Coeffs::reconstruct() const
+{
+    return dwt().reconstruct(*this);
+}
+
+void DWT2D::Coeffs::reconstruct(cv::OutputArray image) const
+{
+    dwt().reconstruct(*this, image);
+}
+
 DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
     cv::InputArray read_mask,
     cv::InputArray write_mask
@@ -424,7 +474,7 @@ DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
 {
     DWT2D::Coeffs normalized_coeffs;
 
-    throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
+    throw_if_this_is_empty();
     throw_if_bad_mask_for_normalize(write_mask, "write");
 
     scale_output = map_detail_to_unit_interval_scale(read_mask);
@@ -446,51 +496,12 @@ DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
     return normalized_coeffs;
 }
 
-
-// DWT2D::Coeffs DWT2D::Coeffs::map_details_to_unit_interval(
-//     cv::InputArray read_mask,
-//     cv::InputArray write_mask
-// ) const
-// {
-//     DWT2D::Coeffs normalized_coeffs;
-//     map_details_to_unit_interval(normalized_coeffs, read_mask, write_mask);
-//     return normalized_coeffs;
-// }
-
-// double DWT2D::Coeffs::map_details_to_unit_interval(
-//     DWT2D::Coeffs& normalized_coeffs,
-//     cv::InputArray read_mask,
-//     cv::InputArray write_mask
-// ) const
-// {
-//     throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
-//     throw_if_bad_mask_for_normalize(write_mask, "write");
-
-//     double alpha = map_detail_to_unit_interval_scale(read_mask);
-//     cv::Mat normalized_coeffs_matrix = alpha * _p->coeff_matrix + 0.5;
-//     if (is_not_array(write_mask)) {
-//         normalized_coeffs = empty_clone();
-//         normalized_coeffs._p->coeff_matrix = normalized_coeffs_matrix;
-//         normalized_coeffs.set_approx(approx());
-//     } else {
-//         //  Make sure to include any unused half rows/columns resulting from
-//         //  odd image size or kernel lengths.
-//         auto write_mask_matrix = write_mask.getMat() | invalid_detail_mask();
-
-//         normalized_coeffs = clone();
-//         normalized_coeffs_matrix.copyTo(normalized_coeffs, write_mask_matrix);
-//         normalized_coeffs.set_approx(approx());
-//     }
-
-//     return alpha;
-// }
-
 DWT2D::Coeffs DWT2D::Coeffs::map_details_from_unit_interval(
     double scale,
     cv::InputArray write_mask
 ) const
 {
-    throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
+    throw_if_this_is_empty();
     throw_if_bad_mask_for_normalize(write_mask, "write");
 
     cv::Mat unnormalized_coeffs_matrix = (_p->coeff_matrix - 0.5) / scale;
@@ -516,7 +527,7 @@ DWT2D::Coeffs DWT2D::Coeffs::map_details_from_unit_interval(
 
 double DWT2D::Coeffs::map_detail_to_unit_interval_scale(cv::InputArray read_mask) const
 {
-    throw_if_empty(_p->coeff_matrix, "Coefficients are empty.");
+    throw_if_this_is_empty();
     throw_if_bad_mask_for_normalize(read_mask, "read");
     double max_value = maximum_abs_value(
         _p->coeff_matrix,
@@ -526,33 +537,13 @@ double DWT2D::Coeffs::map_detail_to_unit_interval_scale(cv::InputArray read_mask
     return 0.5 / max_value;
 }
 
-template <typename Matrix>
-requires std::same_as<std::remove_cvref_t<Matrix>, cv::Mat>
-void DWT2D::Coeffs::convert_and_copy(
-    cv::InputArray source,
-    Matrix&& destination,
-    cv::InputArray mask
-)
-{
-    assert(destination.type() == type());
-
-    if (is_scalar(source)) {
-        destination.setTo(source, mask);
-    } else if (source.type() != destination.type()) {
-        cv::Mat converted;
-        source.getMat().convertTo(converted, type());
-        converted.copyTo(destination, mask);
-    } else {
-        source.copyTo(destination, mask);
-    }
-}
-
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+inline
 void DWT2D::Coeffs::throw_if_bad_mask_for_normalize(
     cv::InputArray mask,
     const std::string mask_name
-) const
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (is_not_array(mask))
         return;
 
@@ -569,10 +560,15 @@ void DWT2D::Coeffs::throw_if_bad_mask_for_normalize(
             "The ", mask_name, " mask size must be ", size(),
             ", got ", mask.size(), "."
         );
+#endif
 }
 
-void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(cv::InputArray matrix) const
+inline
+void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(
+    cv::InputArray matrix
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (empty()) {
         if (!is_scalar(matrix) && matrix.size() == level_size(0))
             return;
@@ -597,10 +593,16 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_assignment(cv::InputArray matrix) co
             "got matrix.size() = ", matrix.size(), "."
         );
     }
+#endif
 }
 
-void DWT2D::Coeffs::throw_if_wrong_size_for_set_level(cv::InputArray matrix, int level) const
+inline
+void DWT2D::Coeffs::throw_if_wrong_size_for_set_level(
+    cv::InputArray matrix,
+    int level
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (is_scalar(matrix) || matrix.size() == level_size(level))
         return;
 
@@ -609,14 +611,17 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_level(cv::InputArray matrix, int
         "The size of the matrix must be ", level_size(level), ", ",
         "got size = ", matrix.size(), "."
     );
+#endif
 }
 
+inline
 void DWT2D::Coeffs::throw_if_wrong_size_for_set_detail(
     cv::InputArray matrix,
     int level,
     int subband
-) const
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (is_scalar(matrix)
         || (matrix.size() == detail_size(level) && matrix.channels() == channels()))
         return;
@@ -651,10 +656,15 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_detail(
             "got channels = ", matrix.channels(), "."
         );
     }
+#endif
 }
 
-void DWT2D::Coeffs::throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const
+inline
+void DWT2D::Coeffs::throw_if_wrong_size_for_set_all_detail_levels(
+    cv::InputArray matrix
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (is_scalar(matrix) || (matrix.size() == size() && matrix.channels() == channels()))
         return;
 
@@ -675,10 +685,15 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray
             "got channels = ", matrix.channels(), "."
         );
     }
+#endif
 }
 
-void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(cv::InputArray matrix) const
+inline
+void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(
+    cv::InputArray matrix
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (is_scalar(matrix) || matrix.size() == detail_size(levels() - 1))
         return;
 
@@ -687,10 +702,15 @@ void DWT2D::Coeffs::throw_if_wrong_size_for_set_approx(cv::InputArray matrix) co
         "The matrix must be a scalar or its size must be ", detail_size(levels() - 1), ", ",
         "got size = ", matrix.size(), "."
     );
+#endif
 }
 
-void DWT2D::Coeffs::throw_if_level_out_of_range(int level) const
+inline
+void DWT2D::Coeffs::throw_if_level_out_of_range(
+    int level
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (level < -levels() || level >= levels()) {
         throw_out_of_range(
             "DWT2D::Coeffs: level is out of range. ",
@@ -698,10 +718,16 @@ void DWT2D::Coeffs::throw_if_level_out_of_range(int level) const
             "got level = ", level, "."
         );
     }
+#endif
 }
 
-void DWT2D::Coeffs::throw_if_levels_out_of_range(int lower_level, int upper_level) const
+inline
+void DWT2D::Coeffs::throw_if_levels_out_of_range(
+    int lower_level,
+    int upper_level
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (lower_level < -levels() || lower_level >= levels()) {
         throw_out_of_range(
             "DWT2D::Coeffs: lower_level is out of range. ",
@@ -717,19 +743,27 @@ void DWT2D::Coeffs::throw_if_levels_out_of_range(int lower_level, int upper_leve
             "got upper_level = ", upper_level, "."
         );
     }
+#endif
 }
 
-void DWT2D::Coeffs::throw_if_this_is_empty() const
+inline
+void DWT2D::Coeffs::throw_if_this_is_empty() const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (empty()) {
         throw_bad_size(
             "DWT2D::Coeffs: Coefficients are empty."
         );
     }
+#endif
 }
 
-void DWT2D::Coeffs::throw_if_invalid_subband(int subband) const
+inline
+void DWT2D::Coeffs::throw_if_invalid_subband(
+    int subband
+) const CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     switch (subband) {
         case HORIZONTAL:
         case VERTICAL:
@@ -742,8 +776,8 @@ void DWT2D::Coeffs::throw_if_invalid_subband(int subband) const
                 "got ", subband, "."
             );
     }
+#endif
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
 std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& coeffs)
 {
@@ -960,9 +994,10 @@ int DWT2D::max_levels_without_border_effects(int image_rows, int image_cols) con
     return std::max(max_levels, 0);
 }
 
-#if CVWT_ARGUMENT_CHECKING_ENABLED
-void DWT2D::throw_if_levels_out_of_range(int levels) const
+inline
+void DWT2D::throw_if_levels_out_of_range(int levels) const CVWT_DWT2D_NOEXCEPT
 {
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
     if (levels < 1) {
         throw_out_of_range(
             "DWT2D: levels is out of range. ",
@@ -970,14 +1005,17 @@ void DWT2D::throw_if_levels_out_of_range(int levels) const
             "got levels = ", levels,  "."
         );
     }
+#endif
 }
 
+inline
 void DWT2D::throw_if_inconsistent_coeffs_and_image_sizes(
     cv::InputArray coeffs,
     const cv::Size& image_size,
     int levels
-) const
+) const CVWT_DWT2D_NOEXCEPT
 {
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
     auto required_coeffs_size = coeffs_size_for_image(image_size, levels);
     if (coeffs.size() != required_coeffs_size) {
         throw_bad_size(
@@ -988,12 +1026,16 @@ void DWT2D::throw_if_inconsistent_coeffs_and_image_sizes(
             "(Note: use DWT2D::coeffs_size_for_input() to get the required size)"
         );
     }
+#endif
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
-#if CVWT_DISABLE_DWT_WARNINGS_ENABLED
-void DWT2D::warn_if_border_effects_will_occur(int levels, const cv::Size& image_size) const noexcept
+inline
+void DWT2D::warn_if_border_effects_will_occur(
+    int levels,
+    const cv::Size& image_size
+) const noexcept
 {
+#if CVWT_DWT2D_WARNINGS_ENABLED
     int max_levels = max_levels_without_border_effects(image_size);
     if (levels > max_levels) {
         std::stringstream message;
@@ -1003,25 +1045,30 @@ void DWT2D::warn_if_border_effects_will_occur(int levels, const cv::Size& image_
             << "Must have levels <= " << max_levels << " to avoid border effects.";
         CV_LOG_WARNING(NULL, message.str());
     }
+#endif
 }
 
-void DWT2D::warn_if_border_effects_will_occur(int levels, cv::InputArray image) const noexcept
+inline
+void DWT2D::warn_if_border_effects_will_occur(
+    int levels,
+    cv::InputArray image
+) const noexcept
 {
+#if CVWT_DWT2D_WARNINGS_ENABLED
     warn_if_border_effects_will_occur(levels, image.size());
+#endif
 }
 
+inline
 void DWT2D::warn_if_border_effects_will_occur(const Coeffs& coeffs) const noexcept
 {
+#if CVWT_DWT2D_WARNINGS_ENABLED
     warn_if_border_effects_will_occur(
         coeffs.levels(),
         coeffs.image_size()
     );
+#endif
 }
-#else
-inline void DWT2D::warn_if_border_effects_will_occur(int levels, const cv::Size& image_size) const noexcept {}
-inline void DWT2D::warn_if_border_effects_will_occur(int levels, cv::InputArray image) const noexcept {}
-inline void DWT2D::warn_if_border_effects_will_occur(const Coeffs& coeffs) const noexcept {}
-#endif  // CVWT_DISABLE_DWT_WARNINGS_ENABLED
 
 
 //  ----------------------------------------------------------------------------

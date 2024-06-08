@@ -444,14 +444,15 @@ KernelPair FilterBankImpl::reconstruct_kernels() const
     return KernelPair(lowpass, highpass);
 }
 
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+inline
 void FilterBankImpl::throw_if_wrong_size(
     const cv::Mat& reconstruct_lowpass,
     const cv::Mat& reconstruct_highpass,
     const cv::Mat& decompose_lowpass,
     const cv::Mat& decompose_highpass
-) const
+) const CVWT_FILTER_BANK_NOEXCEPT
 {
+#if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
     bool all_empty = decompose_lowpass.empty()
         && decompose_highpass.empty()
         && reconstruct_lowpass.empty()
@@ -497,8 +498,8 @@ void FilterBankImpl::throw_if_wrong_size(
             );
         }
     }
+#endif
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 } // namespace internal
 
 
@@ -1009,23 +1010,29 @@ bool FilterBank::operator==(const FilterBank& other) const
     );
 }
 
-#if CVWT_ARGUMENT_CHECKING_ENABLED
-void FilterBank::throw_if_decompose_image_is_wrong_size(cv::InputArray image) const
+inline
+void FilterBank::throw_if_decompose_image_is_wrong_size(
+    cv::InputArray image
+) const CVWT_FILTER_BANK_NOEXCEPT
 {
+#if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
     if (image.rows() <= 1 || image.cols() <= 1) {
         throw_bad_size(
             "FilterBank: Input size must be greater [1 x 1], got ", image.size()
         );
     }
+#endif
 }
 
+inline
 void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
     cv::InputArray approx,
     cv::InputArray horizontal_detail,
     cv::InputArray vertical_detail,
     cv::InputArray diagonal_detail
-) const
+) const CVWT_FILTER_BANK_NOEXCEPT
 {
+#if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
     if (horizontal_detail.size() != approx.size()
         || vertical_detail.size() != approx.size()
         || diagonal_detail.size() != approx.size()) {
@@ -1049,8 +1056,8 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
             "diagonal_detail.channels() = ", diagonal_detail.channels(), "."
         );
     }
+#endif
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 
 std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank)
 {

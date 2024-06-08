@@ -1,11 +1,19 @@
 #   ----------------------------------------------------------------------------
 #   Options
 #   ----------------------------------------------------------------------------
-option(CVWT_ARGUMENT_CHECKING "Build exception throwing for bad function arguments" ON)
-option(CVWT_DWT_WARNINGS "Build log warnings when performing DWT with border effects" ON)
+option(CVWT_ENABLE_EXCEPTIONS "Enable exception throwing globally" ON)
+option(CVWT_ENABLE_DWT2D_EXCEPTIONS "Enable exception throwing by DWT2D" ON)
+option(CVWT_ENABLE_DWT2D_COEFFS_EXCEPTIONS "Enable exception throwing by DWT2D::Coeffs" ON)
+option(CVWT_ENABLE_FILTER_BANK_EXCEPTIONS "Enable exception throwing by FilterBank" ON)
+option(CVWT_ENABLE_WAVELET_EXCEPTIONS "Enable exception throwing by FilterBank" ON)
+option(CVWT_ENABLE_DWT_WARNINGS "Enable warnings when performing DWT with border effects" ON)
 
-message(STATUS "CVWT_ARGUMENT_CHECKING ${CVWT_ARGUMENT_CHECKING}")
-message(STATUS "CVWT_DWT_WARNINGS ${CVWT_DWT_WARNINGS}")
+message(STATUS "CVWT_ENABLE_EXCEPTIONS ${CVWT_ENABLE_EXCEPTIONS}")
+message(STATUS "CVWT_ENABLE_DWT2D_EXCEPTIONS ${CVWT_ENABLE_DWT2D_EXCEPTIONS}")
+message(STATUS "CVWT_ENABLE_DWT2D_COEFFS_EXCEPTIONS ${CVWT_ENABLE_DWT2D_COEFFS_EXCEPTIONS}")
+message(STATUS "CVWT_ENABLE_FILTER_BANK_EXCEPTIONS ${CVWT_ENABLE_FILTER_BANK_EXCEPTIONS}")
+message(STATUS "CVWT_ENABLE_WAVELET_EXCEPTIONS ${CVWT_ENABLE_WAVELET_EXCEPTIONS}")
+message(STATUS "CVWT_ENABLE_DWT_WARNINGS ${CVWT_DWT_WARNINGS}")
 
 #   ----------------------------------------------------------------------------
 #   Find or Fetch Dependencies
@@ -65,31 +73,147 @@ target_compile_features(
     cxx_std_20
 )
 
-if(CVWT_ARGUMENT_CHECKING)
+if(CVWT_ENABLE_EXCEPTIONS)
     target_compile_definitions(
         cvwt
-        PRIVATE
-        CVWT_ARGUMENT_CHECKING_ENABLED=true
+        PUBLIC
+        CVWT_EXCEPTIONS_ENABLED=true
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_NOEXCEPT=
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_NORETURN=[[noreturn]]
     )
 else()
     target_compile_definitions(
         cvwt
-        PRIVATE
-        CVWT_ARGUMENT_CHECKING_ENABLED=false
+        PUBLIC
+        CVWT_EXCEPTIONS_ENABLED=false
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_NOEXCEPT=
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_NORETURN=
     )
 endif()
 
-if(CVWT_DWT_WARNINGS)
+if(CVWT_ENABLE_DWT2D_EXCEPTIONS)
     target_compile_definitions(
         cvwt
-        PRIVATE
-        CVWT_DISABLE_DWT_WARNINGS_ENABLED=true
+        PUBLIC
+        CVWT_DWT2D_EXCEPTIONS_ENABLED=CVWT_EXCEPTIONS_ENABLED
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_DWT2D_NOEXCEPT=CVWT_NOEXCEPT
     )
 else()
     target_compile_definitions(
         cvwt
-        PRIVATE
-        CVWT_DISABLE_DWT_WARNINGS_ENABLED=false
+        PUBLIC
+        CVWT_DWT2D_EXCEPTIONS_ENABLED=false
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_DWT2D_NOEXCEPT=noexcept
+    )
+endif()
+
+if(CVWT_ENABLE_DWT2D_COEFFS_EXCEPTIONS)
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED=CVWT_EXCEPTIONS_ENABLED
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_DWT2D_COEFFS_NOEXCEPT=CVWT_NOEXCEPT
+    )
+else()
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED=false
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_DWT2D_COEFFS_NOEXCEPT=noexcept
+    )
+endif()
+
+if(CVWT_ENABLE_FILTER_BANK_EXCEPTIONS)
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_FILTER_BANK_EXCEPTIONS_ENABLED=CVWT_EXCEPTIONS_ENABLED
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_FILTER_BANK_NOEXCEPT=CVWT_NOEXCEPT
+    )
+else()
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_FILTER_BANK_EXCEPTIONS_ENABLED=false
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_FILTER_BANK_NOEXCEPT=noexcept
+    )
+endif()
+
+if(CVWT_ENABLE_WAVELET_EXCEPTIONS)
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_WAVELET_EXCEPTIONS_ENABLED=CVWT_EXCEPTIONS_ENABLED
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_WAVELET_NOEXCEPT=CVWT_NOEXCEPT
+    )
+else()
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_WAVELET_EXCEPTIONS_ENABLED=false
+    )
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_WAVELET_NOEXCEPT=noexcept
+    )
+endif()
+
+if(CVWT_ENABLE_DWT_WARNINGS)
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_DWT2D_WARNINGS_ENABLED=true
+    )
+else()
+    target_compile_definitions(
+        cvwt
+        PUBLIC
+        CVWT_DWT2D_WARNINGS_ENABLED=false
     )
 endif()
 

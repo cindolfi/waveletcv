@@ -466,12 +466,7 @@ public:
          * @throws cv::Exception If @pref{coeffs} is an incompatible matrix or
          *                       scalar.
          */
-        Coeffs& operator=(cv::InputArray coeffs)
-        {
-            throw_if_wrong_size_for_assignment(coeffs);
-            convert_and_copy(coeffs, _p->coeff_matrix);
-            return *this;
-        }
+        Coeffs& operator=(cv::InputArray coeffs);
 
         //  Casting
         /**
@@ -602,11 +597,7 @@ public:
          * @throws cv::Exception If @pref{coeffs} is an incompatible matrix or
          *                       scalar.
          */
-        void set_level(int level, cv::InputArray coeffs)
-        {
-            throw_if_wrong_size_for_set_level(coeffs, level);
-            convert_and_copy(coeffs, _p->coeff_matrix(level_rect(level)));
-        }
+        void set_level(int level, cv::InputArray coeffs);
 
         //  --------------------------------------------------------------------
         //  Get & Set Approximation Coefficients
@@ -628,11 +619,7 @@ public:
          *
          * @throws cv::Exception If @pref{coeffs} is an incompatible matrix or scalar.
          */
-        void set_approx(cv::InputArray coeffs)
-        {
-            throw_if_wrong_size_for_set_approx(coeffs);
-            convert_and_copy(coeffs, approx());
-        }
+        void set_approx(cv::InputArray coeffs);
         ///@}
 
         //  --------------------------------------------------------------------
@@ -665,11 +652,7 @@ public:
          *
          * @throws cv::Exception If @pref{coeffs} is an incompatible matrix or scalar.
          */
-        void set_all_detail_levels(cv::InputArray coeffs)
-        {
-            throw_if_wrong_size_for_set_all_detail_levels(coeffs);
-            convert_and_copy(coeffs, _p->coeff_matrix, detail_mask());
-        }
+        void set_all_detail_levels(cv::InputArray coeffs);
 
         /**
          * @brief Sets the detail coefficients at a given level and subband.
@@ -685,12 +668,7 @@ public:
          *  - If @pref{coeffs} is an incompatible matrix or scalar.
          *  - If @pref{subband} is not a valid #Subband.
          */
-        void set_detail(int level, int subband, cv::InputArray coeffs)
-        {
-            throw_if_wrong_size_for_set_detail(coeffs, level, subband);
-            throw_if_invalid_subband(subband);
-            convert_and_copy(coeffs, detail(level, subband));
-        }
+        void set_detail(int level, int subband, cv::InputArray coeffs);
 
         /**
          * @brief Sets the smallest scale detail coefficients in a given subband.
@@ -769,11 +747,7 @@ public:
          * @throws cv::Exception If @pref{coeffs} is an incompatible matrix or
          *                       scalar.
          */
-        void set_horizontal_detail(int level, cv::InputArray coeffs)
-        {
-            throw_if_wrong_size_for_set_detail(coeffs, level, HORIZONTAL);
-            convert_and_copy(coeffs, horizontal_detail(level));
-        }
+        void set_horizontal_detail(int level, cv::InputArray coeffs);
 
         /**
          * @brief Sets the smallest scale horizontal subband detail coefficients.
@@ -822,11 +796,7 @@ public:
          *
          * @copydetails set_horizontal_detail(int, cv::InputArray)
          */
-        void set_vertical_detail(int level, cv::InputArray coeffs)
-        {
-            throw_if_wrong_size_for_set_detail(coeffs, level, VERTICAL);
-            convert_and_copy(coeffs, vertical_detail(level));
-        }
+        void set_vertical_detail(int level, cv::InputArray coeffs);
 
         /**
          * @brief Sets the smallest scale vertical subband detail coefficients.
@@ -869,11 +839,7 @@ public:
          *
          * @copydetails set_horizontal_detail(int, cv::InputArray)
          */
-        void set_diagonal_detail(int level, cv::InputArray coeffs)
-        {
-            throw_if_wrong_size_for_set_detail(coeffs, level, DIAGONAL);
-            convert_and_copy(coeffs, diagonal_detail(level));
-        }
+        void set_diagonal_detail(int level, cv::InputArray coeffs);
 
         /**
          * @brief Sets the smallest scale diagonal subband detail coefficients.
@@ -1627,32 +1593,6 @@ public:
         friend std::ostream& operator<<(std::ostream& stream, const Coeffs& wavelet);
 
     protected:
-        //  Argument Checkers - these can be disabled by building with cmake
-        //  option CVWT_ARGUMENT_CHECKING = OFF
-        #if CVWT_ARGUMENT_CHECKING_ENABLED
-        void throw_if_bad_mask_for_normalize(cv::InputArray mask, const std::string mask_name) const;
-        void throw_if_wrong_size_for_assignment(cv::InputArray matrix) const;
-        void throw_if_wrong_size_for_set_level(cv::InputArray matrix, int level) const;
-        void throw_if_wrong_size_for_set_detail(cv::InputArray matrix, int level, int subband) const;
-        void throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const;
-        void throw_if_wrong_size_for_set_approx(cv::InputArray matrix) const;
-        void throw_if_level_out_of_range(int level) const;
-        void throw_if_levels_out_of_range(int lower_level, int upper_level) const;
-        void throw_if_this_is_empty() const;
-        void throw_if_invalid_subband(int subband) const;
-        #else
-        void throw_if_bad_mask_for_normalize(cv::InputArray mask, const std::string mask_name) const noexcept {}
-        void throw_if_wrong_size_for_assignment(cv::InputArray matrix) const noexcept {}
-        void throw_if_wrong_size_for_set_level(cv::InputArray matrix, int level) const noexcept {}
-        void throw_if_wrong_size_for_set_detail(cv::InputArray matrix, int level, int subband) const noexcept {}
-        void throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const noexcept {};
-        void throw_if_wrong_size_for_set_approx(cv::InputArray matrix) const noexcept {}
-        void throw_if_level_out_of_range(int level) const noexcept {}
-        void throw_if_levels_out_of_range(int lower_level, int upper_level) const noexcept {}
-        void throw_if_this_is_empty() const noexcept {}
-        void throw_if_invalid_subband(int subband) const noexcept {}
-        #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
-
         //  Helpers
         /**
          * @brief Copies the source to the destination.
@@ -1667,7 +1607,20 @@ public:
             cv::InputArray source,
             Matrix&& destination,
             cv::InputArray mask = cv::noArray()
-        );
+        )
+        {
+            assert(destination.type() == type());
+
+            if (is_scalar(source)) {
+                destination.setTo(source, mask);
+            } else if (source.type() != destination.type()) {
+                cv::Mat converted;
+                source.getMat().convertTo(converted, type());
+                converted.copyTo(destination, mask);
+            } else {
+                source.copyTo(destination, mask);
+            }
+        }
 
         /**
          * @brief Maps a negative level index to the corresponding positive level index.
@@ -1702,6 +1655,20 @@ public:
                 && (array.total() == channels || array.total() == 1)
                 || (array.size() == cv::Size(1, 4) && array.type() == CV_64F && channels <= 4);
         }
+
+    private:
+        //  Argument Checkers - these can be disabled by building with cmake
+        //  option CVWT_ENABLE_DWT2D_COEFFS_EXCEPTIONS = OFF
+        void throw_if_bad_mask_for_normalize(cv::InputArray mask, const std::string mask_name) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_assignment(cv::InputArray matrix) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_set_level(cv::InputArray matrix, int level) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_set_detail(cv::InputArray matrix, int level, int subband) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_set_approx(cv::InputArray matrix) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_level_out_of_range(int level) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_levels_out_of_range(int lower_level, int upper_level) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_this_is_empty() const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_invalid_subband(int subband) const CVWT_DWT2D_COEFFS_NOEXCEPT;
 
     private:
         std::shared_ptr<internal::Dwt2dCoeffsImpl> _p;
@@ -1949,25 +1916,15 @@ public:
     {
         return max_levels_without_border_effects(image.size());
     }
-protected:
+private:
     //  Argument Checkers - these can be disabled by building with cmake
-    //  option CVWT_ARGUMENT_CHECKING = OFF
-    #if CVWT_ARGUMENT_CHECKING_ENABLED
-    void throw_if_levels_out_of_range(int levels) const;
+    //  option CVWT_ENABLE_DWT2D_EXCEPTIONS = OFF
+    void throw_if_levels_out_of_range(int levels) const CVWT_DWT2D_NOEXCEPT;
     void throw_if_inconsistent_coeffs_and_image_sizes(
         cv::InputArray coeffs,
         const cv::Size& image_size,
         int levels
-    ) const;
-    #else
-    void throw_if_levels_out_of_range(int levels) const noexcept {}
-    void throw_if_inconsistent_coeffs_and_image_sizes(
-        cv::InputArray coeffs,
-        const cv::Size& image_size,
-        int levels
-    ) const noexcept
-    {}
-    #endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+    ) const CVWT_DWT2D_NOEXCEPT;
 
     //  Log warnings - these can be disabled by defining CVWT_DISABLE_DWT_WARNINGS_ENABLED
     void warn_if_border_effects_will_occur(int levels, const cv::Size& image_size) const noexcept;
@@ -2366,13 +2323,11 @@ public:
 
     CoeffsExpr mul(const DWT2D::Coeffs& other, double scale = 1.0) const
     {
-        throw_if_incompatible(coeffs, other);
         return CoeffsExpr(coeffs, other, MatExpr::mul(other));
     }
 
     CoeffsExpr mul(const CoeffsExpr& other, double scale = 1.0) const
     {
-        throw_if_incompatible(coeffs, other.coeffs);
         return CoeffsExpr(coeffs, other.coeffs, MatExpr::mul(other, scale));
     }
 
@@ -2403,7 +2358,7 @@ public:
     static void throw_if_incompatible(
         const DWT2D::Coeffs& coeffs_a,
         const DWT2D::Coeffs& coeffs_b
-    );
+    ) CVWT_DWT2D_COEFFS_NOEXCEPT;
 
 public:
     DWT2D::Coeffs coeffs;
@@ -2823,7 +2778,7 @@ cv::MatExpr operator!=(const cv::Matx<T, m, n>& lhs, const CoeffsExpr& rhs)
     return rhs != lhs;
 }
 
-cv::MatExpr operator!=(const CoeffsExpr& lhs, double scalar);
+cv::MatExpr operator!=(const CoeffsExpr& lhs, double rhs);
 inline cv::MatExpr operator!=(double lhs, const CoeffsExpr& rhs)
 {
     return rhs != lhs;
@@ -2860,7 +2815,7 @@ cv::MatExpr operator!=(const cv::Matx<T, m, n>& lhs, const DWT2D::Coeffs& rhs)
     return rhs != lhs;
 }
 
-cv::MatExpr operator!=(const DWT2D::Coeffs& lhs, double scalar);
+cv::MatExpr operator!=(const DWT2D::Coeffs& lhs, double rhs);
 inline cv::MatExpr operator!=(double lhs, const DWT2D::Coeffs& rhs)
 {
     return rhs != lhs;

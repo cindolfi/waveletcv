@@ -104,7 +104,6 @@ Wavelet::Wavelet(
 {
 }
 
-
 Orthogonality Wavelet::infer_orthogonality(const FilterBank& filter_bank) const
 {
     Orthogonality orthogonality;
@@ -295,7 +294,6 @@ Wavelet create_daubechies(int order)
             cv::Mat(internal::DAUBECHIES_FILTER_COEFFS[name])
         ),
         Orthogonality::ORTHOGONAL,
-        // (order > 1) ? Symmetry::ASYMMETRIC : Symmetry::SYMMETRIC,
         Symmetry::ASYMMETRIC,
         name,
         internal::DAUBECHIES_FAMILY,
@@ -418,7 +416,6 @@ std::string make_orthogonal_name(const std::string& prefix, int order)
     std::stringstream stream;
     stream << prefix << order;
     return stream.str();
-    // return prefix + std::to_string(order);
 }
 
 std::string make_biorthogonal_name(
@@ -430,18 +427,18 @@ std::string make_biorthogonal_name(
     std::stringstream stream;
     stream << prefix << vanishing_moments_psi << "." << vanishing_moments_phi;
     return stream.str();
-    // return prefix + std::to_string(vanishing_moments_psi) + "." + std::to_string(vanishing_moments_phi);
 }
 
-#if CVWT_ARGUMENT_CHECKING_ENABLED
-template <typename V>
+template <typename CoeffsCollection>
+inline
 void throw_if_invalid_wavelet_name(
     const std::string& name,
     const std::string& family,
-    const std::map<std::string, V>& filter_coeffs,
+    const std::map<std::string, CoeffsCollection>& filter_coeffs,
     const std::string& name_prefix
-)
+) CVWT_WAVELET_NOEXCEPT
 {
+#if CVWT_WAVELET_EXCEPTIONS_ENABLED
     if (!filter_coeffs.contains(name)) {
         std::stringstream available_names;
         for (auto name : std::views::keys(filter_coeffs))
@@ -455,8 +452,8 @@ void throw_if_invalid_wavelet_name(
             "Got ", name_prefix + name, "."
         );
     }
+#endif
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
 } // namespace internal
 } // namespace cvwt
 

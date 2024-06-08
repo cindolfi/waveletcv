@@ -4,11 +4,13 @@
 
 namespace cvwt
 {
+inline
 void CoeffsExpr::throw_if_incompatible(
     const DWT2D::Coeffs& coeffs_a,
     const DWT2D::Coeffs& coeffs_b
-)
+) CVWT_DWT2D_COEFFS_NOEXCEPT
 {
+#if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
     if (coeffs_a.levels() != coeffs_b.levels())
         throw_bad_arg(
             "Incompatible DWT2D coefficients. "
@@ -40,6 +42,7 @@ void CoeffsExpr::throw_if_incompatible(
             "got lhs border_type() = ", coeffs_a.border_type(),
             " and rhs border_type() = ", coeffs_b.border_type(), "."
         );
+#endif
 }
 
 //  ============================================================================

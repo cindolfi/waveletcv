@@ -142,30 +142,34 @@ namespace internal
 //  forward declarations (defined in utils.cpp)
 std::string get_type_name(int type);
 
-[[noreturn]]
+CVWT_NORETURN
 void _throw_error(
     cv::Error::Code code,
     const char* function,
     const char* file,
     int line,
     auto... message_parts
-) noexcept(false)
+) noexcept(!CVWT_EXCEPTIONS_ENABLED)
 {
+#if CVWT_EXCEPTIONS_ENABLED
     std::stringstream message;
     (message << ... << message_parts);
 
     cv::error(code, message.str(), function, file, line);
+#endif
 }
 
-[[noreturn]]
+CVWT_NORETURN
 void _throw_bad_size(
     const char* function,
     const char* file,
     int line,
     auto... message_parts
-) noexcept(false)
+) noexcept(!CVWT_EXCEPTIONS_ENABLED)
 {
-    throw_error(cv::Error::StsBadSize, function, file, line, message_parts...);
+#if CVWT_EXCEPTIONS_ENABLED
+    _throw_error(cv::Error::StsBadSize, function, file, line, message_parts...);
+#endif
 }
 
 void _throw_if_empty(
@@ -175,8 +179,9 @@ void _throw_if_empty(
     const char* file,
     int line,
     auto... message_parts
-)
+) CVWT_NOEXCEPT
 {
+#if CVWT_EXCEPTIONS_ENABLED
     if (array.empty()) {
         if constexpr (sizeof...(message_parts) == 0)
             _throw_bad_size(
@@ -186,51 +191,46 @@ void _throw_if_empty(
         else
             _throw_bad_size(function, file, line, message_parts...);
     }
+#endif
 }
 
-[[noreturn]]
+CVWT_NORETURN
 void _throw_bad_arg(
     const char* function,
     const char* file,
     int line,
     auto... message_parts
-) noexcept(false)
+) noexcept(!CVWT_EXCEPTIONS_ENABLED)
 {
-    throw_error(
-        cv::Error::StsBadArg,
-        function, file, line,
-        message_parts...
-    );
+#if CVWT_EXCEPTIONS_ENABLED
+    _throw_error(cv::Error::StsBadArg, function, file, line, message_parts...);
+#endif
 }
 
-[[noreturn]]
+CVWT_NORETURN
 void _throw_out_of_range(
     const char* function,
     const char* file,
     int line,
     auto... message_parts
-) noexcept(false)
+) noexcept(!CVWT_EXCEPTIONS_ENABLED)
 {
-    throw_error(
-        cv::Error::StsOutOfRange,
-        function, file, line,
-        message_parts...
-    );
+#if CVWT_EXCEPTIONS_ENABLED
+    _throw_error(cv::Error::StsOutOfRange, function, file, line, message_parts...);
+#endif
 }
 
-[[noreturn]]
+CVWT_NORETURN
 void _throw_bad_mask(
     const char* function,
     const char* file,
     int line,
     auto... message_parts
-) noexcept(false)
+) noexcept(!CVWT_EXCEPTIONS_ENABLED)
 {
-    throw_error(
-        cv::Error::StsBadMask,
-        function, file, line,
-        message_parts...
-    );
+#if CVWT_EXCEPTIONS_ENABLED
+    _throw_error(cv::Error::StsBadMask, function, file, line, message_parts...);
+#endif
 }
 
 void _throw_if_bad_mask_type(
@@ -239,8 +239,9 @@ void _throw_if_bad_mask_type(
     const char* file,
     int line,
     auto... message_parts
-)
+) CVWT_NOEXCEPT
 {
+#if CVWT_EXCEPTIONS_ENABLED
     if (mask.type() != CV_8UC1 && mask.type() != CV_8SC1) {
         if constexpr (sizeof...(message_parts) == 0)
             _throw_bad_mask(
@@ -256,6 +257,7 @@ void _throw_if_bad_mask_type(
                 get_type_name(mask.type()), "]"
             );
     }
+#endif
 }
 
 void _throw_if_bad_mask_depth(
@@ -266,6 +268,7 @@ void _throw_if_bad_mask_depth(
     auto... message_parts
 )
 {
+#if CVWT_EXCEPTIONS_ENABLED
     if (mask.depth() != CV_8U && mask.depth() != CV_8S) {
         if constexpr (sizeof...(message_parts) == 0)
             _throw_bad_mask(
@@ -281,6 +284,7 @@ void _throw_if_bad_mask_depth(
                 get_type_name(mask.type()), "]"
             );
     }
+#endif
 }
 
 void _throw_if_bad_mask_for_array(
@@ -293,8 +297,9 @@ void _throw_if_bad_mask_for_array(
     const char* file,
     int line,
     auto... message_parts
-)
+) CVWT_NOEXCEPT
 {
+#if CVWT_EXCEPTIONS_ENABLED
     if (!array.sameSize(mask)) {
         if constexpr (sizeof...(message_parts) == 0)
             _throw_bad_mask(
@@ -349,20 +354,23 @@ void _throw_if_bad_mask_for_array(
         }
         break;
     }
+#endif
 }
 
-[[noreturn]]
+CVWT_NORETURN
 void _throw_not_implemented(
     const char* function,
     const char* file,
     int line,
     auto... message_parts
-) noexcept(false)
+) noexcept(!CVWT_EXCEPTIONS_ENABLED)
 {
-    throw_error(cv::Error::StsNotImplemented, function, file, line, message_parts...);
+#if CVWT_EXCEPTIONS_ENABLED
+    _throw_error(cv::Error::StsNotImplemented, function, file, line, message_parts...);
+#endif
 }
 
-[[noreturn]]
+CVWT_NORETURN
 void _throw_member_not_implemented(
     const std::string& class_name,
     const std::string& function_name,
@@ -370,13 +378,15 @@ void _throw_member_not_implemented(
     const char* file,
     int line,
     auto... message_parts
-)  noexcept(false)
+) noexcept(!CVWT_EXCEPTIONS_ENABLED)
 {
+#if CVWT_EXCEPTIONS_ENABLED
     _throw_not_implemented(
         function, file, line,
         class_name, "::", function_name, " is not implemented. ",
         message_parts...
     );
+#endif
 }
 
 void _throw_if_not_vector(
@@ -387,8 +397,9 @@ void _throw_if_not_vector(
     const char* file,
     int line,
     auto... message_parts
-)
+) CVWT_NOEXCEPT
 {
+#if CVWT_EXCEPTIONS_ENABLED
     if (!is_vector(array, channels <= 0 ? array.channels() : channels)) {
         if constexpr (sizeof...(message_parts) == 0)
             _throw_bad_size(
@@ -406,6 +417,7 @@ void _throw_if_not_vector(
                 array_name, ".channels() = ", array.channels(), ".]"
             );
     }
+#endif
 }
 }   // namespace internal
 }   // namespace cvwt
