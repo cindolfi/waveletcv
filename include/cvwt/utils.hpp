@@ -30,7 +30,7 @@ using promote_types = decltype((std::declval<T>() + ...));
  */
 template <typename T>
 requires std::floating_point<std::remove_cvref_t<T>>
-bool approx_zero(T x, double absolute_tolerance)
+bool is_approx_zero(T x, double absolute_tolerance)
 {
     return std::abs(x) < static_cast<T>(absolute_tolerance);
 }
@@ -40,9 +40,9 @@ bool approx_zero(T x, double absolute_tolerance)
  */
 template <typename T>
 requires std::floating_point<std::remove_cvref_t<T>>
-bool approx_zero(T x)
+bool is_approx_zero(T x)
 {
-    return approx_zero(x, internal::sqrt_epsilon<T>);
+    return is_approx_zero(x, internal::sqrt_epsilon<T>);
 }
 
 /**
@@ -56,7 +56,7 @@ bool approx_zero(T x)
 template <typename T1, typename T2>
 requires std::floating_point<std::remove_cvref_t<T1>>
     && std::floating_point<std::remove_cvref_t<T2>>
-constexpr bool approx_equal(
+constexpr bool is_approx_equal(
     T1 x,
     T2 y,
     double relative_tolerance,
@@ -67,10 +67,10 @@ constexpr bool approx_equal(
 
     //  https://www.reidatcheson.com/floating%20point/comparison/2019/03/20/floating-point-comparison.html
     if (x == 0.0)
-        return approx_zero(y, zero_absolute_tolerance);
+        return is_approx_zero(y, zero_absolute_tolerance);
 
     if (y == 0.0)
-        return approx_zero(x, zero_absolute_tolerance);
+        return is_approx_zero(x, zero_absolute_tolerance);
 
     T min = std::max(
         std::min(std::abs(x), std::abs(y)),
@@ -85,11 +85,11 @@ constexpr bool approx_equal(
 template <typename T1, typename T2>
 requires std::floating_point<std::remove_cvref_t<T1>>
     && std::floating_point<std::remove_cvref_t<T2>>
-constexpr bool approx_equal(T1 x, T2 y, double relative_tolerance)
+constexpr bool is_approx_equal(T1 x, T2 y, double relative_tolerance)
 {
     using T = internal::promote_types<T1, T2>;
 
-    return approx_equal(
+    return is_approx_equal(
         x, y,
         static_cast<T>(relative_tolerance),
         internal::sqrt_epsilon<T>
@@ -102,11 +102,11 @@ constexpr bool approx_equal(T1 x, T2 y, double relative_tolerance)
 template <typename T1, typename T2>
 requires std::floating_point<std::remove_cvref_t<T1>>
     && std::floating_point<std::remove_cvref_t<T2>>
-constexpr bool approx_equal(T1 x, T2 y)
+constexpr bool is_approx_equal(T1 x, T2 y)
 {
     using T = internal::promote_types<T1, T2>;
 
-    return approx_equal(
+    return is_approx_equal(
         x, y,
         internal::sqrt_epsilon<T>,
         internal::sqrt_epsilon<T>
@@ -453,7 +453,7 @@ bool matrix_equals(cv::InputArray a, cv::InputArray b);
  * @param[in] relative_tolerance
  * @param[in] zero_absolute_tolerance
  */
-bool matrix_approx_equals(
+bool approx_equals(
     cv::InputArray a,
     cv::InputArray b,
     double relative_tolerance,
@@ -462,11 +462,11 @@ bool matrix_approx_equals(
 /**
  * @overload
  */
-bool matrix_approx_equals(cv::InputArray a, cv::InputArray b, double relative_tolerance);
+bool approx_equals(cv::InputArray a, cv::InputArray b, double relative_tolerance);
 /**
  * @overload
  */
-bool matrix_approx_equals(cv::InputArray a, cv::InputArray b);
+bool approx_equals(cv::InputArray a, cv::InputArray b);
 
 /**
  * @brief Returns true if all corresponding values in two matrices are approximately equal.
@@ -474,11 +474,11 @@ bool matrix_approx_equals(cv::InputArray a, cv::InputArray b);
  * @param[in] a
  * @param[in] absolute_tolerance
  */
-bool matrix_approx_zeros(cv::InputArray a, double absolute_tolerance);
+bool approx_zeros(cv::InputArray a, double absolute_tolerance);
 /**
  * @overload
  */
-bool matrix_approx_zeros(cv::InputArray a);
+bool approx_zeros(cv::InputArray a);
 
 
 /**

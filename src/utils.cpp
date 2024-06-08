@@ -675,7 +675,7 @@ struct MatrixApproxEquals
     ) const
     {
         auto is_approx_equal = [&](T1 x, T2 y) {
-            return approx_equal<Float, Float>(
+            return is_approx_equal<Float, Float>(
                 x,
                 y,
                 relative_tolerance,
@@ -693,7 +693,7 @@ struct MatrixApproxEquals
     ) const
     {
         auto is_approx_equal = [&](T1 x, T2 y) {
-            return approx_equal<Float, Float>(
+            return is_approx_equal<Float, Float>(
                 x,
                 y,
                 relative_tolerance
@@ -709,7 +709,7 @@ struct MatrixApproxEquals
     ) const
     {
         auto is_approx_equal = [&](T1 x, T2 y) {
-            return approx_equal<Float, Float>(x, y);
+            return is_approx_equal<Float, Float>(x, y);
         };
 
         return compare_approx_equal(a, b, is_approx_equal);
@@ -758,7 +758,7 @@ struct MatrixApproxZero
     bool operator()(cv::InputArray a, double zero_absolute_tolerance) const
     {
         auto is_approx_zero = [&](T x) {
-            return approx_zero<Float>(x, zero_absolute_tolerance);
+            return is_approx_zero<Float>(x, zero_absolute_tolerance);
         };
 
         return compare_approx_zero(a, is_approx_zero);
@@ -767,7 +767,7 @@ struct MatrixApproxZero
     bool operator()(cv::InputArray a) const
     {
         auto is_approx_zero = [&](T x) {
-            return approx_zero<Float>(x);
+            return is_approx_zero<Float>(x);
         };
 
         return compare_approx_zero(a, is_approx_zero);
@@ -828,7 +828,7 @@ bool matrix_equals(cv::InputArray a, cv::InputArray b)
     return true;
 }
 
-bool matrix_approx_equals(
+bool approx_equals(
     cv::InputArray a,
     cv::InputArray b,
     double relative_tolerance,
@@ -840,14 +840,14 @@ bool matrix_approx_equals(
     );
 }
 
-bool matrix_approx_equals(cv::InputArray a, cv::InputArray b, double relative_tolerance)
+bool approx_equals(cv::InputArray a, cv::InputArray b, double relative_tolerance)
 {
     return internal::dispatch_on_pixel_depths<internal::MatrixApproxEquals>(
         a.depth(), b.depth(), a, b, relative_tolerance
     );
 }
 
-bool matrix_approx_equals(cv::InputArray a, cv::InputArray b)
+bool approx_equals(cv::InputArray a, cv::InputArray b)
 {
     return internal::dispatch_on_pixel_depths<internal::MatrixApproxEquals>(
         a.depth(), b.depth(), a, b
@@ -855,14 +855,14 @@ bool matrix_approx_equals(cv::InputArray a, cv::InputArray b)
 }
 
 
-bool matrix_approx_zeros(cv::InputArray a, double absolute_tolerance)
+bool approx_zeros(cv::InputArray a, double absolute_tolerance)
 {
     return internal::dispatch_on_pixel_depth<internal::MatrixApproxZero>(
         a.depth(), a, absolute_tolerance
     );
 }
 
-bool matrix_approx_zeros(cv::InputArray a)
+bool approx_zeros(cv::InputArray a)
 {
     return internal::dispatch_on_pixel_depth<internal::MatrixApproxZero>(
         a.depth(), a

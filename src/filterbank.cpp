@@ -709,7 +709,7 @@ bool FilterBank::is_orthogonal() const
         lowpass_correlation,
         2
     );
-    if (!matrix_approx_equals(lowpass_correlation, delta))
+    if (!approx_equals(lowpass_correlation, delta))
         return false;
 
     //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 5.16
@@ -720,7 +720,7 @@ bool FilterBank::is_orthogonal() const
         highpass_correlation,
         2
     );
-    if (!matrix_approx_equals(highpass_correlation, delta))
+    if (!approx_equals(highpass_correlation, delta))
         return false;
 
     //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 5.15
@@ -731,7 +731,7 @@ bool FilterBank::is_orthogonal() const
         cross_correlation,
         2
     );
-    if (!matrix_approx_zeros(cross_correlation))
+    if (!approx_zeros(cross_correlation))
         return false;
 
     return is_biorthogonal();
@@ -768,7 +768,7 @@ bool FilterBank::satisfies_alias_cancellation(
     cv::Mat decompose_highpass_alternated_signs;
     negate_even_indices(decompose_kernels.highpass(), decompose_highpass_alternated_signs);
 
-    return matrix_approx_zeros(
+    return approx_zeros(
         internal::convolve(
             reconstruct_kernels.lowpass(),
             decompose_lowpass_alternated_signs
@@ -793,7 +793,7 @@ bool FilterBank::satisfies_no_distortion(
     //  "Wavelets and Filter Banks" Nguyen & Strang - Equation 4.4
     int depth = std::max(decompose_kernels.depth(), reconstruct_kernels.depth());
     auto delta = cv::Mat::eye(reconstruct_kernels.lowpass().total(), 1, depth);
-    return matrix_approx_equals(
+    return approx_equals(
         2 * delta,
         internal::convolve(
             reconstruct_kernels.lowpass(),
