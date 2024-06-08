@@ -464,7 +464,7 @@ void FilterBankImpl::throw_if_wrong_size(
             && !reconstruct_highpass.empty();
 
         if (!all_nonempty) {
-            internal::throw_bad_arg(
+            throw_bad_arg(
                 "FilterBank: Kernels must all be empty or all nonempty. Got ",
                 (reconstruct_lowpass.empty() ? "empty" : "nonempty"), " reconstruct_lowpass, ",
                 (reconstruct_highpass.empty() ? "empty" : "nonempty"), " reconstruct_highpass, ",
@@ -475,7 +475,7 @@ void FilterBankImpl::throw_if_wrong_size(
 
         if (decompose_lowpass.size() != decompose_highpass.size()
             || !is_vector(decompose_lowpass, 1)) {
-            internal::throw_bad_size(
+            throw_bad_size(
                 "FilterBank: decompose_lowpass and decompose_highpass kernels "
                 "must be single channel vectors of the same size. ",
                 "Got decompose_lowpass.size() = ", decompose_lowpass.size(),
@@ -487,7 +487,7 @@ void FilterBankImpl::throw_if_wrong_size(
 
         if (reconstruct_lowpass.size() != reconstruct_highpass.size()
             || !is_vector(reconstruct_lowpass, 1)) {
-            internal::throw_bad_size(
+            throw_bad_size(
                 "FilterBank: reconstruct_lowpass and reconstruct_highpass kernels "
                 "must be single channel vectors of the same size. ",
                 "Got reconstruct_lowpass.size() = ", reconstruct_lowpass.size(),
@@ -1013,7 +1013,7 @@ bool FilterBank::operator==(const FilterBank& other) const
 void FilterBank::throw_if_decompose_image_is_wrong_size(cv::InputArray image) const
 {
     if (image.rows() <= 1 || image.cols() <= 1) {
-        internal::throw_bad_size(
+        throw_bad_size(
             "FilterBank: Input size must be greater [1 x 1], got ", image.size()
         );
     }
@@ -1029,7 +1029,7 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
     if (horizontal_detail.size() != approx.size()
         || vertical_detail.size() != approx.size()
         || diagonal_detail.size() != approx.size()) {
-        internal::throw_bad_size(
+        throw_bad_size(
             "FilterBank: Inputs must all be the same size, got ",
             "approx.size() = ", approx.size(), ", ",
             "horizontal_detail.size() = ", horizontal_detail.size(), ", ",
@@ -1041,7 +1041,7 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
     if (horizontal_detail.channels() != approx.channels()
         || vertical_detail.channels() != approx.channels()
         || diagonal_detail.channels() != approx.channels()) {
-        internal::throw_bad_size(
+        throw_bad_size(
             "FilterBank: Inputs must all be the same number of channels, got ",
             "approx.channels() = ", approx.channels(), ", ",
             "horizontal_detail.channels() = ", horizontal_detail.channels(), ", ",

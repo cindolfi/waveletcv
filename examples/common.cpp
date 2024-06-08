@@ -34,7 +34,7 @@ std::pair<cv::Mat, std::filesystem::path> open_image(
     else if (channels == 4)
         flags |= cv::IMREAD_ANYCOLOR;
     else
-        internal::throw_bad_arg(
+        throw_bad_arg(
             "Invalid number of channels, got ", channels, ". ",
             "Must be 1, 3, or 4."
         );

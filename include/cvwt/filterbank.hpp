@@ -37,14 +37,14 @@ public:
         _highpass(highpass)
     {
         if (lowpass.size() != highpass.size()) {
-            internal::throw_bad_size(
+            throw_bad_size(
                 "Kernels must be the same size. ",
                 "Got lowpass.size() = ", lowpass.size(),
                 " and highpass.size() = ", highpass.size(), "."
             );
         }
         if (lowpass.type() != highpass.type()) {
-            internal::throw_bad_arg(
+            throw_bad_arg(
                 "Kernels must be the same type. ",
                 "Got lowpass.type() = ", internal::get_type_name(lowpass.type()),
                 " and highpass.type() = ", internal::get_type_name(highpass.type()), "."

@@ -10,7 +10,7 @@ void CoeffsExpr::throw_if_incompatible(
 )
 {
     if (coeffs_a.levels() != coeffs_b.levels())
-        internal::throw_bad_arg(
+        throw_bad_arg(
             "Incompatible DWT2D coefficients. "
             "Must have the same levels(), "
             "got lhs levels() = ", coeffs_a.levels(),
@@ -18,7 +18,7 @@ void CoeffsExpr::throw_if_incompatible(
         );
 
     if (coeffs_a.image_size() != coeffs_b.image_size())
-        internal::throw_bad_arg(
+        throw_bad_arg(
             "Incompatible DWT2D coefficients. "
             "Must have the same image_size(), "
             "got lhs image_size() = ", coeffs_a.image_size(),
@@ -26,7 +26,7 @@ void CoeffsExpr::throw_if_incompatible(
         );
 
     if (coeffs_a.wavelet() != coeffs_b.wavelet())
-        internal::throw_bad_arg(
+        throw_bad_arg(
             "Incompatible DWT2D coefficients. "
             "Must have the same wavelet(), "
             "got lhs wavelet() = ", coeffs_a.wavelet(),
@@ -34,7 +34,7 @@ void CoeffsExpr::throw_if_incompatible(
         );
 
     if (coeffs_a.border_type() != coeffs_b.border_type())
-        internal::throw_bad_arg(
+        throw_bad_arg(
             "Incompatible DWT2D coefficients. "
             "Must have the same border_type(), "
             "got lhs border_type() = ", coeffs_a.border_type(),

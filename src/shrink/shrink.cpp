@@ -278,7 +278,7 @@ void Shrink::shrink_subsets(
     const cv::Range& levels
 ) const
 {
-    internal::throw_member_not_implemented(
+    throw_member_not_implemented(
         typeid(*this).name(),
         "shrink_subsets()"
     );
@@ -290,7 +290,7 @@ cv::Scalar Shrink::compute_global_threshold(
     const cv::Scalar& stdev
 ) const
 {
-    internal::throw_member_not_implemented(
+    throw_member_not_implemented(
         typeid(*this).name(),
         "compute_global_threshold()"
     );
@@ -302,7 +302,7 @@ cv::Scalar Shrink::compute_level_threshold(
     const cv::Scalar& stdev
 ) const
 {
-    internal::throw_member_not_implemented(
+    throw_member_not_implemented(
         typeid(*this).name(),
         "compute_level_threshold()"
     );
@@ -315,7 +315,7 @@ cv::Scalar Shrink::compute_subband_threshold(
     const cv::Scalar& stdev
 ) const
 {
-    internal::throw_member_not_implemented(
+    throw_member_not_implemented(
         typeid(*this).name(),
         "compute_subband_threshold()"
     );
@@ -327,7 +327,7 @@ cv::Mat4d Shrink::compute_subset_thresholds(
     const cv::Scalar& stdev
 ) const
 {
-    internal::throw_member_not_implemented(
+    throw_member_not_implemented(
         typeid(*this).name(),
         "compute_subset_thresholds()"
     );
@@ -340,7 +340,7 @@ void Shrink::expand_subset_thresholds(
     cv::Mat& expanded_thresholds
 ) const
 {
-    internal::throw_member_not_implemented(
+    throw_member_not_implemented(
         typeid(*this).name(),
         "expand_subset_thresholds()"
     );

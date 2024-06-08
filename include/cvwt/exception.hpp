@@ -13,11 +13,6 @@ namespace cvwt
 //  forward declarations (defined in utils.cpp)
 bool is_vector(cv::InputArray vector, int channels);
 
-namespace internal
-{
-//  forward declarations (defined in utils.cpp)
-std::string get_type_name(int type);
-
 /**
  * @brief Throws an error.
  *
@@ -25,7 +20,127 @@ std::string get_type_name(int type);
  * @param[in] ... Message strings, values, or objects.  These are combined using
  *            std::stringstream to generate the error message.
  */
-#define throw_error(code, ...) _throw_error(code, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+#define throw_error(code, ...) internal::_throw_error(code, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a bad size exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_bad_size(...) internal::_throw_bad_size(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a bad size exception the array is empty.
+ *
+ * @param[in] array The array to check.  This must be convertible to cv::InputArray.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_if_empty(array, ...) internal::_throw_if_empty(array, #array, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a bad argument exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_bad_arg(...) internal::_throw_bad_arg(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws an out of range exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_out_of_range(...) internal::_throw_out_of_range(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a bad mask exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_bad_mask(...) internal::_throw_bad_mask(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a bad mask exception if the mask type is not CV_8UC1 or CV_8SC1.
+ *
+ * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_if_bad_mask_type(mask, ...) internal::_throw_if_bad_mask_type(mask, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a bad mask exception if the mask depth is not CV_8U or CV_8S.
+ *
+ * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_if_bad_mask_depth(mask, ...) internal::_throw_if_bad_mask_depth(mask, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Allowed number of mask channels that can be used with given array.
+ */
+enum AllowedMaskChannels
+{
+    SINGLE,
+    SAME,
+    SINGLE_OR_SAME,
+};
+
+/**
+ * @brief Throws a bad mask exception if mask cannot be used with the array.
+ *
+ * The mask must have the same size as the array.
+ * If `allowed_channels` is
+ *  - AllowedMaskChannels::SINGLE: the mask must be a single channel
+ *  - AllowedMaskChannels::SAME: the mask must have the same number of
+ *    channels as the array
+ *  - AllowedMaskChannels::SINGLE_OR_SAME: the mask must be a single channel or
+ *    have the same number of channels as the array
+ *
+ * @param[in] array The array to check.  This must be convertible to cv::InputArray.
+ * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_if_bad_mask_for_array(array, mask, allowed_channels, ...) internal::_throw_if_bad_mask_for_array(array, mask, #array, #mask, allowed_channels, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a not implemented exception.
+ *
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_not_implemented(...) internal::_throw_not_implemented(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a member function is not implemented exception.
+ *
+ * @param[in] class_name The name of the class.
+ * @param[in] function_name The name of the member function.
+ * @param[in] ... Message strings, values, or objects.  These are combined using
+ *            std::stringstream to generate the error message.
+ */
+#define throw_member_not_implemented(class_name, function_name, ...) internal::_throw_member_not_implemented(class_name, function_name, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @brief Throws a bad size exception if the array is not a single channel row or column vector.
+ *
+ * @param[in] array The array to check.  This must be convertible to cv::InputArray.
+ */
+#define throw_if_not_vector(array, channels, ...) internal::_throw_if_not_vector(array, channels, #array, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
+
+
+
+
+namespace internal
+{
+//  forward declarations (defined in utils.cpp)
+std::string get_type_name(int type);
 
 [[noreturn]]
 void _throw_error(
@@ -42,14 +157,6 @@ void _throw_error(
     cv::error(code, message.str(), function, file, line);
 }
 
-/**
- * @brief Throws a bad size exception.
- *
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_bad_size(...) _throw_bad_size(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
 [[noreturn]]
 void _throw_bad_size(
     const char* function,
@@ -60,15 +167,6 @@ void _throw_bad_size(
 {
     throw_error(cv::Error::StsBadSize, function, file, line, message_parts...);
 }
-
-/**
- * @brief Throws a bad size exception the array is empty.
- *
- * @param[in] array The array to check.  This must be convertible to cv::InputArray.
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_if_empty(array, ...) _throw_if_empty(array, #array, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 void _throw_if_empty(
     cv::InputArray array,
@@ -90,14 +188,6 @@ void _throw_if_empty(
     }
 }
 
-/**
- * @brief Throws a bad argument exception.
- *
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_bad_arg(...) _throw_bad_arg(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
 [[noreturn]]
 void _throw_bad_arg(
     const char* function,
@@ -112,14 +202,6 @@ void _throw_bad_arg(
         message_parts...
     );
 }
-
-/**
- * @brief Throws an out of range exception.
- *
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_out_of_range(...) _throw_out_of_range(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]
 void _throw_out_of_range(
@@ -136,14 +218,6 @@ void _throw_out_of_range(
     );
 }
 
-/**
- * @brief Throws a bad mask exception.
- *
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_bad_mask(...) _throw_bad_mask(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
 [[noreturn]]
 void _throw_bad_mask(
     const char* function,
@@ -158,15 +232,6 @@ void _throw_bad_mask(
         message_parts...
     );
 }
-
-/**
- * @brief Throws a bad mask exception if the mask type is not CV_8UC1 or CV_8SC1.
- *
- * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_if_bad_mask_type(mask, ...) _throw_if_bad_mask_type(mask, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 void _throw_if_bad_mask_type(
     cv::InputArray mask,
@@ -193,15 +258,6 @@ void _throw_if_bad_mask_type(
     }
 }
 
-/**
- * @brief Throws a bad mask exception if the mask depth is not CV_8U or CV_8S.
- *
- * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_if_bad_mask_depth(mask, ...) _throw_if_bad_mask_depth(mask, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
 void _throw_if_bad_mask_depth(
     cv::InputArray mask,
     const char* function,
@@ -226,34 +282,6 @@ void _throw_if_bad_mask_depth(
             );
     }
 }
-
-/**
- * @brief Allowed number of mask channels that can be used with given array.
- */
-enum AllowedMaskChannels
-{
-    SINGLE,
-    SAME,
-    SINGLE_OR_SAME,
-};
-
-/**
- * @brief Throws a bad mask exception if mask cannot be used with the array.
- *
- * The mask must have the same size as the array.
- * If `allowed_channels` is
- *  - AllowedMaskChannels::SINGLE: the mask must be a single channel
- *  - AllowedMaskChannels::SAME: the mask must have the same number of
- *    channels as the array
- *  - AllowedMaskChannesl::SINGLE_OR_SAME: the mask must be a single channel or
- *    have the same number of channels as the array
- *
- * @param[in] array The array to check.  This must be convertible to cv::InputArray.
- * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_if_bad_mask_for_array(array, mask, allowed_channels, ...) _throw_if_bad_mask_for_array(array, mask, #array, #mask, allowed_channels, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 void _throw_if_bad_mask_for_array(
     cv::InputArray array,
@@ -323,14 +351,6 @@ void _throw_if_bad_mask_for_array(
     }
 }
 
-/**
- * @brief Throws a not implemented exception.
- *
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_not_implemented(...) _throw_not_implemented(CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
-
 [[noreturn]]
 void _throw_not_implemented(
     const char* function,
@@ -341,16 +361,6 @@ void _throw_not_implemented(
 {
     throw_error(cv::Error::StsNotImplemented, function, file, line, message_parts...);
 }
-
-/**
- * @brief Throws a member function is not implemented exception.
- *
- * @param[in] class_name The name of the class.
- * @param[in] function_name The name of the member function.
- * @param[in] ... Message strings, values, or objects.  These are combined using
- *            std::stringstream to generate the error message.
- */
-#define throw_member_not_implemented(class_name, function_name, ...) _throw_member_not_implemented(class_name, function_name, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 [[noreturn]]
 void _throw_member_not_implemented(
@@ -368,13 +378,6 @@ void _throw_member_not_implemented(
         message_parts...
     );
 }
-
-/**
- * @brief Throws a bad size exception if the array is not a single channel row or column vector.
- *
- * @param[in] array The array to check.  This must be convertible to cv::InputArray.
- */
-#define throw_if_not_vector(array, channels, ...) _throw_if_not_vector(array, channels, #array, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
 void _throw_if_not_vector(
     cv::InputArray array,

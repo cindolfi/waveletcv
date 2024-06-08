@@ -427,7 +427,7 @@ private:
     static void throw_if_already_registered(const std::string& name)
     {
         if (_wavelet_factories<CallArgs...>.contains(name)) {
-            internal::throw_bad_arg(
+            throw_bad_arg(
                 "A wavelet factory has already been registered to `", name, "`."
             );
         }

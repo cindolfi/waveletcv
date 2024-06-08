@@ -1018,7 +1018,7 @@ bool is_row_vector(cv::InputArray array, int channels)
 
 double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
 {
-    internal::throw_if_empty(array, "Input is empty.");
+    throw_if_empty(array, "Input is empty.");
 
     auto abs_max = [](cv::InputArray channel_matrix, cv::InputArray channel_mask) {
         double min, max;
@@ -1036,13 +1036,13 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
             result = abs_max(array_matrix.reshape(1), cv::noArray());
         }
     } else {
-        internal::throw_if_bad_mask_type(mask);
-        internal::throw_if_empty(
+        throw_if_bad_mask_type(mask);
+        throw_if_empty(
             mask,
             "Mask is empty. Use cv::noArray() to indicate no mask."
         );
         if (mask.size() != array.size())
-            internal::throw_bad_size(
+            throw_bad_size(
                 "The array and mask must be the same size, ",
                 "got array.size() = ", array.size(),
                 " and mask.size() = ", mask.size(), "."
@@ -1050,7 +1050,7 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
 
         if (array.channels() == 1) {
             if (mask.channels() > 1) {
-                internal::throw_bad_size(
+                throw_bad_size(
                     "Wrong number of mask channels for single channel array. ",
                     "Must be 1, got mask.channels() = ", mask.channels(), "."
                 );
@@ -1072,7 +1072,7 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
                     );
                 }
             } else {
-                internal::throw_bad_size(
+                throw_bad_size(
                     "Wrong number of mask channels for ",
                     "array.channels() = ", array.channels(), ". ",
                     "Must be 1 or ", array.channels(),
