@@ -302,7 +302,7 @@ public:
 
             LevelIterator() = default;
             LevelIterator(Coeffs* coeffs, int level) : coeffs(coeffs), level(level) {}
-            value_type operator*() const { return coeffs->at_level(level); }
+            value_type operator*() const { return coeffs->from_level(level); }
             auto& operator++(){ ++level; return *this; }
             auto operator++(int) { auto copy = *this; ++*this; return copy; }
             auto& operator--() { --level; return *this; }
@@ -322,7 +322,7 @@ public:
 
             ConstLevelIterator() = default;
             ConstLevelIterator(const Coeffs* coeffs, int level) : coeffs(coeffs), level(level) {}
-            value_type operator*() const { return coeffs->at_level(level); }
+            value_type operator*() const { return coeffs->from_level(level); }
             auto& operator++(){ ++level; return *this; }
             auto operator++(int) { auto copy = *this; ++*this; return copy; }
             auto& operator--() { --level; return *this; }
@@ -555,7 +555,7 @@ public:
          *
          * For illustration, consider a coefficient matrix returned by a four
          * level DWT2D.
-         * The result of `at_level(2)` is the shaded submatrix comprised of the
+         * The result of `from_level(2)` is the shaded submatrix comprised of the
          * approximation coefficients A and the detail subbands H2, V2, D2, H3,
          * V3, and D3.
          *
@@ -565,7 +565,7 @@ public:
          *
          * @param[in] level
          */
-        Coeffs at_level(int level) const;
+        Coeffs from_level(int level) const;
 
         /**
          * @brief Sets the coefficients at and above a decomposition level.
@@ -573,7 +573,7 @@ public:
          * For illustration, consider a coefficient matrix returned by a four
          * level DWT2D and a given matrix `level_coeffs` of size
          * @ref level_size(int) const "level_size(2)".
-         * Calling `set_level(2, level_coeffs)` **copies** `level_coeffs` to the
+         * Calling `set_from_level(2, level_coeffs)` **copies** `level_coeffs` to the
          * shaded submatrix comprised of the approximation coefficients A and
          * the detail subbands H2, V2, D2, H3, V3, and D3.
          *
@@ -590,7 +590,7 @@ public:
          * @throws cv::Exception If @pref{coeffs} is an incompatible matrix or
          *                       scalar.
          */
-        void set_level(int level, cv::InputArray coeffs);
+        void set_from_level(int level, cv::InputArray coeffs);
 
         //  --------------------------------------------------------------------
         //  Get & Set Approximation Coefficients
@@ -1261,7 +1261,7 @@ public:
          * DWT2D::Coeffs coeffs = ...;
          * int level = 0;
          * for (auto& level_coeffs : coeffs) {
-         *     assert(level_coeffs == coeffs.at_level(level));
+         *     assert(level_coeffs == coeffs.from_level(level));
          *     assert(level_coeffs.levels() == coeffs.levels() - level);
          *     assert(level_coeffs.size() == coeffs.level_size(level));
          *     ++level;
@@ -1292,7 +1292,7 @@ public:
          * }
          * @endcode
          *
-         * @see at_level()
+         * @see from_level()
          */
         LevelIterator begin() { return LevelIterator(this, 0); }
         ConstLevelIterator begin() const { return ConstLevelIterator(this, 0); }

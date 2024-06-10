@@ -126,7 +126,7 @@ std::vector<cv::Mat> DWT2D::Coeffs::collect_details(int subband) const
     return result;
 }
 
-DWT2D::Coeffs DWT2D::Coeffs::at_level(int level) const
+DWT2D::Coeffs DWT2D::Coeffs::from_level(int level) const
 {
     throw_if_level_out_of_range(level);
     level = resolve_level(level);
@@ -150,7 +150,7 @@ DWT2D::Coeffs DWT2D::Coeffs::at_level(int level) const
     );
 }
 
-void DWT2D::Coeffs::set_level(int level, cv::InputArray coeffs)
+void DWT2D::Coeffs::set_from_level(int level, cv::InputArray coeffs)
 {
     throw_if_wrong_size_for_set_level(coeffs, level);
     convert_and_copy(coeffs, _p->coeff_matrix(level_rect(level)));

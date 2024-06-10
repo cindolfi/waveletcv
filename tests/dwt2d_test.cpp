@@ -46,7 +46,7 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, WaveletIsInvalid)
 #if CVWT_ARGUMENT_CHECKING_ENABLED
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, AtLevelIsError)
 {
-    EXPECT_THROW({ coeffs.at_level(0); }, cv::Exception);
+    EXPECT_THROW({ coeffs.from_level(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxIsError)
@@ -88,7 +88,7 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailIsError)
 #if CVWT_ARGUMENT_CHECKING_ENABLED
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetLevelIsError)
 {
-    EXPECT_THROW({ coeffs.set_level(0, cv::Mat()); }, cv::Exception);
+    EXPECT_THROW({ coeffs.set_from_level(0, cv::Mat()); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetApproxIsError)
@@ -458,7 +458,7 @@ TEST_P(Dwt2dCoeffsTest, LevelIteratorConsistentWithAt)
     for (auto level_coeffs : coeffs) {
         EXPECT_THAT(
             level_coeffs,
-            MatrixEq(coeffs.at_level(level))
+            MatrixEq(coeffs.from_level(level))
         ) << "iterator and at() are inconsistent at level " << level;
         ++level;
     }
@@ -664,7 +664,7 @@ protected:
             full_size,
             full_levels
         );
-        auto level_coeffs = full_coeffs.at_level(level);
+        auto level_coeffs = full_coeffs.from_level(level);
 
         //  Get approx coefficients before assignment so that we can make sure
         //  view semantics are followed - i.e. assignment should be reflected
@@ -707,7 +707,7 @@ protected:
             full_size,
             full_levels
         );
-        auto level_coeffs = full_coeffs.at_level(level);
+        auto level_coeffs = full_coeffs.from_level(level);
 
         //  Get detail coefficients before assignment so that we can make sure
         //  view semantics are followed - i.e. assignment should be reflected
@@ -1008,35 +1008,35 @@ protected:
 
 TEST_P(Dwt2dCoeffsLevelsTest, SizeIsCorrect)
 {
-    auto level_coeffs = coeffs.at_level(level);
+    auto level_coeffs = coeffs.from_level(level);
 
     EXPECT_EQ(level_coeffs.size(), expected_size);
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, TypeIsCorrect)
 {
-    auto level_coeffs = coeffs.at_level(level);
+    auto level_coeffs = coeffs.from_level(level);
 
     EXPECT_EQ(level_coeffs.type(), expected_level_coeffs.type());
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, LevelsIsCorrect)
 {
-    auto level_coeffs = coeffs.at_level(level);
+    auto level_coeffs = coeffs.from_level(level);
 
     EXPECT_EQ(level_coeffs.levels(), expected_levels);
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, ValuesAreCorrect)
 {
-    auto level_coeffs = coeffs.at_level(level);
+    auto level_coeffs = coeffs.from_level(level);
 
     EXPECT_THAT(level_coeffs, MatrixEq(expected_level_coeffs));
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, LevelAccessDoesNotCauseCopy)
 {
-    auto level_coeffs = coeffs.at_level(level);
+    auto level_coeffs = coeffs.from_level(level);
 
     EXPECT_TRUE(
         is_data_shared(level_coeffs, coeffs)
@@ -1047,8 +1047,8 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAccessIsTransitive)
 {
     int i = level;
     for (int j = 0; j < expected_levels - i; ++j) {
-        auto level_coeffs1 = coeffs.at_level(i).at_level(j);
-        auto level_coeffs2 = coeffs.at_level(i + j);
+        auto level_coeffs1 = coeffs.from_level(i).from_level(j);
+        auto level_coeffs2 = coeffs.from_level(i + j);
 
         EXPECT_THAT(
             level_coeffs1,
@@ -1063,18 +1063,18 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAccessIsTransitive)
 
 TEST_P(Dwt2dCoeffsLevelsTest, SetLevelToMatrix)
 {
-    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
+    DWT2D::Coeffs level_coeffs = coeffs.from_level(level);
     cv::Mat expected_level_matrix(expected_size, type, level);
 
     //  Set level coeffs
-    coeffs.set_level(level, expected_level_matrix);
+    coeffs.set_from_level(level, expected_level_matrix);
 
     EXPECT_THAT(level_coeffs, MatrixEq(expected_level_matrix));
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentFromMatrix)
 {
-    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
+    DWT2D::Coeffs level_coeffs = coeffs.from_level(level);
     cv::Mat expected_level_matrix(expected_size, type, level);
 
     //  Assign level coeffs
@@ -1088,7 +1088,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelToWrongSizeMatrixIsError)
 {
     EXPECT_THROW(
         {
-            coeffs.set_level(
+            coeffs.set_from_level(
                 level,
                 cv::Mat(cv::Size(1, 1) + expected_size, type, level)
             );
@@ -1101,7 +1101,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentToWrongSizeMatrixIsError)
 {
     EXPECT_THROW(
         {
-            DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
+            DWT2D::Coeffs level_coeffs = coeffs.from_level(level);
             level_coeffs = cv::Mat(cv::Size(1, 1) + expected_size, type, level);
         },
         cv::Exception
@@ -1111,7 +1111,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentToWrongSizeMatrixIsError)
 
 TEST_P(Dwt2dCoeffsLevelsTest, SetLevelWritesIntoOriginalCoeffs)
 {
-    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
+    DWT2D::Coeffs level_coeffs = coeffs.from_level(level);
 
     cv::Mat expected_level_matrix(
         level_coeffs.rows(),
@@ -1121,21 +1121,21 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelWritesIntoOriginalCoeffs)
     );
 
     //  Set level coeffs
-    coeffs.set_level(level, expected_level_matrix);
+    coeffs.set_from_level(level, expected_level_matrix);
 
     EXPECT_TRUE(
         is_data_shared(level_coeffs, coeffs)
     ) << "assignment to level caused copy of original coeffs";
 
     EXPECT_THAT(
-        coeffs.at_level(level),
+        coeffs.from_level(level),
         MatrixEq(expected_level_matrix)
     ) << "assignment to level not reflected in original coeffs";
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentWritesIntoOriginalCoeffs)
 {
-    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
+    DWT2D::Coeffs level_coeffs = coeffs.from_level(level);
 
     cv::Mat expected_level_matrix(
         level_coeffs.rows(),
@@ -1157,19 +1157,19 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentWritesIntoOriginalCoeffs)
     ) << "assignment to level caused copy of original coeffs";
 
     EXPECT_THAT(
-        coeffs.at_level(level),
+        coeffs.from_level(level),
         MatrixEq(expected_level_matrix)
     ) << "assignment to level not reflected in original coeffs";
 }
 
 TEST_P(Dwt2dCoeffsLevelsTest, SetLevelDoesNotModifyDetailsAtLowerLevels)
 {
-    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
+    DWT2D::Coeffs level_coeffs = coeffs.from_level(level);
 
     auto [expected_horizontal_details, expected_vertical_details, expected_diagonal_details] = collect_and_clone_details(coeffs);
 
     //  Set level coeffs
-    coeffs.set_level(
+    coeffs.set_from_level(
         level,
         cv::Mat(level_coeffs.size(), level_coeffs.type(), level)
     );
@@ -1184,7 +1184,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetLevelDoesNotModifyDetailsAtLowerLevels)
 
 TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentDoesNotModifyDetailsAtLowerLevels)
 {
-    DWT2D::Coeffs level_coeffs = coeffs.at_level(level);
+    DWT2D::Coeffs level_coeffs = coeffs.from_level(level);
 
     auto [expected_horizontal_details, expected_vertical_details, expected_diagonal_details] = collect_and_clone_details(coeffs);
 
