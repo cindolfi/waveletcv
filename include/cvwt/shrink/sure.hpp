@@ -103,11 +103,8 @@ public:
     /**
      * @brief Exception thrown when optimization reaches the maximum allowed time.
      *
-     * @see
-     *  - optimizer_stop_conditions()
-     *  - set_optimizer_stop_conditions()
-     *  - fail_on_timeout()
-     *  - warn_on_timeout()
+     * @see optimizer_stop_conditions, set_optimizer_stop_conditions,
+     *      fail_on_timeout, warn_on_timeout
      */
     class TimeoutOccured : public StoppedEarly
     {
@@ -118,11 +115,8 @@ public:
     /**
      * @brief Exception thrown when optimization reaches the maximum allowed number of evaluations.
      *
-     * @see
-     *  - optimizer_stop_conditions()
-     *  - set_optimizer_stop_conditions()
-     *  - fail_on_max_evaluations()
-     *  - warn_on_max_evaluations()
+     * @see optimizer_stop_conditions, set_optimizer_stop_conditions,
+     *      fail_on_max_evaluations, warn_on_max_evaluations
      */
     class MaxEvaluationsReached : public StoppedEarly
     {
@@ -346,8 +340,6 @@ public:
      *
      * This function returns a multichannel threshold by applying the single channel
      * algorithm to each channel of the given `detail_coeffs`.
-     *
-     * @see compute_universal_threshold()
      *
      * @param[in] detail_coeffs The detail coefficients.
      * @param[in] stdev The standard deviations of each of the detail coefficients channels.

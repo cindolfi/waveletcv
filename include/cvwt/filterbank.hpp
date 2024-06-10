@@ -91,8 +91,6 @@ public:
 
     /**
      * @brief Returns true if the lowpass kernels are equal and the highpass kernels are equal.
-     *
-     * @see is_equal()
      */
     bool operator==(const KernelPair& other) const;
 private:
@@ -292,31 +290,36 @@ public:
     /**
      * @brief Returns true if the filter kernels are empty.
      *
-     * @see cv::Mat::empty()
+     * @see cv::Mat::empty
      */
     bool empty() const { return _p->decompose.empty(); }
+
     /**
      * @brief Returns the filter kernels data type depth.
      *
-     * @see cv::Mat::depth()
+     * @see cv::Mat::depth
      */
     int depth() const { return _p->decompose.depth(); }
+
     /**
      * @brief Returns the filter kernels data type.
      *
-     * @see cv::Mat::type()
+     * @see cv::Mat::type
      */
     int type() const { return _p->decompose.type(); }
+
     /**
      * @brief Returns maximum number of kernel coefficients.
      *
      * This is equal to `std::max(decompose_kernels.filter_length(), reconstruct_kernels.filter_length()))`.
      */
     int filter_length() const { return _p->filter_length; }
+
     /**
      * @brief The decomposition kernels.
      */
     KernelPair decompose_kernels() const { return _p->decompose_kernels(); }
+
     /**
      * @brief The reconstruction kernels.
      */

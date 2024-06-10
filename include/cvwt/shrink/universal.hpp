@@ -178,7 +178,7 @@ public:
      *     \lambda_k = \sigma_k \, \sqrt{2 \log{N}}
      * \f}
      *
-     * @see https://computing.llnl.gov/sites/default/files/jei2001.pdf
+     * https://computing.llnl.gov/sites/default/files/jei2001.pdf
 
     * @param[in] num_elements The number of detail coefficients.
     * @param[in] stdev The standard deviations of the detail coefficients channels.
@@ -196,7 +196,7 @@ public:
      * compute_universal_threshold(coeffs, coeffs.detail_mask(), stdev);
      * @endcode
      *
-     * @see https://computing.llnl.gov/sites/default/files/jei2001.pdf
+     * https://computing.llnl.gov/sites/default/files/jei2001.pdf
      *
      * @param[in] coeffs The discrete wavelet transform coefficients.
      * @param[in] stdev The standard deviations of the detail coefficients channels.

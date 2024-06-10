@@ -126,13 +126,7 @@ class CoeffsExpr;
  * cv::Mat reconstructed_image = idwt2d(coeffs, "db2");
  * @endcode
  *
- * @cite AConciseIntroductionToWavelets
- *
- * @see
- *  - FilterBank
- *  - Wavelet
- *  - dwt2d()
- *  - idwt2d()
+ * @see FilterBank, dwt2d, idwt2d
  */
 class DWT2D
 {
@@ -340,10 +334,10 @@ public:
 
         //  --------------------------------------------------------------------
         //  Casting
-        /**
-         * @name Conversion
-         * @{
-         */
+        // /**
+        //  * @name Conversion
+        //  * @{
+        //  */
         /**
          * @brief Implicit cast to cv::Mat.
          *
@@ -373,8 +367,6 @@ public:
          *
          * @warning Modifying the elements of the returned cv::_InputArray
          *          will modify the coefficients stored by this object.
-         *
-         * @see `DWT2D::Coeffs::operator cv::Mat()`
          */
         operator cv::_InputArray() const { return _p->coeff_matrix; }
 
@@ -391,8 +383,6 @@ public:
          *
          * @warning Modifying the elements of the returned cv::_OutputArray
          *          will modify the coefficients stored by this object.
-         *
-         * @see `DWT2D::Coeffs::operator cv::Mat()`
          */
         operator cv::_OutputArray() const { return _p->coeff_matrix; }
 
@@ -409,11 +399,9 @@ public:
          *
          * @warning Modifying the elements of the returned cv::_InputOutputArray
          *          will modify the coefficients stored by this object.
-         *
-         * @see `DWT2D::Coeffs::operator cv::Mat()`
          */
         operator cv::_InputOutputArray() const { return _p->coeff_matrix; }
-        /**@} Conversion*/
+        // /**@} Conversion*/
 
         //  --------------------------------------------------------------------
         //  Copy
@@ -573,10 +561,8 @@ public:
          *
          * @param[in] subband The detail subband.  This must be a #DetailSubband.
          *
-         * @see
-         *  - collect_horizontal_details()
-         *  - collect_vertical_details()
-         *  - collect_diagonal_details()
+         * @see collect_horizontal_details, collect_vertical_details,
+         *      collect_diagonal_details()
          */
         std::vector<cv::Mat> collect_details(int subband) const;
         ///@}
@@ -623,7 +609,7 @@ public:
         /**
          * @brief Returns the vertical subband detail coefficients at a given level.
          *
-         * @copydetails horizontal_detail(int)
+         * @copydetails horizontal_detail(int) const
          */
         cv::Mat vertical_detail(int level) const
         {
@@ -652,7 +638,7 @@ public:
         /**
          * @brief Returns the diagonal subband detail coefficients at a given level.
          *
-         * @copydetails horizontal_detail(int)
+         * @copydetails horizontal_detail(int) const
          */
         cv::Mat diagonal_detail(int level) const
         {
@@ -698,7 +684,7 @@ public:
          *
          * @param[in] level
          *
-         * @see level_rect()
+         * @see level_rect
          */
         cv::Size level_size(int level) const;
 
@@ -710,7 +696,7 @@ public:
          *
          * @param[in] level
          *
-         * @see level_size()
+         * @see level_size
          */
         cv::Rect level_rect(int level) const;
 
@@ -787,7 +773,7 @@ public:
         /**
          * @brief The mask indicating the subband coefficients at a level.
          *
-         * @param[in] levels
+         * @param[in] level
          * @param[in] subband The detail subband.  This must be a #DetailSubband.
          */
         cv::Mat detail_mask(int level, int subband) const;
@@ -1075,7 +1061,7 @@ public:
         /**
          * @brief Transform from DWT space back to image space.
          *
-         * @see DWT2D::reconstruct()
+         * @see DWT2D::reconstruct
          */
         cv::Mat reconstruct() const;
 
@@ -1084,7 +1070,7 @@ public:
          *
          * @param[out] image The reconstructed image.
          *
-         * @see DWT2D::reconstruct()
+         * @see DWT2D::reconstruct
          */
         void reconstruct(cv::OutputArray image) const;
 
@@ -1123,7 +1109,7 @@ public:
          *
          * @copydetails common_invalid_coeffs_definition
          *
-         * @see total_details()
+         * @see total_details
          */
         int total_valid() const;
 
@@ -1134,7 +1120,7 @@ public:
          *
          * @copydetails common_invalid_coeffs_definition
          *
-         * @see total_valid()
+         * @see total_valid
          */
         int total_details() const;
 
@@ -1160,16 +1146,14 @@ public:
          *       detail coefficients. Reconstruction from the normalized
          *       coefficients will result in distortion.
          *
-         * @see
-         *  - map_details_from_unit_interval()
-         *  - map_detail_to_unit_interval_scale()
-         *
          * @param[in] read_mask Indicates which coefficients are used to compute the
          *                  map parameters. This can be a single channel or
          *                  multichannel matrix with depth CV_8U.
          * @param[in] write_mask Indicates which coefficients are mapped.
          *                   This can be a single channel or multichannel matrix
          *                   with depth CV_8U.
+         *
+         * @see map_details_from_unit_interval, map_detail_to_unit_interval_scale
          */
         [[nodiscard]]
         DWT2D::Coeffs map_details_to_unit_interval(
@@ -1189,6 +1173,7 @@ public:
          * @param[in] write_mask Indicates which coefficients are mapped.
          *                       This can be a single channel or multichannel
          *                       matrix with depth CV_8U.
+         * @see map_details_from_unit_interval, map_detail_to_unit_interval_scale
          */
         [[nodiscard]]
         DWT2D::Coeffs map_details_to_unit_interval(
@@ -1203,20 +1188,23 @@ public:
          * This function maps detail coefficients centered at 0.5 to detail
          * coefficients centered at 0.
          *
-         * Given the scale parameter \f$\alpha\f$ and the normalized coefficients
-         * \f$\tilde\w\f$, this function computes the coefficents \f$w\f$ by
+         * Given the @pref{scale} parameter \f$\alpha\f$ and the normalized
+         * coefficients \f$\tilde\w\f$, this function computes the coefficents
+         * \f$w\f$ by
          * \f{equation}{
          *     w = \frac{\tilde\w - \frac{1}{2}}{\alpha}
          * \f}
          *
-         * For a particular \f$\max(|w|\f$, the scale parameter \f$\alpha\f$ must be
+         * For a particular \f$\max(|w|\f$, the @pref{scale} parameter
+         * \f$\alpha\f$ must be
          * \f{equation}{
          *     \alpha = \frac{1}{2 \max(|w|)}
          * \f}
          *
-         * This is the inverse to map_details_to_unit_interval().  It must be
-         * called with the scale returned by map_details_to_unit_interval() and
-         * the same write mask that was passed to map_details_to_unit_interval().
+         * This is the inverse to map_details_to_unit_interval().  For perfect
+         * inversion, @pref{write_mask} must be the same and @pref{scale} must
+         * be the value outputted by
+         * map_details_to_unit_interval(double&, cv::InputArray, cv::InputArray).
          *
          * @code{cpp}
          * DWT2D::Coeffs coeffs = ...;
@@ -1229,13 +1217,12 @@ public:
          * auto coeffs2 = unit_interval_detail_coeffs.map_details_from_unit_interval(scale);
          * @endcode
          *
-         * @see
-         *  - map_details_to_unit_interval()
-         *  - map_detail_to_unit_interval_scale()
-         *
+         * @param[in] scale
          * @param[in] write_mask Indicates which coefficients are mapped.
          *                       This can be a single channel or multichannel
          *                       matrix with depth CV_8U.
+         *
+         * @see map_details_to_unit_interval, map_detail_to_unit_interval_scale
          */
         [[nodiscard]]
         DWT2D::Coeffs map_details_from_unit_interval(
@@ -1254,6 +1241,8 @@ public:
          * @param[in] read_mask Indicates which coefficients are used to compute
          *                      the scale parameter. This can be a single
          *                      channel or multichannel matrix with depth CV_8U.
+         *
+         * @see map_details_to_unit_interval, map_details_from_unit_interval
          */
         double map_detail_to_unit_interval_scale(cv::InputArray read_mask = cv::noArray()) const;
 
@@ -1589,10 +1578,10 @@ public:
      * The size of the multiscale decomposition coefficients is a function
      * of the input size, the number of levels, and the Wavelet::filter_length().
      *
-     * @see FilterBank::subband_size()
-     *
      * @param[in] image_size
      * @param[in] levels
+     *
+     * @see FilterBank::subband_size
      */
     cv::Size coeffs_size_for_image(const cv::Size& image_size, int levels) const;
 
@@ -1604,8 +1593,6 @@ public:
      * @code{cpp}
      * this->coeffs_size_for_image(image.size(), levels);
      * @endcode
-     *
-     * @see coeffs_size_for_image(const cv::Size& image_size, int levels) const
      *
      * @param[in] image
      * @param[in] levels
@@ -1623,8 +1610,6 @@ public:
      * @code{cpp}
      * this->coeffs_size_for_image(cv::Size(image_cols, image_rows), levels);
      * @endcode
-     *
-     * @see coeffs_size_for_image(const cv::Size& image_size, int levels) const
      *
      * @param[in] image_rows
      * @param[in] image_cols
@@ -1728,14 +1713,12 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& coeffs);
  * return dwt.decompose(image, levels);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - idwt2d()
- *
  * @param[in] image
  * @param[in] wavelet
  * @param[in] levels
  * @param[in] border_type
+ *
+ * @see DWT2D, idwt2d
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -1754,15 +1737,13 @@ DWT2D::Coeffs dwt2d(
  * dwt.decompose(image, output, levels);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - idwt2d()
- *
  * @param[in] image
  * @param[out] coeffs
  * @param[in] wavelet
  * @param[in] levels
  * @param[in] border_type
+ *
+ * @see DWT2D, idwt2d
  */
 void dwt2d(
     cv::InputArray image,
@@ -1780,10 +1761,6 @@ void dwt2d(
  * @code{cpp}
  * dwt2d(image, Wavelet::create(wavelet), levels, border_type);
  * @endcode
- *
- * @see
- *   - DWT2D
- *   - idwt2d()
  *
  * @param[in] image
  * @param[in] wavelet
@@ -1806,15 +1783,13 @@ DWT2D::Coeffs dwt2d(
  * dwt2d(image, output, Wavelet::create(wavelet), levels, border_type);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - idwt2d()
- *
  * @param[in] image
  * @param[out] coeffs
  * @param[in] wavelet
  * @param[in] levels
  * @param[in] border_type
+ *
+ * @see DWT2D, idwt2d
  */
 void dwt2d(
     cv::InputArray image,
@@ -1834,11 +1809,11 @@ void dwt2d(
  * return dwt.decompose(image);
  * @endcode
  *
- * @see idwt2d()
- *
  * @param[in] image
  * @param[in] wavelet
  * @param[in] border_type
+ *
+ * @see DWT2D, idwt2d
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -1856,14 +1831,12 @@ DWT2D::Coeffs dwt2d(
  * dwt.decompose(image, output);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - idwt2d()
- *
  * @param[in] image
  * @param[out] coeffs
  * @param[in] wavelet
  * @param[in] border_type
+ *
+ * @see DWT2D, idwt2d
  */
 void dwt2d(
     cv::InputArray image,
@@ -1881,13 +1854,11 @@ void dwt2d(
  * dwt2d(image, Wavelet::create(wavelet), border_type);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - idwt2d()
- *
  * @param[in] image
  * @param[in] wavelet
  * @param[in] border_type
+ *
+ * @see DWT2D, idwt2d
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -1904,14 +1875,12 @@ DWT2D::Coeffs dwt2d(
  * dwt2d(image, output, Wavelet::create(wavelet), border_type);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - idwt2d()
- *
  * @param[in] image
  * @param[out] coeffs
  * @param[in] wavelet
  * @param[in] border_type
+ *
+ * @see DWT2D, idwt2d
  */
 void dwt2d(
     cv::InputArray image,
@@ -1930,13 +1899,11 @@ void dwt2d(
  * return dwt.reconstruct(coeffs);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - dwt2d()
- *
  * @param[in] coeffs
  * @param[in] wavelet
  * @param[in] border_type
+ *
+ * @see DWT2D, dwt2d
  */
 cv::Mat idwt2d(
     const DWT2D::Coeffs& coeffs,
@@ -1954,14 +1921,12 @@ cv::Mat idwt2d(
  * dwt.reconstruct(coeffs, output);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - idwt2d()
- *
  * @param[in] coeffs
  * @param[out] image
  * @param[in] wavelet
  * @param[in] border_type
+ *
+ * @see DWT2D, dwt2d
  */
 void idwt2d(
     const DWT2D::Coeffs& coeffs,
@@ -1979,13 +1944,11 @@ void idwt2d(
  * idwt2d(coeffs, Wavelet::create(wavelet), border_type);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - dwt2d()
- *
  * @param[in] coeffs
  * @param[in] wavelet
  * @param[in] border_type
+ *
+ * @see DWT2D, dwt2d
  */
 cv::Mat idwt2d(
     const DWT2D::Coeffs& coeffs,
@@ -2002,14 +1965,12 @@ cv::Mat idwt2d(
  * idwt2d(coeffs, output, Wavelet::create(wavelet), border_type);
  * @endcode
  *
- * @see
- *   - DWT2D
- *   - dwt2d()
- *
  * @param[in] coeffs
  * @param[out] image
  * @param[in] wavelet
  * @param[in] border_type
+ *
+ * @see DWT2D, dwt2d
  */
 void idwt2d(
     const DWT2D::Coeffs& coeffs,

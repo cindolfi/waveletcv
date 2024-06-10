@@ -304,6 +304,8 @@ ShrinkFunction make_shrink_function(
  * @param[in] threshold
  * @param[in] shrink_function
  * @param[in] levels
+ *
+ * @see Shrinker, shrink_levels, shrink_subbands, make_shrink_function
  */
 void shrink_globally(
     DWT2D::Coeffs& coeffs,
@@ -321,12 +323,6 @@ void shrink_globally(
  * If `levels` is `cv::Range::all()`, `level_thresholds.rows` must equal `coeffs.levels()`.
  * Otherwise, `level_thresholds.rows` must equal `levels.size()`.
  *
- * @see
- *  - Shrinker
- *  - shrink_globally()
- *  - shrink_subbands()
- *  - make_shrink_function()
- *
  * @param[inout] coeffs The DWT coefficients.
  * @param[in] level_thresholds The threshold paramaters for each level.
  *      This must be an array with N rows, 1 column, and 4 channels (where N is
@@ -334,7 +330,8 @@ void shrink_globally(
  *      decomposition level.
  * @param[in] shrink_function The function that shrinks the coefficients.
  * @param[in] levels The decomposition levels that are shrunk.
- * @sa Shrinker, shrink_globally, shrink_subbands, make_shrink_function
+ *
+ * @see Shrinker, shrink_globally, shrink_subbands, make_shrink_function
  */
 void shrink_levels(
     DWT2D::Coeffs& coeffs,
@@ -352,12 +349,6 @@ void shrink_levels(
  * If `levels` is `cv::Range::all()`, `subband_thresholds.rows` must equal `coeffs.levels()`.
  * Otherwise, `subband_thresholds.rows` must equal `levels.size()`.
  *
- * @see
- *  - Shrinker
- *  - shrink_globally()
- *  - shrink_levels()
- *  - make_shrink_function()
- *
  * @param[inout] coeffs The DWT coefficients.
  * @param[in] subband_thresholds The threshold paramaters for each subband.
  *      This must be an array with N rows, 3 columns, and 4 channels (where N is
@@ -367,6 +358,8 @@ void shrink_levels(
  *      the third column contains diagonal subband thresholds.
  * @param[in] shrink_function The function that shrinks the coefficients.
  * @param[in] levels The decomposition levels that are shrunk.
+ *
+ * @see Shrinker, shrink_globally, shrink_levels, make_shrink_function
  */
 void shrink_subbands(
     DWT2D::Coeffs& coeffs,
@@ -1366,8 +1359,6 @@ protected:
      * the threshold for each partitioned subset (i.e. used in
      * compute_level_threshold() or compute_subband_threshold()).
      *
-     * @see finish_partitioning()
-     *
      * @param[in] coeffs The DWT coefficients.
      * @param[in] levels The subset of levels to compute thresholds for.
      * @param[in] stdev The standard deviation of the coefficient noise.
@@ -1406,8 +1397,6 @@ protected:
      *     }
      * }
      * @endcode
-     *
-     * @see start_partitioning()
      *
      * @param[in] coeffs The DWT coefficients.
      * @param[in] levels The subset of levels to compute thresholds for.
