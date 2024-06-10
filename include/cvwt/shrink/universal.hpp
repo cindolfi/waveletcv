@@ -14,24 +14,24 @@ namespace cvwt
 //  Universal / VisuShrink
 //  ----------------------------------------------------------------------------
 /**
- * @brief %Shrink using the universal threshold.
+ * @brief Shrink using the universal threshold.
  */
-class UniversalShrink : public Shrink
+class UniversalShrinker : public Shrinker
 {
 public:
     /**
-     * @brief Construct a new Universal Shrink object.
+     * @brief Construct a new Universal Shrinker object.
      *
      * @param[in] partition
      * @param[in] shrink_function
      * @param[in] stdev_function
      */
-    UniversalShrink(
-        Shrink::Partition partition,
+    UniversalShrinker(
+        Shrinker::Partition partition,
         ShrinkFunction shrink_function,
         StdDevFunction stdev_function
     ) :
-        Shrink(
+        Shrinker(
             partition,
             shrink_function,
             stdev_function
@@ -43,11 +43,11 @@ public:
      *
      * @param[in] shrink_function
      */
-    UniversalShrink(
+    UniversalShrinker(
         ShrinkFunction shrink_function
     ) :
-        UniversalShrink(
-            Shrink::GLOBALLY,
+        UniversalShrinker(
+            Shrinker::GLOBALLY,
             shrink_function
         )
     {}
@@ -60,10 +60,10 @@ public:
      * @param[in] shrink_function
      */
     template <typename T, typename W>
-    UniversalShrink(
+    UniversalShrinker(
         PrimitiveShrinkFunction<T, W> shrink_function
     ) :
-        UniversalShrink(
+        UniversalShrinker(
             make_shrink_function(shrink_function)
         )
     {}
@@ -74,11 +74,11 @@ public:
      * @param[in] partition
      * @param[in] shrink_function
      */
-    UniversalShrink(
-        Shrink::Partition partition,
+    UniversalShrinker(
+        Shrinker::Partition partition,
         ShrinkFunction shrink_function
     ) :
-        Shrink(
+        Shrinker(
             partition,
             shrink_function
         )
@@ -93,11 +93,11 @@ public:
      * @param[in] shrink_function
      */
     template <typename T, typename W>
-    UniversalShrink(
-        Shrink::Partition partition,
+    UniversalShrinker(
+        Shrinker::Partition partition,
         PrimitiveShrinkFunction<T, W> shrink_function
     ) :
-        UniversalShrink(
+        UniversalShrinker(
             partition,
             make_shrink_function(shrink_function)
         )
@@ -109,12 +109,12 @@ public:
      * @param[in] shrink_function
      * @param[in] stdev_function
      */
-    UniversalShrink(
+    UniversalShrinker(
         ShrinkFunction shrink_function,
         StdDevFunction stdev_function
     ) :
-        UniversalShrink(
-            Shrink::GLOBALLY,
+        UniversalShrinker(
+            Shrinker::GLOBALLY,
             shrink_function,
             stdev_function
         )
@@ -129,11 +129,11 @@ public:
      * @param[in] stdev_function
      */
     template <typename T, typename W>
-    UniversalShrink(
+    UniversalShrinker(
         PrimitiveShrinkFunction<T, W> shrink_function,
         StdDevFunction stdev_function
     ) :
-        UniversalShrink(
+        UniversalShrinker(
             make_shrink_function(shrink_function),
             stdev_function
         )
@@ -149,12 +149,12 @@ public:
      * @param[in] stdev_function
      */
     template <typename T, typename W>
-    UniversalShrink(
-        Shrink::Partition partition,
+    UniversalShrinker(
+        Shrinker::Partition partition,
         PrimitiveShrinkFunction<T, W> shrink_function,
         StdDevFunction stdev_function
     ) :
-        UniversalShrink(
+        UniversalShrinker(
             partition,
             make_shrink_function(shrink_function),
             stdev_function
@@ -164,11 +164,11 @@ public:
     /**
      * @brief Copy Constructor.
      */
-    UniversalShrink(const UniversalShrink& other) = default;
+    UniversalShrinker(const UniversalShrinker& other) = default;
     /**
      * @brief Move Constructor.
      */
-    UniversalShrink(UniversalShrink&& other) = default;
+    UniversalShrinker(UniversalShrinker&& other) = default;
 
     /**
      * @brief Computes the universal shrinkage threshold.
@@ -243,7 +243,7 @@ public:
 
 protected:
     /**
-     * @copydoc Shrink::compute_global_threshold
+     * @copydoc Shrinker::compute_global_threshold
      */
     cv::Scalar compute_global_threshold(
         const DWT2D::Coeffs& coeffs,
@@ -255,7 +255,7 @@ protected:
     }
 
     /**
-     * @copydoc Shrink::compute_level_threshold
+     * @copydoc Shrinker::compute_level_threshold
      */
     cv::Scalar compute_level_threshold(
         const cv::Mat& detail_coeffs,
@@ -267,7 +267,7 @@ protected:
     }
 
     /**
-     * @copydoc Shrink::compute_subband_threshold
+     * @copydoc Shrinker::compute_subband_threshold
      */
     cv::Scalar compute_subband_threshold(
         const cv::Mat& detail_coeffs,
@@ -285,24 +285,24 @@ protected:
  *        function, and the MAD standard deviation estimator.
  *
  */
-class VisuShrink : public UniversalShrink
+class VisuShrinker : public UniversalShrinker
 {
 public:
     /**
      * @overload
      *
      */
-    VisuShrink() :
-        VisuShrink(Shrink::GLOBALLY)
+    VisuShrinker() :
+        VisuShrinker(Shrinker::GLOBALLY)
     {}
 
     /**
-     * @brief Construct a new Visu Shrink object.
+     * @brief Construct a new VisuShrinker object.
      *
      * @param[in] partition
      */
-    VisuShrink(Shrink::Partition partition) :
-        UniversalShrink(
+    VisuShrinker(Shrinker::Partition partition) :
+        UniversalShrinker(
             partition,
             soft_threshold
         )
@@ -311,11 +311,11 @@ public:
     /**
      * @brief Copy Constructor.
      */
-    VisuShrink(const VisuShrink& other) = default;
+    VisuShrinker(const VisuShrinker& other) = default;
     /**
      * @brief Move Constructor.
      */
-    VisuShrink(VisuShrink&& other) = default;
+    VisuShrinker(VisuShrinker&& other) = default;
 };
 
 //  ----------------------------------------------------------------------------

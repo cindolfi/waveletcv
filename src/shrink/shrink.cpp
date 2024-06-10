@@ -111,7 +111,7 @@ void shrink_subbands(
 //  ============================================================================
 //  High Level API
 //  ============================================================================
-void Shrink::shrink(
+void Shrinker::shrink(
     const DWT2D::Coeffs& coeffs,
     DWT2D::Coeffs& shrunk_coeffs,
     const cv::Range& levels,
@@ -128,7 +128,7 @@ void Shrink::shrink(
         thresholds.assign(subset_thresholds);
 
     switch (partition()) {
-    case Shrink::GLOBALLY:
+    case Shrinker::GLOBALLY:
         cvwt::shrink_globally(
             shrunk_coeffs,
             subset_thresholds.at<cv::Scalar>(0, 0),
@@ -136,13 +136,13 @@ void Shrink::shrink(
             levels
         );
         break;
-    case Shrink::LEVELS:
+    case Shrinker::LEVELS:
         cvwt::shrink_levels(shrunk_coeffs, subset_thresholds, shrink_function(), levels);
         break;
-    case Shrink::SUBBANDS:
+    case Shrinker::SUBBANDS:
         cvwt::shrink_subbands(shrunk_coeffs, subset_thresholds, shrink_function(), levels);
         break;
-    case Shrink::SUBSETS:
+    case Shrinker::SUBSETS:
         shrink_subsets(shrunk_coeffs, subset_thresholds, levels);
         break;
     }
@@ -150,7 +150,7 @@ void Shrink::shrink(
 
 
 
-void Shrink::expand_thresholds(
+void Shrinker::expand_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Mat4d& subset_thresholds,
     cv::OutputArray expanded_thresholds,
@@ -167,29 +167,29 @@ void Shrink::expand_thresholds(
     auto resolved_levels = (levels == cv::Range::all()) ? cv::Range(0, coeffs.levels())
                                                         : levels;
     switch (partition()) {
-    case Shrink::GLOBALLY:
+    case Shrinker::GLOBALLY:
         expanded_thresholds_matrix.setTo(
             subset_thresholds.at<cv::Scalar>(0, 0),
             coeffs.detail_mask(levels)
         );
         break;
-    case Shrink::LEVELS:
+    case Shrinker::LEVELS:
         for (int level = resolved_levels.start; level < resolved_levels.end; ++level)
             for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL})
                 expanded_thresholds_matrix(coeffs.detail_rect(level, subband)) = subset_thresholds.at<cv::Scalar>(level);
         break;
-    case Shrink::SUBBANDS:
+    case Shrinker::SUBBANDS:
         for (int level = resolved_levels.start; level < resolved_levels.end; ++level)
             for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL})
                 expanded_thresholds_matrix(coeffs.detail_rect(level, subband)) = subset_thresholds.at<cv::Scalar>(level, subband);
         break;
-    case Shrink::SUBSETS:
+    case Shrinker::SUBSETS:
         expand_subset_thresholds(coeffs, subset_thresholds, levels, expanded_thresholds_matrix);
         break;
     }
 }
 
-cv::Mat4d Shrink::compute_thresholds(
+cv::Mat4d Shrinker::compute_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Range& levels,
     const cv::Scalar& stdev
@@ -203,30 +203,30 @@ cv::Mat4d Shrink::compute_thresholds(
     return subset_thresholds;
 }
 
-cv::Mat4d Shrink::compute_partition_thresholds(
+cv::Mat4d Shrinker::compute_partition_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Range& levels,
     const cv::Scalar& stdev
 ) const
 {
     switch (partition()) {
-    case Shrink::GLOBALLY:
+    case Shrinker::GLOBALLY:
         return cv::Mat4d(
             cv::Size(1, 1),
             compute_global_threshold(coeffs, levels, stdev)
         );
-    case Shrink::LEVELS:
+    case Shrinker::LEVELS:
         return compute_level_thresholds(coeffs, levels, stdev);
-    case Shrink::SUBBANDS:
+    case Shrinker::SUBBANDS:
         return compute_subband_thresholds(coeffs, levels, stdev);
-    case Shrink::SUBSETS:
+    case Shrinker::SUBSETS:
         return compute_subset_thresholds(coeffs, levels, stdev);
     }
 
     return cv::Mat4d();
 }
 
-void Shrink::shrink_subsets(
+void Shrinker::shrink_subsets(
     DWT2D::Coeffs& coeffs,
     const cv::Mat4d& subset_thresholds,
     const cv::Range& levels
@@ -238,7 +238,7 @@ void Shrink::shrink_subsets(
     );
 }
 
-cv::Scalar Shrink::compute_global_threshold(
+cv::Scalar Shrinker::compute_global_threshold(
     const DWT2D::Coeffs& coeffs,
     const cv::Range& levels,
     const cv::Scalar& stdev
@@ -250,7 +250,7 @@ cv::Scalar Shrink::compute_global_threshold(
     );
 }
 
-cv::Scalar Shrink::compute_level_threshold(
+cv::Scalar Shrinker::compute_level_threshold(
     const cv::Mat& detail_coeffs,
     int level,
     const cv::Scalar& stdev
@@ -262,7 +262,7 @@ cv::Scalar Shrink::compute_level_threshold(
     );
 }
 
-cv::Scalar Shrink::compute_subband_threshold(
+cv::Scalar Shrinker::compute_subband_threshold(
     const cv::Mat& detail_coeffs,
     int level,
     int subband,
@@ -275,7 +275,7 @@ cv::Scalar Shrink::compute_subband_threshold(
     );
 }
 
-cv::Mat4d Shrink::compute_subset_thresholds(
+cv::Mat4d Shrinker::compute_subset_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Range& levels,
     const cv::Scalar& stdev
@@ -287,7 +287,7 @@ cv::Mat4d Shrink::compute_subset_thresholds(
     );
 }
 
-void Shrink::expand_subset_thresholds(
+void Shrinker::expand_subset_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Mat4d& subset_thresholds,
     const cv::Range& levels,
@@ -300,7 +300,7 @@ void Shrink::expand_subset_thresholds(
     );
 }
 
-cv::Mat4d Shrink::compute_level_thresholds(
+cv::Mat4d Shrinker::compute_level_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Range& levels,
     const cv::Scalar& stdev
@@ -318,7 +318,7 @@ cv::Mat4d Shrink::compute_level_thresholds(
     return thresholds;
 }
 
-cv::Mat4d Shrink::compute_subband_thresholds(
+cv::Mat4d Shrinker::compute_subband_thresholds(
     const DWT2D::Coeffs& coeffs,
     const cv::Range& levels,
     const cv::Scalar& stdev

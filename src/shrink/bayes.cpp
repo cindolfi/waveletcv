@@ -60,7 +60,7 @@ private:
 //  ----------------------------------------------------------------------------
 //  BayesShrink
 //  ----------------------------------------------------------------------------
-cv::Scalar BayesShrink::compute_bayes_threshold(
+cv::Scalar BayesShrinker::compute_bayes_threshold(
     cv::InputArray detail_coeffs,
     const cv::Scalar& stdev
 ) const
@@ -72,7 +72,7 @@ cv::Scalar BayesShrink::compute_bayes_threshold(
     );
 }
 
-cv::Scalar BayesShrink::compute_bayes_threshold(
+cv::Scalar BayesShrinker::compute_bayes_threshold(
     cv::InputArray detail_coeffs,
     cv::InputArray mask,
     const cv::Scalar& stdev
@@ -88,13 +88,13 @@ cv::Scalar BayesShrink::compute_bayes_threshold(
 
 DWT2D::Coeffs bayes_shrink(const DWT2D::Coeffs& coeffs)
 {
-    BayesShrink shrink;
+    BayesShrinker shrink;
     return shrink(coeffs);
 }
 
 void bayes_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs)
 {
-    BayesShrink shrink;
+    BayesShrinker shrink;
     shrink(coeffs, shrunk_coeffs);
 }
 

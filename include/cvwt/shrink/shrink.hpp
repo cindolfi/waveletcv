@@ -13,7 +13,6 @@ namespace cvwt
 /** @addtogroup shrinkage Shrink DWT Coefficients
  *  @{
  */
-
 /**
  * @brief A function that shrinks matrix elements towards zero.
  */
@@ -27,7 +26,7 @@ using ShrinkFunction = std::function<
 >;
 
 /**
- * @brief A function that shrinks primitive values towards zero.
+ * @brief A function that shrinks fundamental types towards zero.
  */
 template <typename Value, typename Threshold>
 using PrimitiveShrinkFunction = std::function<Value(Value, Threshold)>;
@@ -294,9 +293,6 @@ ShrinkFunction make_shrink_function(
     };
 }
 
-//  ----------------------------------------------------------------------------
-//  Shrink
-//  ----------------------------------------------------------------------------
 /**
  * @brief Shrinks DWT detail coefficients using a single threshold.
  *
@@ -326,7 +322,7 @@ void shrink_globally(
  * Otherwise, `level_thresholds.rows` must equal `levels.size()`.
  *
  * @see
- *  - Shrink
+ *  - Shrinker
  *  - shrink_globally()
  *  - shrink_subbands()
  *  - make_shrink_function()
@@ -338,7 +334,7 @@ void shrink_globally(
  *      decomposition level.
  * @param[in] shrink_function The function that shrinks the coefficients.
  * @param[in] levels The decomposition levels that are shrunk.
- * @sa Shrink, shrink_globally, shrink_subbands, make_shrink_function
+ * @sa Shrinker, shrink_globally, shrink_subbands, make_shrink_function
  */
 void shrink_levels(
     DWT2D::Coeffs& coeffs,
@@ -357,7 +353,7 @@ void shrink_levels(
  * Otherwise, `subband_thresholds.rows` must equal `levels.size()`.
  *
  * @see
- *  - Shrink
+ *  - Shrinker
  *  - shrink_globally()
  *  - shrink_levels()
  *  - make_shrink_function()
@@ -396,19 +392,19 @@ void shrink_subbands(
  * is shrunk toward zero by a shrink_function().
  *
  * Algorithms will support one or more of the following partitions:
- *  - All detail coefficients comprise a single set (Shrink::GLOBALLY)
- *  - Coefficients are partitioned by decomposition level (Shrink::LEVELS)
- *  - Coefficients are partitioned by subband (Shrink::SUBBANDS)
- *  - Specialized, implementation defined partition (Shrink::SUBSETS)
+ *  - All detail coefficients comprise a single set (Shrinker::GLOBALLY)
+ *  - Coefficients are partitioned by decomposition level (Shrinker::LEVELS)
+ *  - Coefficients are partitioned by subband (Shrinker::SUBBANDS)
+ *  - Specialized, implementation defined partition (Shrinker::SUBSETS)
  *
  * The format of the thresholds matrix returned by compute_thresholds(), called
  * with N decomposition levels, depends on the partition():
- *  - Shrink::GLOBALLY: 1 row and 1 column.
- *  - Shrink::LEVELS: N rows and 1 column, where each row corresponds to a level.
- *  - Shrink::SUBBANDS: N rows and 3 columns, where each row corresponds to a
+ *  - Shrinker::GLOBALLY: 1 row and 1 column.
+ *  - Shrinker::LEVELS: N rows and 1 column, where each row corresponds to a level.
+ *  - Shrinker::SUBBANDS: N rows and 3 columns, where each row corresponds to a
  *    level and the columns corresponds to HORIZONTAL, VERTICAL, and DIAGONAL
  *    subbands.
- *  - Shrink::SUBSETS: implementation defined
+ *  - Shrinker::SUBSETS: implementation defined
  *
  * Many shrinkage algorithms assume that the original image pixels are drawn
  * from a normal distribution with a identical variance.  Since this
@@ -423,7 +419,7 @@ void shrink_subbands(
  * To shrink all detail coefficients:
  * @code{cpp}
  * cvwt::DWT2D::Coeffs coeffs = ...;
- * cvwt::Shrink* shrinker = ...;
+ * cvwt::Shrinker* shrinker = ...;
  * cvwt::DWT2D::Coeffs shrunken_coeffs;
  * shrunken_coeffs = shrinker->shrink(coeffs);
  * @endcode
@@ -443,7 +439,7 @@ void shrink_subbands(
  * shrunken_coeffs = shrinker->shrink(coeffs, cv::Range(1, coeffs.levels()));
  * @endcode
  *
- * Shrink objects are also functors:
+ * Shrinker objects are also functors:
  * @code{cpp}
  * cvwt::BayesShrink bayesshrink;
  * shrunken_coeffs = bayesshrink(coeffs);
@@ -491,25 +487,25 @@ void shrink_subbands(
  *
  * Algorithms that shrink all detail coefficients using a single threshold must
  * implement:
- *  - A constructor that passes or allows the user to pass Shrink::GLOBALLY to
+ *  - A constructor that passes or allows the user to pass Shrinker::GLOBALLY to
  *    this class's constructor
  *  - compute_global_threshold()
  *
  * Algorithms that shrink detail coefficients using a separate threshold for
  * each level must implement:
- *  - A constructor that passes or allows the user to pass Shrink::LEVELS to
+ *  - A constructor that passes or allows the user to pass Shrinker::LEVELS to
  *    this class's constructor
  *  - compute_level_threshold()
  *
  * Algorithms that shrink detail coefficients using a separate threshold for
  * each subband must implement:
- *  - A constructor that passes or allows the user to pass Shrink::SUBBAND to
+ *  - A constructor that passes or allows the user to pass Shrinker::SUBBAND to
  *    this class's constructor
  *  - compute_subband_threshold()
  *
  * Algorithms that shrink detail coefficients using a partitioning scheme other
  * than those listed above must implement:
- *  - A constructor that passes or allows the user to pass Shrink::SUBSETS to
+ *  - A constructor that passes or allows the user to pass Shrinker::SUBSETS to
  *    this class's constructor
  *  - compute_subset_thresholds()
  *  - expand_subset_thresholds()
@@ -528,7 +524,7 @@ void shrink_subbands(
  * For performance reasons, algorithms that do not require an estimate of the
  * noise variance should override compute_noise_stdev() to do nothing.
  */
-class Shrink
+class Shrinker
 {
 public:
     /**
@@ -557,7 +553,7 @@ public:
     {
     public:
         PartitioningContext(
-            const Shrink* shrink,
+            const Shrinker* shrink,
             const DWT2D::Coeffs& coeffs,
             const cv::Range& levels,
             const cv::Scalar& stdev,
@@ -588,7 +584,7 @@ public:
         }
 
     private:
-        const Shrink* _shrink;
+        const Shrinker* _shrink;
         std::lock_guard<std::mutex> _lock;
         const DWT2D::Coeffs& _coeffs;
         const cv::Range& _levels;
@@ -601,11 +597,11 @@ public:
     /**
      * @private
      */
-    Shrink() = delete;
+    Shrinker() = delete;
     /**
      * @brief Copy Constructor.
      */
-    Shrink(const Shrink& other) :
+    Shrinker(const Shrinker& other) :
         _partition(other._partition),
         _shrink_function(other._shrink_function),
         _stdev_function(other._stdev_function)
@@ -613,14 +609,14 @@ public:
     /**
      * @brief Move Constructor.
      */
-    Shrink(Shrink&& other) = default;
+    Shrinker(Shrinker&& other) = default;
 
     //  ------------------------------------------------------------------------
     //  Getters & Setters
     /**
      * @brief The scheme used to partition the DWT coefficients.
      */
-    Shrink::Partition partition() const { return _partition; }
+    Shrinker::Partition partition() const { return _partition; }
     /**
      * @brief The function used to shrink a subset of DWT coefficients.
      */
@@ -1254,15 +1250,15 @@ public:
 
 protected:
     /**
-     * @brief Construct a new Shrink object.
+     * @brief Construct a new Shrinker object.
      *
      * @param[in] partition The scheme used to partition the coefficients.
      * @param[in] shrink_function The function used to shrink coefficients.
      * @param[in] stdev_function The function used to compute an estimate of the
-     *                       standard deviation of coefficient noise.
+     *                           standard deviation of coefficient noise.
      */
-    Shrink(
-        Shrink::Partition partition,
+    Shrinker(
+        Shrinker::Partition partition,
         ShrinkFunction shrink_function,
         StdDevFunction stdev_function
     ) :
@@ -1276,17 +1272,17 @@ protected:
      *
      * This is equivalent to:
      * @code{cpp}
-     * Shrink(partition, shrink_function, mad_stdev)
+     * Shrinker(partition, shrink_function, mad_stdev)
      * @endcode
      *
      * @param[in] partition The scheme used to partition the coefficients.
      * @param[in] shrink_function The function used to shrink coefficients.
      */
-    Shrink(
-        Shrink::Partition partition,
+    Shrinker(
+        Shrinker::Partition partition,
         ShrinkFunction shrink_function
     ) :
-        Shrink(
+        Shrinker(
             partition,
             shrink_function,
             mad_stdev
@@ -1298,7 +1294,7 @@ protected:
      *
      * This is equivalent to:
      * @code{cpp}
-     * Shrink(partition, make_shrink_function(shrink_function), stdev_function)
+     * Shrinker(partition, make_shrink_function(shrink_function), stdev_function)
      * @endcode
      *
      * @tparam T
@@ -1306,15 +1302,15 @@ protected:
      * @param[in] partition The scheme used to partition the coefficients.
      * @param[in] shrink_function The function used to shrink coefficients.
      * @param[in] stdev_function The function used to compute an estimate of the
-     *                       standard deviation of coefficient noise.
+     *                           standard deviation of coefficient noise.
      */
     template <typename T, typename W>
-    Shrink(
-        Shrink::Partition partition,
+    Shrinker(
+        Shrinker::Partition partition,
         PrimitiveShrinkFunction<T, W> shrink_function,
         StdDevFunction stdev_function
     ) :
-        Shrink(
+        Shrinker(
             partition,
             make_shrink_function(shrink_function),
             stdev_function
@@ -1326,7 +1322,7 @@ protected:
      *
      * This is equivalent to:
      * @code{cpp}
-     * Shrink(partition, make_shrink_function(shrink_function), mad_stdev)
+     * Shrinker(partition, make_shrink_function(shrink_function), mad_stdev)
      * @endcode
      *
      * @tparam T
@@ -1335,11 +1331,11 @@ protected:
      * @param[in] shrink_function The function used to shrink coefficients.
      */
     template <typename T, typename W>
-    Shrink(
-        Shrink::Partition partition,
+    Shrinker(
+        Shrinker::Partition partition,
         PrimitiveShrinkFunction<T, W> shrink_function
     ) :
-        Shrink(
+        Shrinker(
             partition,
             shrink_function,
             mad_stdev
@@ -1417,7 +1413,7 @@ protected:
      * @param[in] levels The subset of levels to compute thresholds for.
      * @param[in] stdev The standard deviation of the coefficient noise.
      * @param[in] shrunk_coeffs The shrunken DWT coefficients.  This is empty when
-     *                      called from compute_thresholds().
+     *                          called from compute_thresholds().
      * @param[in] thresholds The computed thresholds.
      */
     virtual void finish_partitioning(
@@ -1455,7 +1451,7 @@ protected:
      * @brief Computes the threshold on a single global subset of coefficients.
      *
      * Subclasses that that support a single threshold for all coefficients
-     * (i.e. set partition to Shrink::GLOBALLY) **must** override this function.
+     * (i.e. set partition to Shrinker::GLOBALLY) **must** override this function.
      *
      * @param[in] coeffs The entire set of DWT coefficients.
      * @param[in] levels The subset of levels over which to compute the threshold.
@@ -1527,7 +1523,7 @@ protected:
      * @brief Shrinks the coefficients using a implementation defined partition.
      *
      * Subclasses that use a custom partitioning scheme (i.e. set partition to
-     * Shrink::SUBSETS) **must** override this function.
+     * Shrinker::SUBSETS) **must** override this function.
      *
      * Implentations should partition the coefficients into one or more subsets
      * and call shrink_coeffs() for each subset in the partition.
@@ -1633,7 +1629,7 @@ protected:
     ) const;
 
 private:
-    Shrink::Partition _partition;
+    Shrinker::Partition _partition;
     ShrinkFunction _shrink_function;
     StdDevFunction _stdev_function;
     mutable std::mutex _mutex;

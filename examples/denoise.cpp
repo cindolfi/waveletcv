@@ -30,15 +30,15 @@ const std::set<std::string> AVAILABLE_SHRINK_METHODS = {
     "bayes-levelwise",
     "bayes-global",
 };
-const std::map<std::string, SureShrink::Optimizer> AVAILABLE_OPTIMIZERS = {
-    {"auto", SureShrink::AUTO},
-    {"sbplx", SureShrink::SBPLX},
-    {"nelder-mead", SureShrink::NELDER_MEAD},
-    {"cobyla", SureShrink::COBYLA},
-    {"bobyqa", SureShrink::BOBYQA},
-    {"direct", SureShrink::DIRECT},
-    {"direct-l", SureShrink::DIRECT_L},
-    {"brute-force", SureShrink::BRUTE_FORCE},
+const std::map<std::string, SureShrinker::Optimizer> AVAILABLE_OPTIMIZERS = {
+    {"auto", SureShrinker::AUTO},
+    {"sbplx", SureShrinker::SBPLX},
+    {"nelder-mead", SureShrinker::NELDER_MEAD},
+    {"cobyla", SureShrinker::COBYLA},
+    {"bobyqa", SureShrinker::BOBYQA},
+    {"direct", SureShrinker::DIRECT},
+    {"direct-l", SureShrinker::DIRECT_L},
+    {"brute-force", SureShrinker::BRUTE_FORCE},
 };
 
 void show_images(
@@ -118,51 +118,51 @@ void main_program(const cxxopts::ParseResult& args)
     else
         noisy_image = image;
 
-    std::unique_ptr<Shrink> shrinker;
+    std::unique_ptr<Shrinker> shrinker;
     if (shrink_method == "visu")
-        shrinker = std::make_unique<VisuShrink>();
+        shrinker = std::make_unique<VisuShrinker>();
     else if (shrink_method == "sure")
-        shrinker = std::make_unique<SureShrink>(
-            SureShrink::SUBBANDS,
-            SureShrink::HYBRID,
+        shrinker = std::make_unique<SureShrinker>(
+            SureShrinker::SUBBANDS,
+            SureShrinker::HYBRID,
             optimizer
         );
     else if (shrink_method == "sure-levelwise")
-        shrinker = std::make_unique<SureShrink>(
-            Shrink::LEVELS,
-            SureShrink::HYBRID,
+        shrinker = std::make_unique<SureShrinker>(
+            Shrinker::LEVELS,
+            SureShrinker::HYBRID,
             optimizer
         );
     else if (shrink_method == "sure-global")
-        shrinker = std::make_unique<SureShrink>(
-            Shrink::GLOBALLY,
-            SureShrink::HYBRID,
+        shrinker = std::make_unique<SureShrinker>(
+            Shrinker::GLOBALLY,
+            SureShrinker::HYBRID,
             optimizer
         );
     else if (shrink_method == "sure-strict")
-        shrinker = std::make_unique<SureShrink>(
-            SureShrink::SUBBANDS,
-            SureShrink::STRICT,
+        shrinker = std::make_unique<SureShrinker>(
+            SureShrinker::SUBBANDS,
+            SureShrinker::STRICT,
             optimizer
         );
     else if (shrink_method == "sure-strict-levelwise")
-        shrinker = std::make_unique<SureShrink>(
-            Shrink::LEVELS,
-            SureShrink::STRICT,
+        shrinker = std::make_unique<SureShrinker>(
+            Shrinker::LEVELS,
+            SureShrinker::STRICT,
             optimizer
         );
     else if (shrink_method == "sure-strict-global")
-        shrinker = std::make_unique<SureShrink>(
-            Shrink::GLOBALLY,
-            SureShrink::STRICT,
+        shrinker = std::make_unique<SureShrinker>(
+            Shrinker::GLOBALLY,
+            SureShrinker::STRICT,
             optimizer
         );
     else if (shrink_method == "bayes")
-        shrinker = std::make_unique<BayesShrink>();
+        shrinker = std::make_unique<BayesShrinker>();
     else if (shrink_method == "bayes-levelwise")
-        shrinker = std::make_unique<BayesShrink>(Shrink::LEVELS);
+        shrinker = std::make_unique<BayesShrinker>(Shrinker::LEVELS);
     else if (shrink_method == "bayes-global")
-        shrinker = std::make_unique<BayesShrink>(Shrink::GLOBALLY);
+        shrinker = std::make_unique<BayesShrinker>(Shrinker::GLOBALLY);
 
     auto start_time = std::chrono::high_resolution_clock::now();
     auto coeffs = levels > 0 ? dwt2d(noisy_image, wavelet, levels)

@@ -2702,7 +2702,7 @@ public:
         const cv::Scalar& stdev
     )
     {
-        return SureShrink().compute_sure_risk(matrix, threshold, stdev);
+        return SureShrinker().compute_sure_risk(matrix, threshold, stdev);
     }
 
     static BaseParamsMap create_base_params()
@@ -3251,7 +3251,7 @@ INSTANTIATE_TEST_CASE_P(
 struct ShrinkThresholdTestParam
 {
     std::string label;
-    std::shared_ptr<Shrink> shrinker;
+    std::shared_ptr<Shrinker> shrinker;
     DWT2D::Coeffs coeffs;
     double tolerance;
     cv::Scalar expected_stdev;
@@ -3309,7 +3309,7 @@ public:
     }
 
 private:
-    static std::shared_ptr<Shrink> create_shrinker(const json& json_shrinker)
+    static std::shared_ptr<Shrinker> create_shrinker(const json& json_shrinker)
     {
         auto type = json_shrinker["type"].get<std::string>();
         auto args = json_shrinker["args"];
@@ -3323,16 +3323,16 @@ private:
         throw std::invalid_argument("Invalid shrinker type");
     }
 
-    static std::shared_ptr<Shrink> create_bayes_shrink(const json& args)
+    static std::shared_ptr<Shrinker> create_bayes_shrink(const json& args)
     {
-        return std::make_shared<BayesShrink>(
+        return std::make_shared<BayesShrinker>(
             partition_map.at(args["partition"])
         );
     }
 
-    static std::shared_ptr<Shrink> create_sure_shrink(const json& args)
+    static std::shared_ptr<Shrinker> create_sure_shrink(const json& args)
     {
-        auto shrinker = std::make_shared<SureShrink>(
+        auto shrinker = std::make_shared<SureShrinker>(
             partition_map.at(args["partition"].get<std::string>()),
             sure_variant_map.at(args["variant"].get<std::string>()),
             sure_optimizer_map.at(args["optimizer"].get<std::string>())
@@ -3342,9 +3342,9 @@ private:
         return shrinker;
     }
 
-    static std::shared_ptr<Shrink> create_visu_shrink(const json& args)
+    static std::shared_ptr<Shrinker> create_visu_shrink(const json& args)
     {
-        return std::make_shared<VisuShrink>(
+        return std::make_shared<VisuShrinker>(
             partition_map.at(args["partition"].get<std::string>())
         );
     }
@@ -3363,35 +3363,35 @@ private:
     }
 
 private:
-    static std::map<std::string, Shrink::Partition> partition_map;
-    static std::map<std::string, SureShrink::Variant> sure_variant_map;
-    static std::map<std::string, SureShrink::Optimizer> sure_optimizer_map;
+    static std::map<std::string, Shrinker::Partition> partition_map;
+    static std::map<std::string, SureShrinker::Variant> sure_variant_map;
+    static std::map<std::string, SureShrinker::Optimizer> sure_optimizer_map;
     static std::map<std::string, double> sure_optimizer_tolerance_map;
 };
 
-std::map<std::string, Shrink::Partition> ShrinkThresholdTest::partition_map(
+std::map<std::string, Shrinker::Partition> ShrinkThresholdTest::partition_map(
     {
-        {"global", Shrink::GLOBALLY},
-        {"levels", Shrink::LEVELS},
-        {"subbands", Shrink::SUBBANDS},
+        {"global", Shrinker::GLOBALLY},
+        {"levels", Shrinker::LEVELS},
+        {"subbands", Shrinker::SUBBANDS},
     }
 );
-std::map<std::string, SureShrink::Variant> ShrinkThresholdTest::sure_variant_map(
+std::map<std::string, SureShrinker::Variant> ShrinkThresholdTest::sure_variant_map(
     {
-        {"strict", SureShrink::STRICT},
-        {"hybrid", SureShrink::HYBRID},
+        {"strict", SureShrinker::STRICT},
+        {"hybrid", SureShrinker::HYBRID},
     }
 );
-std::map<std::string, SureShrink::Optimizer> ShrinkThresholdTest::sure_optimizer_map(
+std::map<std::string, SureShrinker::Optimizer> ShrinkThresholdTest::sure_optimizer_map(
     {
-        {"auto", SureShrink::AUTO},
-        {"nelder_mead", SureShrink::NELDER_MEAD},
-        {"sbplx", SureShrink::SBPLX},
-        {"cobyla", SureShrink::COBYLA},
-        {"bobyqa", SureShrink::BOBYQA},
-        {"direct", SureShrink::DIRECT},
-        {"direct_l", SureShrink::DIRECT_L},
-        {"brute_force", SureShrink::BRUTE_FORCE},
+        {"auto", SureShrinker::AUTO},
+        {"nelder_mead", SureShrinker::NELDER_MEAD},
+        {"sbplx", SureShrinker::SBPLX},
+        {"cobyla", SureShrinker::COBYLA},
+        {"bobyqa", SureShrinker::BOBYQA},
+        {"direct", SureShrinker::DIRECT},
+        {"direct_l", SureShrinker::DIRECT_L},
+        {"brute_force", SureShrinker::BRUTE_FORCE},
     }
 );
 
@@ -3419,7 +3419,7 @@ TEST_P(ShrinkThresholdTest, CorrectNoiseStandardDeviation)
 TEST_P(ShrinkThresholdTest, CorrectThresholds)
 {
     auto param = GetParam();
-    auto expected_thresholds = param.shrinker->partition() == Shrink::GLOBALLY
+    auto expected_thresholds = param.shrinker->partition() == Shrinker::GLOBALLY
                              ? param.expected_thresholds.row(0)
                              : param.expected_thresholds;
 
@@ -3431,13 +3431,13 @@ TEST_P(ShrinkThresholdTest, CorrectThresholds)
 TEST_P(ShrinkThresholdTest, ConsistentWithPrescalingByStdDev)
 {
     auto param = GetParam();
-    auto sure_shrinker = std::dynamic_pointer_cast<SureShrink>(param.shrinker);
-    if (sure_shrinker && sure_shrinker->optimizer() != SureShrink::BRUTE_FORCE)
+    auto sure_shrinker = std::dynamic_pointer_cast<SureShrinker>(param.shrinker);
+    if (sure_shrinker && sure_shrinker->optimizer() != SureShrinker::BRUTE_FORCE)
         GTEST_SKIP();
 
     auto coeffs = param.coeffs.empty_clone();
     cv::divide(param.coeffs, param.expected_stdev, coeffs);
-    auto expected_thresholds = param.shrinker->partition() == Shrink::GLOBALLY
+    auto expected_thresholds = param.shrinker->partition() == Shrinker::GLOBALLY
                              ? param.expected_thresholds.row(0)
                              : param.expected_thresholds;
     cv::divide(expected_thresholds, param.expected_stdev, expected_thresholds);
@@ -3452,7 +3452,7 @@ TEST_P(ShrinkThresholdTest, AllLevels)
 {
     auto param = GetParam();
     cv::Range levels = cv::Range::all();
-    auto expected_thresholds = param.shrinker->partition() == Shrink::GLOBALLY
+    auto expected_thresholds = param.shrinker->partition() == Shrinker::GLOBALLY
                              ? param.expected_thresholds.row(0)
                              : param.expected_thresholds;
 
@@ -3465,7 +3465,7 @@ TEST_P(ShrinkThresholdTest, FirstLevel)
 {
     auto param = GetParam();
     int levels = 1;
-    auto expected_thresholds = param.shrinker->partition() == Shrink::GLOBALLY
+    auto expected_thresholds = param.shrinker->partition() == Shrinker::GLOBALLY
                              ? param.expected_thresholds.row(1)
                              : param.expected_thresholds.rowRange(0, levels);
 
@@ -3478,7 +3478,7 @@ TEST_P(ShrinkThresholdTest, LastLevel)
 {
     auto param = GetParam();
     cv::Range levels(param.coeffs.levels() - 1, param.coeffs.levels());
-    auto expected_thresholds = param.shrinker->partition() == Shrink::GLOBALLY
+    auto expected_thresholds = param.shrinker->partition() == Shrinker::GLOBALLY
                              ? param.expected_thresholds.row(2)
                              : param.expected_thresholds.rowRange(levels);
 
@@ -3494,7 +3494,7 @@ TEST_P(ShrinkThresholdTest, FirstTwoLevels)
         GTEST_SKIP();
 
     int levels = 2;
-    auto expected_thresholds = param.shrinker->partition() == Shrink::GLOBALLY
+    auto expected_thresholds = param.shrinker->partition() == Shrinker::GLOBALLY
                              ? param.expected_thresholds.row(3)
                              : param.expected_thresholds.rowRange(0, levels);
 
@@ -3510,7 +3510,7 @@ TEST_P(ShrinkThresholdTest, LastTwoLevels)
         GTEST_SKIP();
 
     cv::Range levels(param.coeffs.levels() - 2, param.coeffs.levels());
-    auto expected_thresholds = param.shrinker->partition() == Shrink::GLOBALLY
+    auto expected_thresholds = param.shrinker->partition() == Shrinker::GLOBALLY
                              ? param.expected_thresholds.row(4)
                              : param.expected_thresholds.rowRange(levels);
 
@@ -3522,7 +3522,7 @@ TEST_P(ShrinkThresholdTest, LastTwoLevels)
 TEST_P(ShrinkThresholdTest, ExpandThresholds)
 {
     auto param = GetParam();
-    auto expected_thresholds = param.shrinker->partition() == Shrink::GLOBALLY
+    auto expected_thresholds = param.shrinker->partition() == Shrinker::GLOBALLY
                              ? param.expected_thresholds.row(0)
                              : param.expected_thresholds;
 
@@ -3534,14 +3534,14 @@ TEST_P(ShrinkThresholdTest, ExpandThresholds)
 
     cv::Mat collected;
     switch (param.shrinker->partition()) {
-    case Shrink::GLOBALLY:
+    case Shrinker::GLOBALLY:
         collect_masked(expanded_thresholds, collected, param.coeffs.detail_mask());
         EXPECT_THAT(
             collected,
             MatrixAllEq(expected_thresholds.at<cv::Scalar>(0))
         );
         break;
-    case Shrink::LEVELS:
+    case Shrinker::LEVELS:
         for (int level = 0; level < param.coeffs.levels(); ++level) {
             collect_masked(expanded_thresholds, collected, param.coeffs.detail_mask(level));
             EXPECT_THAT(
@@ -3550,7 +3550,7 @@ TEST_P(ShrinkThresholdTest, ExpandThresholds)
             );
         }
         break;
-    case Shrink::SUBBANDS:
+    case Shrinker::SUBBANDS:
         for (int level = 0; level < param.coeffs.levels(); ++level) {
             for (auto subband : {HORIZONTAL, VERTICAL, DIAGONAL}) {
                 collect_masked(

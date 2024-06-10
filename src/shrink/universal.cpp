@@ -12,7 +12,7 @@ namespace cvwt
 //  ----------------------------------------------------------------------------
 //  Universal
 //  ----------------------------------------------------------------------------
-cv::Scalar UniversalShrink::compute_universal_threshold(
+cv::Scalar UniversalShrinker::compute_universal_threshold(
     int num_elements,
     const cv::Scalar& stdev
 )
@@ -20,7 +20,7 @@ cv::Scalar UniversalShrink::compute_universal_threshold(
     return stdev * std::sqrt(2.0 * std::log(num_elements));
 }
 
-cv::Scalar UniversalShrink::compute_universal_threshold(
+cv::Scalar UniversalShrinker::compute_universal_threshold(
     const DWT2D::Coeffs& coeffs,
     const cv::Scalar& stdev
 )
@@ -31,7 +31,7 @@ cv::Scalar UniversalShrink::compute_universal_threshold(
     );
 }
 
-cv::Scalar UniversalShrink::compute_universal_threshold(
+cv::Scalar UniversalShrinker::compute_universal_threshold(
     cv::InputArray detail_coeffs,
     const cv::Scalar& stdev
 )
@@ -42,7 +42,7 @@ cv::Scalar UniversalShrink::compute_universal_threshold(
     );
 }
 
-cv::Scalar UniversalShrink::compute_universal_threshold(
+cv::Scalar UniversalShrinker::compute_universal_threshold(
     cv::InputArray detail_coeffs,
     cv::InputArray mask,
     const cv::Scalar& stdev
@@ -63,25 +63,25 @@ cv::Scalar UniversalShrink::compute_universal_threshold(
 //  ----------------------------------------------------------------------------
 DWT2D::Coeffs visu_shrink(const DWT2D::Coeffs& coeffs)
 {
-    VisuShrink shrink;
+    VisuShrinker shrink;
     return shrink(coeffs);
 }
 
 void visu_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs)
 {
-    VisuShrink shrink;
+    VisuShrinker shrink;
     shrink(coeffs, shrunk_coeffs);
 }
 
 DWT2D::Coeffs visu_shrink(DWT2D::Coeffs& coeffs, int levels)
 {
-    VisuShrink shrink;
+    VisuShrinker shrink;
     return shrink(coeffs, levels);
 }
 
 void visu_shrink(DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels)
 {
-    VisuShrink shrink;
+    VisuShrinker shrink;
     shrink(coeffs, shrunk_coeffs, levels);
 }
 }   // namespace cvwt

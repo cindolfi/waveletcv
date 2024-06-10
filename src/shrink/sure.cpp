@@ -110,9 +110,9 @@ struct SingleChannelComputeSureThreshold
     double operator()(
         cv::InputArray coeffs,
         double stdev,
-        SureShrink::Optimizer optimizer,
-        SureShrink::Variant variant,
-        const SureShrink::OptimizerStopConditions& stop_conditions
+        SureShrinker::Optimizer optimizer,
+        SureShrinker::Variant variant,
+        const SureShrinker::OptimizerStopConditions& stop_conditions
     ) const
     {
         assert(coeffs.channels() == 1);
@@ -121,15 +121,15 @@ struct SingleChannelComputeSureThreshold
             coeffs_matrix = coeffs_matrix / stdev;
 
         double threshold;
-        if (variant == SureShrink::HYBRID && use_universal_threshold(coeffs_matrix)) {
-            threshold = UniversalShrink::compute_universal_threshold(
+        if (variant == SureShrinker::HYBRID && use_universal_threshold(coeffs_matrix)) {
+            threshold = UniversalShrinker::compute_universal_threshold(
                 coeffs_matrix.total(),
                 1.0
             )[0];
         } else {
             if (coeffs_matrix.total() == 1) {
                 threshold = cv::abs(coeffs_matrix.at<T>(0, 0));
-            } else if (optimizer == SureShrink::BRUTE_FORCE
+            } else if (optimizer == SureShrinker::BRUTE_FORCE
                        || coeffs_matrix.total() <= MINIMUM_TOTAL_FOR_NLOPT) {
                 threshold = compute_sure_threshold_using_brute_force(coeffs_matrix);
             } else {
@@ -151,15 +151,15 @@ struct SingleChannelComputeSureThreshold
     );
 
 private:
-    nlopt::algorithm to_nlopt_algorithm(SureShrink::Optimizer optimizer) const
+    nlopt::algorithm to_nlopt_algorithm(SureShrinker::Optimizer optimizer) const
     {
         switch (optimizer) {
-        case SureShrink::NELDER_MEAD: return nlopt::algorithm::LN_NELDERMEAD;
-        case SureShrink::SBPLX: return nlopt::algorithm::LN_SBPLX;
-        case SureShrink::COBYLA: return nlopt::algorithm::LN_COBYLA;
-        case SureShrink::BOBYQA: return nlopt::algorithm::LN_BOBYQA;
-        case SureShrink::DIRECT: return nlopt::algorithm::GN_DIRECT;
-        case SureShrink::DIRECT_L: return nlopt::algorithm::GN_DIRECT_L;
+        case SureShrinker::NELDER_MEAD: return nlopt::algorithm::LN_NELDERMEAD;
+        case SureShrinker::SBPLX: return nlopt::algorithm::LN_SBPLX;
+        case SureShrinker::COBYLA: return nlopt::algorithm::LN_COBYLA;
+        case SureShrinker::BOBYQA: return nlopt::algorithm::LN_BOBYQA;
+        case SureShrinker::DIRECT: return nlopt::algorithm::GN_DIRECT;
+        case SureShrinker::DIRECT_L: return nlopt::algorithm::GN_DIRECT_L;
         }
 
         assert(false);
@@ -181,7 +181,7 @@ private:
     double compute_sure_threshold_using_nlopt(
         const cv::Mat& coeffs,
         nlopt::algorithm algorithm,
-        const SureShrink::OptimizerStopConditions& stop_conditions
+        const SureShrinker::OptimizerStopConditions& stop_conditions
     ) const
     {
         NLObjectiveData data(coeffs);
@@ -224,13 +224,13 @@ private:
                     break;
                 case nlopt::MAXEVAL_REACHED:
                     if (stop_conditions.max_evals_is_error)
-                        throw SureShrink::MaxEvaluationsReached();
+                        throw SureShrinker::MaxEvaluationsReached();
 
                     CV_LOG_WARNING(NULL, "maximum evaluations was reached");
                     break;
                 case nlopt::MAXTIME_REACHED:
                     if (stop_conditions.timeout_is_error)
-                        throw SureShrink::TimeoutOccured();
+                        throw SureShrinker::TimeoutOccured();
 
                     CV_LOG_WARNING(NULL, "maximum time was reached");
                     break;
@@ -313,9 +313,9 @@ struct ComputeSureThreshold
     cv::Scalar operator()(
         cv::InputArray coeffs,
         const cv::Scalar& stdev,
-        SureShrink::Optimizer optimizer,
-        SureShrink::Variant variant,
-        const SureShrink::OptimizerStopConditions& stop_conditions
+        SureShrinker::Optimizer optimizer,
+        SureShrinker::Variant variant,
+        const SureShrinker::OptimizerStopConditions& stop_conditions
     ) const
     {
         assert(coeffs.channels() == CHANNELS);
@@ -341,9 +341,9 @@ struct ComputeSureThreshold
         cv::InputArray coeffs,
         cv::InputArray mask,
         const cv::Scalar& stdev,
-        SureShrink::Optimizer optimizer,
-        SureShrink::Variant variant,
-        const SureShrink::OptimizerStopConditions& stop_conditions
+        SureShrinker::Optimizer optimizer,
+        SureShrinker::Variant variant,
+        const SureShrinker::OptimizerStopConditions& stop_conditions
     ) const
     {
         assert(coeffs.channels() == CHANNELS);
@@ -361,10 +361,10 @@ struct ComputeSureThreshold
 //  ----------------------------------------------------------------------------
 //  SureShrink
 //  ----------------------------------------------------------------------------
-int SureShrink::AUTO_BRUTE_FORCE_SIZE_LIMIT = 32 * 32 * 3;
-SureShrink::Optimizer SureShrink::AUTO_OPTIMIZER = SureShrink::Optimizer::SBPLX;
+int SureShrinker::AUTO_BRUTE_FORCE_SIZE_LIMIT = 32 * 32 * 3;
+SureShrinker::Optimizer SureShrinker::AUTO_OPTIMIZER = SureShrinker::Optimizer::SBPLX;
 
-cv::Scalar SureShrink::compute_sure_threshold(
+cv::Scalar SureShrinker::compute_sure_threshold(
     cv::InputArray detail_coeffs,
     const cv::Scalar& stdev,
     cv::InputArray mask
@@ -392,7 +392,7 @@ cv::Scalar SureShrink::compute_sure_threshold(
     }
 }
 
-cv::Scalar SureShrink::compute_sure_risk(
+cv::Scalar SureShrinker::compute_sure_risk(
     cv::InputArray coeffs,
     const cv::Scalar& threshold,
     const cv::Scalar& stdev,
@@ -411,12 +411,12 @@ cv::Scalar SureShrink::compute_sure_risk(
     }
 }
 
-SureShrink::Optimizer SureShrink::resolve_optimizer(cv::InputArray detail_coeffs) const
+SureShrinker::Optimizer SureShrinker::resolve_optimizer(cv::InputArray detail_coeffs) const
 {
-    SureShrink::Optimizer resolved_optimizer = optimizer();
-    if (optimizer() == SureShrink::AUTO) {
+    SureShrinker::Optimizer resolved_optimizer = optimizer();
+    if (optimizer() == SureShrinker::AUTO) {
         if (detail_coeffs.total() * detail_coeffs.channels() <= AUTO_BRUTE_FORCE_SIZE_LIMIT)
-            resolved_optimizer = SureShrink::BRUTE_FORCE;
+            resolved_optimizer = SureShrinker::BRUTE_FORCE;
         else
             resolved_optimizer = AUTO_OPTIMIZER;
     }
@@ -429,49 +429,49 @@ SureShrink::Optimizer SureShrink::resolve_optimizer(cv::InputArray detail_coeffs
 //  ----------------------------------------------------------------------------
 DWT2D::Coeffs sure_shrink(const DWT2D::Coeffs& coeffs)
 {
-    SureShrink shrink;
+    SureShrinker shrink;
     return shrink(coeffs);
 }
 
 void sure_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs)
 {
-    SureShrink shrink;
+    SureShrinker shrink;
     shrink(coeffs, shrunk_coeffs);
 }
 
 DWT2D::Coeffs sure_shrink(DWT2D::Coeffs& coeffs, int levels)
 {
-    SureShrink shrink;
+    SureShrinker shrink;
     return shrink(coeffs, levels);
 }
 
 void sure_shrink(DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels)
 {
-    SureShrink shrink;
+    SureShrinker shrink;
     shrink(coeffs, shrunk_coeffs, levels);
 }
 
 DWT2D::Coeffs sure_shrink_levelwise(const DWT2D::Coeffs& coeffs)
 {
-    SureShrink shrink(Shrink::LEVELS);
+    SureShrinker shrink(Shrinker::LEVELS);
     return shrink(coeffs);
 }
 
 void sure_shrink_levelwise(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs)
 {
-    SureShrink shrink(Shrink::LEVELS);
+    SureShrinker shrink(Shrinker::LEVELS);
     shrink(coeffs, shrunk_coeffs);
 }
 
 DWT2D::Coeffs sure_shrink_levelwise(const DWT2D::Coeffs& coeffs, int levels)
 {
-    SureShrink shrink(Shrink::LEVELS);
+    SureShrinker shrink(Shrinker::LEVELS);
     return shrink(coeffs, levels);
 }
 
 void sure_shrink_levelwise(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels)
 {
-    SureShrink shrink(Shrink::LEVELS);
+    SureShrinker shrink(Shrinker::LEVELS);
     shrink(coeffs, shrunk_coeffs, levels);
 }
 }   // namespace cvwt

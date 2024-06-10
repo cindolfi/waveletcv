@@ -17,9 +17,9 @@ namespace cvwt
  * @brief Implements the SureShrink algorithm for shrinking DWT coefficients.
  * @headerfile <cvwt/shrinkage.hpp>
  *
- * The coefficients can be partitioned Shrink::GLOBALLY into a single subset,
- * by Shrink::LEVELS into level subsets, or by Shrink::SUBBANDS into subband
- * subsets.  The default is Shrink::SUBBANDS.
+ * The coefficients can be partitioned Shrinker::GLOBALLY into a single subset,
+ * by Shrinker::LEVELS into level subsets, or by Shrinker::SUBBANDS into subband
+ * subsets.  The default is Shrinker::SUBBANDS.
  *
  * This algorithm uses soft_threshold().  There are two possible methods used
  * to compute the thresholds.  The SureShrink::STRICT variant always computes
@@ -32,15 +32,15 @@ namespace cvwt
  * algorithm is set by passing a SureShrink::Optimizer to the constructor.  When
  * the optimization algorithm is SureShrink::BRUTE_FORCE each subset's threshold
  * is computed by evaluating the risk using the absolute value of each
- * coefficient in that subset (i.e.\f$O(rows \cdot cols \cdot channels)\f$ runtime).  Although
- * this is the most accurate method, it can be prohibitively slow for larger
- * subsets of coefficients.  SureShrink::AUTO is the default optimization
- * algorithm.  It uses the algorithm set by SureShrink::AUTO_OPTIMIZER for
- * larger subsets and SureShrink::BRUTE_FORCE for smaller subsets.  The cutoff
- * size between these two modes is set with SureShrink::AUTO_BRUTE_FORCE_SIZE_LIMIT.
- *
+ * coefficient in that subset (i.e.\f$O(rows \cdot cols \cdot channels)\f$
+ * runtime).  Although this is the most accurate method, it can be prohibitively
+ * slow for larger subsets of coefficients.  SureShrink::AUTO is the default
+ * optimization algorithm.  It uses the algorithm set by
+ * SureShrink::AUTO_OPTIMIZER for larger subsets and SureShrink::BRUTE_FORCE for
+ * smaller subsets.  The cutoff size between these two modes is set with
+ * SureShrink::AUTO_BRUTE_FORCE_SIZE_LIMIT.
  */
-class SureShrink : public Shrink
+class SureShrinker : public Shrinker
 {
 public:
     /**
@@ -151,14 +151,14 @@ public:
      *
      * Equiqualent to:
      * @code{cpp}
-     * SureShrink(Shrink::SUBBANDS, SureShrink::HYBRID, SureShrink::AUTO)
+     * SureShrink(Shrinker::SUBBANDS, SureShrink::HYBRID, SureShrink::AUTO)
      * @endcode
      */
-    SureShrink() :
-        SureShrink(
-            Shrink::SUBBANDS,
-            SureShrink::HYBRID,
-            SureShrink::AUTO
+    SureShrinker() :
+        SureShrinker(
+            Shrinker::SUBBANDS,
+            SureShrinker::HYBRID,
+            SureShrinker::AUTO
         )
     {}
 
@@ -167,16 +167,16 @@ public:
      *
      * Equiqualent to:
      * @code{cpp}
-     * SureShrink(Shrink::SUBBANDS, variant, SureShrink::AUTO)
+     * SureShrink(Shrinker::SUBBANDS, variant, SureShrink::AUTO)
      * @endcode
      *
      * @param[in] variant The variant of the algorithm.
      */
-    SureShrink(SureShrink::Variant variant) :
-        SureShrink(
-            Shrink::SUBBANDS,
+    SureShrinker(SureShrinker::Variant variant) :
+        SureShrinker(
+            Shrinker::SUBBANDS,
             variant,
-            SureShrink::AUTO
+            SureShrinker::AUTO
         )
     {}
 
@@ -190,11 +190,11 @@ public:
      *
      * @param[in] partition
      */
-    SureShrink(Shrink::Partition partition) :
-        SureShrink(
+    SureShrinker(Shrinker::Partition partition) :
+        SureShrinker(
             partition,
-            SureShrink::HYBRID,
-            SureShrink::AUTO
+            SureShrinker::HYBRID,
+            SureShrinker::AUTO
         )
     {}
 
@@ -209,27 +209,27 @@ public:
      * @param[in] partition
      * @param[in] variant
      */
-    SureShrink(Shrink::Partition partition, SureShrink::Variant variant) :
-        SureShrink(
+    SureShrinker(Shrinker::Partition partition, SureShrinker::Variant variant) :
+        SureShrinker(
             partition,
             variant,
-            SureShrink::AUTO
+            SureShrinker::AUTO
         )
     {}
 
     /**
-     * @brief Construct a SureShrink object.
+     * @brief Construct a SureShrinker object.
      *
      * @param[in] partition How the coefficients are partitioned.
      * @param[in] variant The variant of the algorithm to use.
      * @param[in] optimizer The optimization algorithm used to compute the thresholds.
      */
-    SureShrink(
-        Shrink::Partition partition,
-        SureShrink::Variant variant,
-        SureShrink::Optimizer optimizer
+    SureShrinker(
+        Shrinker::Partition partition,
+        SureShrinker::Variant variant,
+        SureShrinker::Optimizer optimizer
     ) :
-        Shrink(
+        Shrinker(
             partition,
             soft_threshold,
             mad_stdev
@@ -239,20 +239,20 @@ public:
     {}
 
     /**
-     * @brief Construct a SureShrink object with specified optimizer stopping conditions.
+     * @brief Construct a SureShrinker object with specified optimizer stopping conditions.
      *
      * @param[in] partition How the coefficients are partitioned.
      * @param[in] variant The variant of the algorithm to use.
      * @param[in] optimizer The optimization algorithm used to compute the thresholds.
      * @param[in] stop_conditions The conditions used to determine optimizer convergence.
      */
-    SureShrink(
-        Shrink::Partition partition,
-        SureShrink::Variant variant,
-        SureShrink::Optimizer optimizer,
+    SureShrinker(
+        Shrinker::Partition partition,
+        SureShrinker::Variant variant,
+        SureShrinker::Optimizer optimizer,
         const OptimizerStopConditions& stop_conditions
     ) :
-        Shrink(
+        Shrinker(
             partition,
             soft_threshold,
             mad_stdev
@@ -265,11 +265,11 @@ public:
     /**
      * @brief Copy Constructor.
      */
-    SureShrink(const SureShrink& other) = default;
+    SureShrinker(const SureShrinker& other) = default;
     /**
      * @brief Move Constructor.
      */
-    SureShrink(SureShrink&& other) = default;
+    SureShrinker(SureShrinker&& other) = default;
 
     Variant variant() const { return _variant; }
     Optimizer optimizer() const { return _optimizer; }
@@ -377,7 +377,7 @@ public:
     );
 protected:
     /**
-     * @copydoc Shrink::compute_global_threshold
+     * @copydoc Shrinker::compute_global_threshold
      */
     cv::Scalar compute_global_threshold(
         const DWT2D::Coeffs& coeffs,
@@ -389,7 +389,7 @@ protected:
     }
 
     /**
-     * @copydoc Shrink::compute_level_threshold
+     * @copydoc Shrinker::compute_level_threshold
      */
     cv::Scalar compute_level_threshold(
         const cv::Mat& detail_coeffs,
@@ -401,7 +401,7 @@ protected:
     }
 
     /**
-     * @copydoc Shrink::compute_subband_threshold
+     * @copydoc Shrinker::compute_subband_threshold
      */
     cv::Scalar compute_subband_threshold(
         const cv::Mat& detail_coeffs,
@@ -425,8 +425,8 @@ protected:
     Optimizer resolve_optimizer(cv::InputArray detail_coeffs) const;
 
 private:
-    SureShrink::Variant _variant;
-    SureShrink::Optimizer _optimizer;
+    SureShrinker::Variant _variant;
+    SureShrinker::Optimizer _optimizer;
     OptimizerStopConditions _stop_conditions;
 };
 

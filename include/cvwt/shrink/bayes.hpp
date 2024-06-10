@@ -33,20 +33,20 @@ namespace cvwt
  * When \f$\hat\sigma^2 \gt \hat\sigma_Y^2\f$, the threshold becomes
  * \f$\lambda_s = \max(|w_n|)\f$ and all subband coefficients are shrunk to zero.
  */
-class BayesShrink : public Shrink
+class BayesShrinker : public Shrinker
 {
 public:
     /**
-     * @brief Construct a new Bayes Shrink object.
+     * @brief Construct a new BayesShrinker object.
      *
      * @param[in] partition
      * @param[in] shrink_function
      */
-    BayesShrink(
-        Shrink::Partition partition,
+    BayesShrinker(
+        Shrinker::Partition partition,
         ShrinkFunction shrink_function
     ) :
-        Shrink(
+        Shrinker(
             partition,
             shrink_function,
             mad_stdev
@@ -56,8 +56,8 @@ public:
     /**
      * @overload
      */
-    BayesShrink() :
-        BayesShrink(Shrink::SUBBANDS)
+    BayesShrinker() :
+        BayesShrinker(Shrinker::SUBBANDS)
     {}
 
     /**
@@ -65,8 +65,8 @@ public:
      *
      * @param[in] partition
      */
-    BayesShrink(Shrink::Partition partition) :
-        BayesShrink(partition, soft_threshold)
+    BayesShrinker(Shrinker::Partition partition) :
+        BayesShrinker(partition, soft_threshold)
     {}
 
     /**
@@ -78,21 +78,21 @@ public:
      * @param[in] shrink_function
      */
     template <typename T, typename W>
-    BayesShrink(
-        Shrink::Partition partition,
+    BayesShrinker(
+        Shrinker::Partition partition,
         PrimitiveShrinkFunction<T, W> shrink_function
     ) :
-        BayesShrink(partition, make_shrink_function(shrink_function))
+        BayesShrinker(partition, make_shrink_function(shrink_function))
     {}
 
     /**
      * @brief Copy Constructor.
      */
-    BayesShrink(const BayesShrink& other) = default;
+    BayesShrinker(const BayesShrinker& other) = default;
     /**
      * @brief Move Constructor.
      */
-    BayesShrink(BayesShrink&& other) = default;
+    BayesShrinker(BayesShrinker&& other) = default;
 
     /**
      * @brief Computes the BayesShrink threshold.
@@ -120,7 +120,7 @@ public:
 
 protected:
     /**
-     * @copydoc Shrink::compute_global_threshold
+     * @copydoc Shrinker::compute_global_threshold
      */
     cv::Scalar compute_global_threshold(
         const DWT2D::Coeffs& coeffs,
@@ -132,7 +132,7 @@ protected:
     }
 
     /**
-     * @copydoc Shrink::compute_level_threshold
+     * @copydoc Shrinker::compute_level_threshold
      */
     cv::Scalar compute_level_threshold(
         const cv::Mat& detail_coeffs,
@@ -144,7 +144,7 @@ protected:
     }
 
     /**
-     * @copydoc Shrink::compute_subband_threshold
+     * @copydoc Shrinker::compute_subband_threshold
      */
     cv::Scalar compute_subband_threshold(
         const cv::Mat& detail_coeffs,
@@ -156,6 +156,7 @@ protected:
         return compute_bayes_threshold(detail_coeffs, stdev);
     }
 };
+
 //  ----------------------------------------------------------------------------
 //  BayesShrink Functional API
 //  ----------------------------------------------------------------------------
