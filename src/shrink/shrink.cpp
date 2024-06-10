@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <numeric>
-// #include <opencv2/imgproc.hpp>
 
 namespace cvwt
 {
@@ -16,7 +15,7 @@ namespace cvwt
 void soft_threshold(
     cv::InputArray array,
     cv::OutputArray result,
-    cv::Scalar threshold,
+    const cv::Scalar& threshold,
     cv::InputArray mask
 )
 {
@@ -33,7 +32,7 @@ void soft_threshold(
 void hard_threshold(
     cv::InputArray array,
     cv::OutputArray result,
-    cv::Scalar threshold,
+    const cv::Scalar& threshold,
     cv::InputArray mask
 )
 {

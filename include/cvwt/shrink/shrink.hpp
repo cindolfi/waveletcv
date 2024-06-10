@@ -45,7 +45,7 @@ struct Threshold
     Threshold() : threshold_function() {}
     Threshold(ThresholdFunctor threshold_function) : threshold_function(threshold_function) {}
 
-    void operator()(cv::InputArray input, cv::OutputArray output, cv::Scalar threshold) const
+    void operator()(cv::InputArray input, cv::OutputArray output, const cv::Scalar& threshold) const
     {
         assert(input.channels() == CHANNELS);
 
@@ -63,7 +63,7 @@ struct Threshold
     void operator()(
         cv::InputArray input,
         cv::OutputArray output,
-        cv::Scalar threshold,
+        const cv::Scalar& threshold,
         cv::InputArray mask
     ) const
     {
@@ -179,7 +179,7 @@ struct WrappedThreshold : public Threshold<T, CHANNELS, WrappedThresholdFunctor<
 void soft_threshold(
     cv::InputArray array,
     cv::OutputArray result,
-    cv::Scalar threshold,
+    const cv::Scalar& threshold,
     cv::InputArray mask = cv::noArray()
 );
 
@@ -207,7 +207,7 @@ void soft_threshold(
 void hard_threshold(
     cv::InputArray array,
     cv::OutputArray result,
-    cv::Scalar threshold,
+    const cv::Scalar& threshold,
     cv::InputArray mask = cv::noArray()
 );
 
@@ -237,7 +237,7 @@ ShrinkFunction make_shrink_function()
     return [](
         cv::InputArray array,
         cv::OutputArray result,
-        cv::Scalar threshold,
+        const cv::Scalar& threshold,
         cv::InputArray mask = cv::noArray()
     )
     {
@@ -278,7 +278,7 @@ ShrinkFunction make_shrink_function(
     return [&](
         cv::InputArray array,
         cv::OutputArray result,
-        cv::Scalar threshold,
+        const cv::Scalar& threshold,
         cv::InputArray mask
     )
     {
