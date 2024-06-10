@@ -77,15 +77,6 @@ public:
         }
     }
 
-    bool has_same_metadata(const Dwt2dCoeffsImpl& coeffs_impl) const
-    {
-        return coeffs_impl.levels == levels
-            && coeffs_impl.image_size == image_size
-            && coeffs_impl.diagonal_subband_rects == diagonal_subband_rects
-            && coeffs_impl.wavelet == coeffs_impl.wavelet
-            && coeffs_impl.border_type == border_type;
-    }
-
 public:
     cv::Mat coeff_matrix;
     int levels;
@@ -425,6 +416,10 @@ public:
 
         //  Assignment
         /**
+         * @name Assignment
+         * @{
+         */
+        /**
          * @brief Copy Assignment.
          *
          * The reference to the underlying data is copied.  After assighment
@@ -454,8 +449,13 @@ public:
          *                       scalar.
          */
         Coeffs& operator=(cv::InputArray coeffs);
+        /**@} Assignment*/
 
         //  Casting
+        /**
+         * @name Conversion
+         * @{
+         */
         /**
          * @brief Implicit cast to cv::Mat.
          *
@@ -525,9 +525,14 @@ public:
          * @see `DWT2D::Coeffs::operator cv::Mat()`
          */
         operator cv::_InputOutputArray() const { return _p->coeff_matrix; }
+        /**@} Conversion*/
 
         //  --------------------------------------------------------------------
         //  Copy
+        /**
+         * @name Copy
+         * @{
+         */
         /**
          * @brief Returns a deep copy of the coefficients matrix and metadata.
          */
@@ -541,6 +546,7 @@ public:
          * @brief Returns an Coeffs with a coefficient matrix and a deep copy of the metadata.
          */
         Coeffs clone_and_assign(cv::InputArray coeff_matrix) const;
+        /**@} Copy*/
 
         //  --------------------------------------------------------------------
         //  Get & Set Sub-coefficients
@@ -588,6 +594,10 @@ public:
 
         //  --------------------------------------------------------------------
         //  Get & Set Approximation Coefficients
+        /**
+         * @name Subband Accessors
+         * @{
+         */
         ///@{
         /**
          * @brief Returns the approximation coefficients.
@@ -843,10 +853,14 @@ public:
          */
         std::vector<cv::Mat> collect_diagonal_details() const { return collect_details(DIAGONAL); }
         ///@}
+        /**@} Subband Accessors*/
 
         //  --------------------------------------------------------------------
         //  Sizes & Rects
-        ///@{
+        /**
+         * @name Subband Regions
+         * @{
+         */
         /**
          * @brief The size of the coefficents starting at the given level.
          *
@@ -948,11 +962,14 @@ public:
          * @brief The region containing the diagonal subband coefficients at the finest scale.
          */
         cv::Rect diagonal_detail_rect() const { return diagonal_detail_rect(0); }
-        ///@}
+        /**@} Subband Regions*/
 
         //  --------------------------------------------------------------------
         //  Masks
-        ///@{
+        /**
+         * @name Subband Masks
+         * @{
+         */
         /**
          * @brief The mask indicating the invalid detail coefficients.
          *
@@ -962,30 +979,6 @@ public:
          * coefficients over one or more levels or subbands.
          */
         cv::Mat invalid_detail_mask() const;
-
-        /**
-         * @brief Returns the total number of valid coefficients.
-         *
-         * This is equal to:
-         *  - `total_details() + approx().total()`
-         *  - `total() - cv::countNonZero(invalid_detail_mask())`
-         *
-         * @copydetails common_invalid_coeffs_definition
-         *
-         * @see total_details()
-         */
-        int total_valid() const;
-
-        /**
-         * @brief Returns the total number of valid detail coefficients.
-         *
-         * This is equal to `total() - cv::countNonZero(invalid_detail_mask()) - approx().total()`
-         *
-         * @copydetails common_invalid_coeffs_definition
-         *
-         * @see total_valid()
-         */
-        int total_details() const;
 
         /**
          * @brief The mask indicating the approximation coefficients.
@@ -1107,11 +1100,14 @@ public:
          * @brief The mask indicating the diagonal subband coefficients at the finest scale.
          */
         cv::Mat diagonal_detail_mask() const { return diagonal_detail_mask(0); }
-        ///@}
+        /**@} Subband Masks*/
 
         //  --------------------------------------------------------------------
         //  Convenience cv::Mat Wrappers
-        ///@{
+        /**
+         * @name cv::Mat Wrappers
+         * @{
+         */
         /**
          * @brief The number of rows.
          */
@@ -1251,7 +1247,7 @@ public:
         CoeffsExpr mul(cv::InputArray matrix, double scale = 1.0) const;
         CoeffsExpr mul(const Coeffs& coeffs, double scale = 1.0) const;
         CoeffsExpr mul(const CoeffsExpr& expression, double scale = 1.0) const;
-        ///@}
+        /**@} cv::Mat Wrappers */
 
         //  --------------------------------------------------------------------
         //  Level Iterators
@@ -1328,7 +1324,10 @@ public:
 
         //  --------------------------------------------------------------------
         //  DWT
-        ///@{
+        /**
+         * @name DWT
+         * @{
+         */
         /**
          * @brief Returns the number of decomposition levels.
          */
@@ -1376,11 +1375,57 @@ public:
          * @see DWT2D::reconstruct()
          */
         void reconstruct(cv::OutputArray image) const;
-        ///@}
+
+        /**
+         * @brief Returns true if the coefficients where generated by the same DWT applied to the same sized image.
+         *
+         * Compatiblility with @pref{other} is defined as:
+         *  - `levels() == other.levels()`
+         *  - `image_size() == other.image_size()`
+         *  - `border_type() == other.border_type()`
+         *  - `wavelet() == other.wavelet()`
+         *
+         * @param other
+         */
+        bool is_compatible(const Coeffs& other) const
+        {
+            return levels() == other.levels()
+                && image_size() == other.image_size()
+                && border_type() == other.border_type()
+                && wavelet() == other.wavelet();
+        }
+        /**@} DWT*/
 
         //  --------------------------------------------------------------------
         //  Other
-        ///@{
+        /**
+         * @name Other
+         * @{
+         */
+        /**
+         * @brief Returns the total number of valid coefficients.
+         *
+         * This is equal to:
+         *  - `total_details() + approx().total()`
+         *  - `total() - cv::countNonZero(invalid_detail_mask())`
+         *
+         * @copydetails common_invalid_coeffs_definition
+         *
+         * @see total_details()
+         */
+        int total_valid() const;
+
+        /**
+         * @brief Returns the total number of valid detail coefficients.
+         *
+         * This is equal to `total() - cv::countNonZero(invalid_detail_mask()) - approx().total()`
+         *
+         * @copydetails common_invalid_coeffs_definition
+         *
+         * @see total_valid()
+         */
+        int total_details() const;
+
         /**
          * @brief Scales and shifts detail coefficients to [0, 1].
          *
@@ -1516,16 +1561,7 @@ public:
 
             return cv::Range(resolve_level(levels.start), resolve_level(levels.end));
         }
-        ///@}
-
-        bool has_same_metadata(const Coeffs& other) const
-        {
-            return _p->levels == other._p->levels
-                && _p->image_size == other._p->image_size
-                && _p->diagonal_subband_rects == other._p->diagonal_subband_rects
-                && _p->wavelet == other._p->wavelet
-                && _p->border_type == other._p->border_type;
-        }
+        /**@} Other*/
 
         /**
          * @private
@@ -1862,6 +1898,16 @@ public:
     int max_levels_without_border_effects(cv::InputArray image) const
     {
         return max_levels_without_border_effects(image.size());
+    }
+
+    /**
+     * @brief Two transforms are equal if their wavelets are equal and their border types are equal.
+     *
+     * @param other
+     */
+    bool operator==(const DWT2D& other) const
+    {
+        return wavelet == other.wavelet && border_type == other.border_type;
     }
 private:
     //  Argument Checkers - these can be disabled by building with cmake
