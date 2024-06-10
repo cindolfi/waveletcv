@@ -193,7 +193,7 @@ public:
      * any OpenCV function and acted on like a normal cv::Mat.**
      *
      * In addition to the coefficients matrix, a DWT2D::Coeffs object contains
-     * metadata defining the structure of subband submatrices and DWT2D object.
+     * metadata defining the structure of subband submatrices and the DWT2D object.
      * In cases where an empty DWT2D::Coeffs object is needed it should be
      * created from an existing DWT2D::Coeffs with empty_clone() so that the
      * metadata is retained.
@@ -204,22 +204,19 @@ public:
      * cv::log(coeffs, log_coeffs);
      * @endcode
      *
-     * In some cases it may be necessary to expicitly cast to a cv::Mat,
-     * process the matrix, and then assign the result to a DWT2D::Coeffs.
-     * A typical situation involves using matrix operations (i.e +, -, etc.).
+     * In some situations it may be necessary to expicitly cast to a cv::Mat,
+     * thereby discarding the metadata.
      * @code{cpp}
-     * DWT2D::Coeffs coeffs = ...;
-     * // Must cast to a cv::Mat to use matrix operations.
-     * cv::Mat matrix = 2 * static_cast<cv::Mat>(coeffs);
+     * // Using clone_and_assign() ensures metadata is retained.
+     * cv::Mat matrix = static_cast<cv::Mat>(coeffs);
+     * matrix = do_something(matrix);
      * @endcode
-     * In such cases the matrix can be assigned to an empty clone of the
-     * original DWT2D::Coeffs
+     * In such cases the metadata can be retained with clone_and_assign()
      * @code{cpp}
-     * // Using empty_clone() ensures metadata is retained.
-     * auto new_coeffs = coeffs.empty_clone();
-     * new_coeffs = matrix;
+     * // Using clone_and_assign() ensures metadata is retained.
+     * auto new_coeffs = coeffs.clone_and_assign(matrix);
      * @endcode
-     * or they can be assigned to original DWT2D::Coeffs
+     * or by assigning the matrix to original DWT2D::Coeffs
      * @code{cpp}
      * coeffs = matrix;
      * @endcode
@@ -227,6 +224,10 @@ public:
     class Coeffs
     {
         friend class DWT2D;
+        friend std::vector<Coeffs> split(const Coeffs& coeffs);
+        friend Coeffs merge(const std::vector<Coeffs>& coeffs);
+        friend std::ostream& operator<<(std::ostream& stream, const Coeffs& wavelet);
+
         /**
          * @class common_scalar_definition
          *
@@ -352,7 +353,7 @@ public:
          *
          * This operation does **not** copy the underlying data (i.e. it is O(1)).
          * Rather, it returns a copy of the private cv::Mat object,
-         * which has a shared pointer to the numeric data.
+         * which has a shared pointer to the underlying data.
          *
          * @warning Modifying the elements of the returned cv::Mat
          *          will modify the coefficients stored by this object.
@@ -444,8 +445,7 @@ public:
         /**
          * @brief Returns the coefficients at and above a decomposition level.
          *
-         * For illustration, consider a coefficient matrix returned by a four
-         * level DWT2D.
+         * Consider a coefficient matrix returned by a four level DWT2D.
          * The result of `from_level(2)` is the shaded submatrix comprised of the
          * approximation coefficients A and the detail subbands H2, V2, D2, H3,
          * V3, and D3.
@@ -461,8 +461,8 @@ public:
         /**
          * @brief Sets the coefficients at and above a decomposition level.
          *
-         * For illustration, consider a coefficient matrix returned by a four
-         * level DWT2D and a given matrix `level_coeffs` of size
+         * Consider a coefficient matrix returned by a four level DWT2D and a
+         * given matrix `level_coeffs` of size
          * @ref level_size(int) const "level_size(2)".
          * Calling `set_from_level(2, level_coeffs)` **copies** `level_coeffs` to the
          * shaded submatrix comprised of the approximation coefficients A and
@@ -1416,9 +1416,6 @@ public:
         void throw_if_this_is_empty() const CVWT_DWT2D_COEFFS_NOEXCEPT;
         void throw_if_invalid_subband(int subband) const CVWT_DWT2D_COEFFS_NOEXCEPT;
 
-        friend std::vector<Coeffs> split(const Coeffs& coeffs);
-        friend Coeffs merge(const std::vector<Coeffs>& coeffs);
-        friend std::ostream& operator<<(std::ostream& stream, const Coeffs& wavelet);
     private:
         std::shared_ptr<internal::Dwt2dCoeffsImpl> _p;
     };
