@@ -150,8 +150,8 @@ public:
      * @param[in] symmetry
      * @param[in] name
      * @param[in] family
-     * @param[in] vanishing_moments_psi
-     * @param[in] vanishing_moments_phi
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
      */
     Wavelet(
         const FilterBank& filter_bank,
@@ -159,8 +159,8 @@ public:
         Symmetry symmetry,
         const std::string& name = "",
         const std::string& family = "",
-        int vanishing_moments_psi = -1,
-        int vanishing_moments_phi = -1
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
     );
 
     /**
@@ -170,16 +170,16 @@ public:
      * @param orthogonality
      * @param name
      * @param family
-     * @param vanishing_moments_psi
-     * @param vanishing_moments_phi
+     * @param wavelet_vanishing_moments
+     * @param scaling_vanishing_moments
      */
     Wavelet(
         const FilterBank& filter_bank,
         Orthogonality orthogonality,
         const std::string& name = "",
         const std::string& family = "",
-        int vanishing_moments_psi = -1,
-        int vanishing_moments_phi = -1
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
     );
 
     /**
@@ -189,16 +189,16 @@ public:
      * @param symmetry
      * @param name
      * @param family
-     * @param vanishing_moments_psi
-     * @param vanishing_moments_phi
+     * @param wavelet_vanishing_moments
+     * @param scaling_vanishing_moments
      */
     Wavelet(
         const FilterBank& filter_bank,
         Symmetry symmetry,
         const std::string& name = "",
         const std::string& family = "",
-        int vanishing_moments_psi = -1,
-        int vanishing_moments_phi = -1
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
     );
 
     /**
@@ -207,15 +207,15 @@ public:
      * @param filter_bank
      * @param name
      * @param family
-     * @param vanishing_moments_psi
-     * @param vanishing_moments_phi
+     * @param wavelet_vanishing_moments
+     * @param scaling_vanishing_moments
      */
     Wavelet(
         const FilterBank& filter_bank,
         const std::string& name = "",
         const std::string& family = "",
-        int vanishing_moments_psi = -1,
-        int vanishing_moments_phi = -1
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
     );
 
     /**
@@ -241,12 +241,12 @@ public:
     /**
      * @brief The number of vanishing moments of the wavelet function.
      */
-    int vanishing_moments_psi() const { return _p->vanishing_moments_psi; }
+    int wavelet_vanishing_moments() const { return _p->wavelet_vanishing_moments; }
 
     /**
      * @brief The number of vanishing moments of the scaling function.
      */
-    int vanishing_moments_phi() const { return _p->vanishing_moments_phi; }
+    int scaling_vanishing_moments() const { return _p->scaling_vanishing_moments; }
 
     /**
      * @brief Returns true if the wavelet is orthogonal.
@@ -451,8 +451,8 @@ private:
         Symmetry symmetry = Symmetry::ASYMMETRIC;
         std::string family = "";
         std::string name = "";
-        int vanishing_moments_psi = -1;
-        int vanishing_moments_phi = -1;
+        int wavelet_vanishing_moments = -1;
+        int scaling_vanishing_moments = -1;
     };
 
     std::shared_ptr<WaveletImpl> _p;
@@ -504,18 +504,18 @@ Wavelet create_coiflets(int order);
 /**
  * @brief Create a Biorthogonal Wavelet.
  *
- * @param[in] vanishing_moments_psi The number of vanishing moments of the wavelet function.
- * @param[in] vanishing_moments_phi The number of vanishing moments of the scaling function.
+ * @param[in] wavelet_vanishing_moments The number of vanishing moments of the wavelet function.
+ * @param[in] scaling_vanishing_moments The number of vanishing moments of the scaling function.
  */
-Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
+Wavelet create_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments);
 
 /**
  * @brief Create a Reverse Biorthogonal Wavelet.
  *
- * @param[in] vanishing_moments_psi The number of vanishing moments of the wavelet function.
- * @param[in] vanishing_moments_phi The number of vanishing moments of the scaling function.
+ * @param[in] wavelet_vanishing_moments The number of vanishing moments of the wavelet function.
+ * @param[in] scaling_vanishing_moments The number of vanishing moments of the scaling function.
  */
-Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi);
+Wavelet create_reverse_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments);
 /** @}*/
 
 
@@ -638,8 +638,8 @@ namespace internal
     std::string make_orthogonal_name(const std::string& prefix, int order);
     std::string make_biorthogonal_name(
         const std::string& prefix,
-        int vanishing_moments_psi,
-        int vanishing_moments_phi
+        int wavelet_vanishing_moments,
+        int scaling_vanishing_moments
     );
 
     template <typename V>

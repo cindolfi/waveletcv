@@ -22,8 +22,8 @@ Wavelet::Wavelet(
     Symmetry symmetry,
     const std::string& name,
     const std::string& family,
-    int vanishing_moments_psi,
-    int vanishing_moments_phi
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments
 ) :
     _p(
         std::make_shared<WaveletImpl>(
@@ -32,8 +32,8 @@ Wavelet::Wavelet(
             symmetry,
             family,
             name,
-            vanishing_moments_psi,
-            vanishing_moments_phi
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
         )
     )
 {
@@ -44,8 +44,8 @@ Wavelet::Wavelet(
     Orthogonality orthogonality,
     const std::string& name,
     const std::string& family,
-    int vanishing_moments_psi,
-    int vanishing_moments_phi
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments
 ) :
     _p(
         std::make_shared<WaveletImpl>(
@@ -54,8 +54,8 @@ Wavelet::Wavelet(
             infer_symmetry(filter_bank),
             family,
             name,
-            vanishing_moments_psi,
-            vanishing_moments_phi
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
         )
     )
 {
@@ -66,8 +66,8 @@ Wavelet::Wavelet(
     Symmetry symmetry,
     const std::string& name,
     const std::string& family,
-    int vanishing_moments_psi,
-    int vanishing_moments_phi
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments
 ) :
     _p(
         std::make_shared<WaveletImpl>(
@@ -76,8 +76,8 @@ Wavelet::Wavelet(
             symmetry,
             name,
             family,
-            vanishing_moments_psi,
-            vanishing_moments_phi
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
         )
     )
 {
@@ -87,8 +87,8 @@ Wavelet::Wavelet(
     const FilterBank& filter_bank,
     const std::string& name,
     const std::string& family,
-    int vanishing_moments_psi,
-    int vanishing_moments_phi
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments
 ) :
     _p(
         std::make_shared<WaveletImpl>(
@@ -97,8 +97,8 @@ Wavelet::Wavelet(
             infer_symmetry(filter_bank),
             family,
             name,
-            vanishing_moments_psi,
-            vanishing_moments_phi
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
         )
     )
 {
@@ -272,8 +272,8 @@ Wavelet create_haar()
         Symmetry::ASYMMETRIC,
         "haar",
         "Haar",
-        1, // vanishing_moments_psi
-        0  // vanishing_moments_phi
+        1, // wavelet_vanishing_moments
+        0  // scaling_vanishing_moments
     );
 }
 
@@ -297,8 +297,8 @@ Wavelet create_daubechies(int order)
         Symmetry::ASYMMETRIC,
         name,
         internal::DAUBECHIES_FAMILY,
-        order, // vanishing_moments_psi
-        0      // vanishing_moments_phi
+        order, // wavelet_vanishing_moments
+        0      // scaling_vanishing_moments
     );
 }
 
@@ -322,8 +322,8 @@ Wavelet create_symlets(int order)
         Symmetry::NEARLY_SYMMETRIC,
         name,
         internal::SYMLETS_FAMILY,
-        order, // vanishing_moments_psi
-        0      // vanishing_moments_phi
+        order, // wavelet_vanishing_moments
+        0      // scaling_vanishing_moments
     );
 }
 
@@ -347,17 +347,17 @@ Wavelet create_coiflets(int order)
         Symmetry::NEARLY_SYMMETRIC,
         name,
         internal::COIFLETS_FAMILY,
-        2 * order,     // vanishing_moments_psi
-        2 * order - 1  // vanishing_moments_phi
+        2 * order,     // wavelet_vanishing_moments
+        2 * order - 1  // scaling_vanishing_moments
     );
 }
 
-Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
+Wavelet create_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments)
 {
     auto name = internal::make_biorthogonal_name(
         internal::BIORTHOGONAL_NAME,
-        vanishing_moments_psi,
-        vanishing_moments_phi
+        wavelet_vanishing_moments,
+        scaling_vanishing_moments
     );
     internal::throw_if_invalid_wavelet_name(
         name,
@@ -374,17 +374,17 @@ Wavelet create_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi
         Symmetry::SYMMETRIC,
         name,
         internal::BIORTHOGONAL_FAMILY,
-        vanishing_moments_psi,
-        vanishing_moments_phi
+        wavelet_vanishing_moments,
+        scaling_vanishing_moments
     );
 }
 
-Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_moments_phi)
+Wavelet create_reverse_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments)
 {
     auto name = internal::make_biorthogonal_name(
         internal::BIORTHOGONAL_NAME,
-        vanishing_moments_psi,
-        vanishing_moments_phi
+        wavelet_vanishing_moments,
+        scaling_vanishing_moments
     );
     auto family = "Reverse " + internal::BIORTHOGONAL_FAMILY;
     internal::throw_if_invalid_wavelet_name(
@@ -404,8 +404,8 @@ Wavelet create_reverse_biorthogonal(int vanishing_moments_psi, int vanishing_mom
         Symmetry::SYMMETRIC,
         "r" + name,
         family,
-        vanishing_moments_psi,
-        vanishing_moments_phi
+        wavelet_vanishing_moments,
+        scaling_vanishing_moments
     );
 }
 
@@ -420,12 +420,12 @@ std::string make_orthogonal_name(const std::string& prefix, int order)
 
 std::string make_biorthogonal_name(
     const std::string& prefix,
-    int vanishing_moments_psi,
-    int vanishing_moments_phi
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments
 )
 {
     std::stringstream stream;
-    stream << prefix << vanishing_moments_psi << "." << vanishing_moments_phi;
+    stream << prefix << wavelet_vanishing_moments << "." << scaling_vanishing_moments;
     return stream.str();
 }
 

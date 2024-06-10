@@ -12,8 +12,8 @@ using namespace testing;
 
 struct WaveletTestParam
 {
-    int vanishing_moments_psi;
-    int vanishing_moments_phi;
+    int wavelet_vanishing_moments;
+    int scaling_vanishing_moments;
     Orthogonality orthogonality;
     Symmetry symmetry;
     std::string family;
@@ -26,8 +26,8 @@ struct WaveletTestParam
 
 void from_json(const json& json_param, WaveletTestParam& param)
 {
-    param.vanishing_moments_psi = json_param["vanishing_moments_psi"];
-    param.vanishing_moments_phi = json_param["vanishing_moments_phi"];
+    param.wavelet_vanishing_moments = json_param["vanishing_moments_psi"];
+    param.scaling_vanishing_moments = json_param["vanishing_moments_phi"];
     if (json_param["orthogonal"].get<bool>())
         param.orthogonality = Orthogonality::ORTHOGONAL;
     else if (json_param["biorthogonal"].get<bool>())
@@ -79,8 +79,8 @@ void PrintTo(const WaveletTestParam& param, std::ostream* stream)
     }
 
     *stream << "\n"
-        << "vanishing_moments_psi: " << param.vanishing_moments_psi << "\n"
-        << "vanishing_moments_phi: " << param.vanishing_moments_phi << "\n"
+        << "wavelet_vanishing_moments: " << param.wavelet_vanishing_moments << "\n"
+        << "scaling_vanishing_moments: " << param.scaling_vanishing_moments << "\n"
         << "orthogonality: " << orthogonality << "\n"
         << "symmetry: " << symmetry << "\n"
         << "family: " << param.family << "\n"
@@ -218,13 +218,13 @@ TEST_P(WaveletTest, Name)
 TEST_P(WaveletTest, VanisingMomentsPsi)
 {
     auto param = GetParam();
-    ASSERT_EQ(wavelet.vanishing_moments_psi(), param.vanishing_moments_psi);
+    ASSERT_EQ(wavelet.wavelet_vanishing_moments(), param.wavelet_vanishing_moments);
 }
 
 TEST_P(WaveletTest, VanisingMomentsPhi)
 {
     auto param = GetParam();
-    ASSERT_EQ(wavelet.vanishing_moments_phi(), param.vanishing_moments_phi);
+    ASSERT_EQ(wavelet.scaling_vanishing_moments(), param.scaling_vanishing_moments);
 }
 
 
