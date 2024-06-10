@@ -330,16 +330,16 @@ public:
      *     \frac{\left(\log_2(N)\right)^{3/2}}{\sqrt{N}}
      * \f}
      * and \f$\lambda_{SURE}\f$ otherwise.
-     * Pass `SureShrink::HYBRID` as the `variant` argument to use
+     * Pass SureShrinker::HYBRID as the @pref{variant} argument to use
      * this implementation.
      *
      * When the standard deviation of each input channel is not one, each channel
-     * standard deviation must be passed in using the `stdev` argument.
+     * standard deviation must be passed in using the @pref{stdev} argument.
      * In which case, the resulting threshold will be suitably scaled to work on the
      * non-standardized coefficients.
      *
      * This function returns a multichannel threshold by applying the single channel
-     * algorithm to each channel of the given `detail_coeffs`.
+     * algorithm to each channel of the given @pref{detail_coeffs}.
      *
      * @param[in] detail_coeffs The detail coefficients.
      * @param[in] stdev The standard deviations of each of the detail coefficients channels.

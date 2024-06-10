@@ -37,10 +37,10 @@ target_sources (
         ${CVWT_INCLUDE_DIR}/cvwt/dwt2d.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/shrinkage.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/utils.hpp
-        ${CVWT_INCLUDE_DIR}/cvwt/daubechies.hpp
-        ${CVWT_INCLUDE_DIR}/cvwt/symlets.hpp
-        ${CVWT_INCLUDE_DIR}/cvwt/coiflets.hpp
-        ${CVWT_INCLUDE_DIR}/cvwt/biorthogonal.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/filters/daubechies.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/filters/symlets.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/filters/coiflets.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/filters/biorthogonal.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/exception.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/shrink/shrink.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/shrink/bayes.hpp

@@ -55,7 +55,9 @@ if (DOXYGEN_FOUND)
 
     set(DOXYGEN_FULL_PATH_NAMES YES)
     set(DOXYGEN_ALIASES
-        [[pref{1}="<span class=\"paramname\">\1</span>"]]
+        [[pref{1}="<span class=\"paramref paramname\">\1</span>"]]
+        [[pref{2}="<span class=\"paramref paramname\">\1</span>.@ref \2"]]
+        [[pref{3}="<span class=\"paramref paramname\">\1</span>.@ref \3 \"\2\""]]
     )
     set(DOXYGEN_VERBATIM_VARS DOXYGEN_ALIASES)
 

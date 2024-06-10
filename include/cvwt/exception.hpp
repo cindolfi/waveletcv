@@ -95,7 +95,8 @@ enum AllowedMaskChannels
  * @brief Throws a bad mask exception if mask cannot be used with the array.
  *
  * The mask must have the same size as the array.
- * If `allowed_channels` is
+ *
+ * If @pref{allowed_channels} is
  *  - AllowedMaskChannels::SINGLE: the mask must be a single channel
  *  - AllowedMaskChannels::SAME: the mask must have the same number of
  *    channels as the array
@@ -104,10 +105,7 @@ enum AllowedMaskChannels
  *
  * @param[in] array The array to check.  This must be convertible to cv::InputArray.
  * @param[in] mask The mask to check.  This must be convertible to cv::InputArray.
- * @param[in] allowed_channels The number of allowed mask channels:
- *                             AllowedMaskChannels::SINGLE,
- *                             AllowedMaskChannels::SAME,
- *                             or AllowedMaskChannels::SINGLE_OR_SAME.
+ * @param[in] allowed_channels The number of allowed mask channels.
  * @param[in] ... Message strings, values, or objects.  These are combined using
  *            std::stringstream to generate the error message.
  */

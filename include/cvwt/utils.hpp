@@ -545,9 +545,10 @@ void patch_nans(cv::InputOutputArray array, double value = 0.0);
  *
  * A scalar is defined to be one of the following:
  *  - A fundamental type (e.g. float, double, etc.)
- *  - A vector containing @pref{array}.channels() elements (e.g. cv::Vec,
- *    std::vector, array, etc.)
- *  - A cv::Scalar if @pref{array}.channels() is less than or equal to 4
+ *  - A vector containing @pref{array,channels(),cv::Mat::channels} elements
+ *    (e.g. cv::Vec, std::vector, array, etc.)
+ *  - A cv::Scalar if @pref{array,channels(),cv::Mat::channels} is less than or
+ *    equal to 4
  *
  * @param[in] scalar
  * @param[in] array

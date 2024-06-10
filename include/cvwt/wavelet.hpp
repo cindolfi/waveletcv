@@ -35,7 +35,7 @@ enum class Orthogonality {
  * Predefined Wavelets
  * ===================
  * The following predefined wavelets can be constructed using the indicated
- * factory or by Wavelet::create() using one of the indicated names.
+ * factory or by create() using one of the indicated names.
  *  - Haar
  *      - Factory: create_haar()
  *      - Names: haar
@@ -43,10 +43,10 @@ enum class Orthogonality {
  *      - Factory: create_daubechies()
  *      - Names: db1, db2, ..., db38
  *  - Symlets
- *      - Factory: create_symlet()
+ *      - Factory: create_symlets()
  *      - Names: sym2, sym3, ..., sym20
  *  - Coiflets
- *      - Factory: create_coiflet()
+ *      - Factory: create_coiflets()
  *      - Names: coif1, coif2, ..., coif17
  *  - Biorthogonal
  *      - Factory: create_biorthogonal()
@@ -88,7 +88,7 @@ enum class Orthogonality {
  * @endcode
  * Under the hood, std::bind_front() binds `order` to create_daubechies().
  * The name() of the Wavelet returned by the bound factory is then mapped to the
- * bound factory for use by Wavelet::create().
+ * bound factory for use by create().
  * @code{cpp}
  * // Create a 4th order Daubechies wavelet
  * Wavelet db4_wavelet = Wavelet::create("db4");
@@ -132,7 +132,7 @@ enum class Orthogonality {
  * Wavelet my2_wavelet = Wavelet::create("my2", -4.0);
  * @endcode
  * Note that in this case the name() of the wavelet returned by
- * Wavelet::create() may or may not be equal to the factory %name.
+ * create() may or may not be equal to the factory %name.
  */
 class Wavelet
 {
@@ -320,7 +320,7 @@ public:
      * Use available_wavelets() to get available wavelet names.
      * Use register_factory() to register a factory for custom wavelets.
      *
-     * @param[in] name The name of the wavelet.
+     * @param[in] name The name of the wavelet factory.
      * @param[in] args The unbound arguments of the wavelet factory
      *                 registered with register_factory().
      */
@@ -338,23 +338,33 @@ public:
     /**
      * @brief Register a Wavelet factory for use by create().
      *
-     * This function is used to support creating custom wavelets with create().
-     * The given @pref{args} are bound to the @pref{factory} function
-     * using `std::bind_front(factory, args...))`.  The name() of the wavelet
-     * created by the factory is used as the %name of the factory.
-     * The create() function looks up the bound factory function and uses it to
-     * create a new Wavelet object.
+     * This function is used to add support for creating custom wavelets by name.
+     *
+     * The registered factory function used by create() is
+     * <code>std::bind_front(@pref{factory}, @pref{args}...))</code>.
+     * The registered factory name is the name() of the wavelet created by the
+     * bound factory.
      *
      * For example:
      * @code{cpp}
-     * //  Returns a custom Wavelet object whose name depends on some_param.
-     * Wavelet create_my_custom_wavelet(int some_param);
+     * // Define a factory function that returns a Wavelet whose name depends on order.
+     * Wavelet create_my_custom_wavelet(int order)
+     * {
+     *     // Compute or lookup filter bank based on order.
+     *     FilterBank filter_bank = ...;
+     *     std::string name = "my" + std::to_string(order);
+     *     std::string family = "My Wavelet";
      *
-     * //  Register a factory for each possible set of arguments to the wavelet
-     * //  factory function.
+     *     return Wavelet(filter_bank, name, family);
+     * }
+     *
+     * // Register a factory for each possible set of factory arguments.
      * Wavelet::register_factory(create_my_custom_wavelet, 2);
      * Wavelet::register_factory(create_my_custom_wavelet, 3);
      * Wavelet::register_factory(create_my_custom_wavelet, 4);
+     *
+     * // Create a 4th order wavelet.
+     * Wavelet my4_wavelet = Wavelet::create("my4");
      * @endcode
      *
      * @param[in] factory A callable that creates a Wavelet object.
@@ -374,23 +384,31 @@ public:
     /**
      * @brief Register a Wavelet factory for use by create().
      *
-     * This function is used to support creating custom wavelets with create().
-     * The given @pref{args} are bound to the @pref{factory} function
-     * using `std::bind_front(factory, args...))`.
+     * This function is used to add support for creating custom wavelets by name.
+     *
+     * The registered factory function used by create() is
+     * <code>std::bind_front(@pref{factory}, @pref{args}...))</code>.
      *
      * For example:
      * @code{cpp}
-     * // Returns a custom Wavelet object whose name depends on some_param
+     * // Define a factory function that returns a Wavelet whose name depends on order,
      * // but not on another_param.
-     * Wavelet create_my_custom_wavelet(int some_param, float another_param);
+     * Wavelet create_my_custom_wavelet(int order, float another_param)
+     * {
+     *     // Compute or lookup filter bank based on order and another_param.
+     *     FilterBank filter_bank = ...;
+     *     std::string name = "my" + std::to_string(order);
+     *     std::string family = "My Wavelet";
      *
-     * // Register a factory for each possible set of bound arguments to the
-     * // wavelet factory function.
+     *     return Wavelet(filter_bank, name, family);
+     * }
+     *
+     * // Register a factory for each possible set of bound factory arguments.
      * Wavelet::register_factory("my2", create_my_custom_wavelet, 2);
      * Wavelet::register_factory("my3", create_my_custom_wavelet, 3);
      * Wavelet::register_factory("my4", create_my_custom_wavelet, 4);
      *
-     * // Provide remaining unbound parameter at creation.
+     * // Create a 2nd order wavelet by providing the unbound parameters.
      * Wavelet my2_wavelet = Wavelet::create("my2", 4.0);
      * @endcode
      *

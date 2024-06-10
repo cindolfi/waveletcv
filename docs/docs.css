@@ -95,3 +95,6 @@ div.line {
     padding-top: 0.5em;
 }
 
+.paramref.paramname {
+    font-weight: bold;
+}

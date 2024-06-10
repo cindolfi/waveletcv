@@ -298,7 +298,8 @@ ShrinkFunction make_shrink_function(
  *
  * The coefficients are shrunk in place.
  *
- * Use the `levels` argument to limit shrinking to a subset of decomposition levels.
+ * Use the @pref{levels} argument to limit shrinking to a subset of
+ * decomposition levels.
  *
  * @param[inout] coeffs
  * @param[in] threshold
@@ -319,9 +320,13 @@ void shrink_globally(
  *
  * The coefficients are shrunk in place.
  *
- * Use the `levels` argument to limit shrinking to a subset of decomposition levels.
- * If `levels` is `cv::Range::all()`, `level_thresholds.rows` must equal `coeffs.levels()`.
- * Otherwise, `level_thresholds.rows` must equal `levels.size()`.
+ * Use the @pref{levels} argument to limit shrinking to a subset of
+ * decomposition levels.
+ * If @pref{levels} is cv::Range::all(),
+ * @pref{level_thresholds,rows,cv::Mat::rows} must equal
+ * @pref{coeffs,levels(),DWT2D::Coeffs::levels}.
+ * Otherwise, @pref{level_thresholds,rows,cv::Mat::rows} must equal
+ * @pref{levels,size(),cv::Range::size}.
  *
  * @param[inout] coeffs The DWT coefficients.
  * @param[in] level_thresholds The threshold paramaters for each level.
@@ -345,9 +350,13 @@ void shrink_levels(
  *
  * The coefficients are shrunk in place.
  *
- * Use the `levels` argument to limit shrinking to a subset of decomposition levels.
- * If `levels` is `cv::Range::all()`, `subband_thresholds.rows` must equal `coeffs.levels()`.
- * Otherwise, `subband_thresholds.rows` must equal `levels.size()`.
+ * Use the @pref{levels} argument to limit shrinking to a subset of
+ * decomposition levels.
+ * If @pref{levels} is cv::Range::all(),
+ * @pref{subband_thresholds,rows,cv::Mat::rows} must equal
+ * @pref{coeffs,levels(),DWT2D::Coeffs::levels}.
+ * Otherwise, @pref{subband_thresholds,rows,cv::Mat::rows} must equal
+ * @pref{levels,size(),cv::Range::size}.
  *
  * @param[inout] coeffs The DWT coefficients.
  * @param[in] subband_thresholds The threshold paramaters for each subband.
@@ -469,11 +478,11 @@ void shrink_subbands(
  *
  * @note In the unlikely situation that the coefficient noise variance is known
  *       (e.g. from a knowlegdge about image acquisition) users should call
- *       the shrink() and compute_thresholds() overloads that take a `stdev`.
+ *       the shrink() and compute_thresholds() overloads that take a @pref{stdev}.
  *       In most cases the noise variance must be estimated from the
  *       coefficients and users should call the shrink() and
- *       compute_thresholds() overloads that do not accept a `stdev`, in which
- *       case it is estimated internally using compute_noise_stdev().
+ *       compute_thresholds() overloads that do not accept a @pref{stdev}, in
+ *       which case it is estimated internally using compute_noise_stdev().
  *
  * Subclassing
  * ===========
@@ -1096,7 +1105,7 @@ public:
      * @brief Expands the subset thresholds to a threshold matrix of the same size as the given coefficients.
      *
      * This function expands the matrix of subset thresholds to a matrix that
-     * is the same size as `coeffs` where each entry is the threshold for
+     * is the same size as @pref{coeffs} where each entry is the threshold for
      * the corresponding coefficient.
      *
      * @param[in] coeffs The DWT coefficients.
@@ -1119,7 +1128,7 @@ public:
      * @overload
      *
      * This function expands the matrix of subset thresholds to a matrix that
-     * is the same size as `coeffs` where each entry is the threshold for
+     * is the same size as @pref{coeffs} where each entry is the threshold for
      * the corresponding coefficient.
      *
      * @param[in] coeffs The DWT coefficients.
@@ -1344,9 +1353,9 @@ protected:
      *
      * A subclass should override this function if it computes *temporary*
      * values that must be accessed by
-     *  - `shrink_subsets()` **and** `compute_subset_thresholds()`
-     *  - or `compute_subband_threshold()` for **every** subband
-     *  - or `compute_level_threshold()` for **every** level
+     *  - shrink_subsets() **and** compute_subset_thresholds()
+     *  - or compute_subband_threshold() for **every** subband
+     *  - or compute_level_threshold() for **every** level
      *
      * The temporary values should be stored as data members.
      *
@@ -1373,13 +1382,13 @@ protected:
     /**
      * @brief Finish a call to shrink() or compute_thresholds().
      *
-     * Cleanup temporary data members created in start_partitioning().  This function
-     * is guaranteed to be called by shrink() and compute_thresholds()
+     * Cleanup temporary data members created in start_partitioning().  This
+     * function is guaranteed to be called by shrink() and compute_thresholds()
      * as long as start_partitioning() did not throw an exception.  If necessary,
      * std::current_exception() can be used to determine if this function was
      * called normally or because an exception occured.  In the latter case,
-     * `shrunk_coeffs` or `thresholds` may be empty depending on when the
-     * exception was thrown.
+     * @pref{shrunk_coeffs} or @pref{thresholds} may be empty depending on when
+     * the exception was thrown.
      *
      * @code{cpp}
      * void MyShrinker::finish_partitioning(

@@ -310,8 +310,6 @@ public:
 
     /**
      * @brief Returns maximum number of kernel coefficients.
-     *
-     * This is equal to `std::max(decompose_kernels.filter_length(), reconstruct_kernels.filter_length()))`.
      */
     int filter_length() const { return _p->filter_length; }
 
@@ -335,12 +333,13 @@ public:
      * @brief Decompose an image.
      *
      * The outputs will all have the same number of channels as the input image
-     * and depth equal to `max(image.depth(), depth())`.
+     * and depth equal to
+     * <code>std::max(@pref{image,depth(),cv::Mat::depth}, depth())</code>.
      *
      * The size of each output will be equal to subband_size().
      * Because full convolution requires extrapolating the image by
      * the filter_length() - 1 on all sides, the size of the outputs will
-     * generally be larger than half the @pref{`image.size()`}.
+     * generally be larger than half the @pref{image.size()}.
      *
      * @param[in] image The image to decompose. This can be any type, single channel or multichannel.
      * @param[out] approx The approximation subband coefficients.
@@ -348,7 +347,8 @@ public:
      * @param[out] vertical_detail The vertical detail subband coefficients.
      * @param[out] diagonal_detail The diagonal detail subband coefficients.
      * @param[in] border_type The border extrapolation method.
-     * @param[in] border_value The border extrapolation value if `border_type` is cv::BORDER_CONSTANT.
+     * @param[in] border_value The border extrapolation value if
+     *                         @pref{border_type} is cv::BORDER_CONSTANT.
      */
     void decompose(
         cv::InputArray image,
@@ -368,15 +368,15 @@ public:
      * size, same depth, and have the same number of channels.  If not, an
      * execption is thrown.
      *
-     * The output will have the same number of channels as the coefficients
-     * and depth equal to `max(approx.depth(), depth())`.
+     * The output image will have the same number of channels as the
+     * coefficients and depth equal to
+     * <code>std::max(@pref{approx,depth(),cv::Mat::depth}, depth())</code>.
      *
-     * The size of the reconstructed image must be provided explicitly via the
-     * @pref{output_size} argument so that the extrapolated strip along the
-     * border added by decompose() can be discarded.
-     * The reconstructed image size cannot be computed from the size of the
-     * coefficients because of the unknown integer truncation that occurs when
-     * downsampling in decompose().
+     * The @pref{image_size} of the reconstructed image is used to discard the
+     * exptrapolated border added by decompose().
+     * It must be explicitly provided because it cannot be inferred from the
+     * size of the coefficient subbands due to *potential* integer truncation
+     * incurred by the downsampling operation in decompose().
      *
      * @param[in] approx The approximation subband coefficients.
      * @param[in] horizontal_detail The horizontal detail subband coefficients.
@@ -601,7 +601,11 @@ protected:
      * @brief Returns true if the kernels satisfy the perfect reconstruction constraints.
      *
      * This is equivalent to
-     * `satisfies_alias_cancellation(decompose_kernels, reconstruct_kernels) && satisfies_no_distortion(decompose_kernels, reconstruct_kernels)`
+     * <code>
+     * @ref satisfies_alias_cancellation(const KernelPair&,const KernelPair&) "satisfies_alias_cancellation"(@pref{decompose_kernels}, @pref{reconstruct_kernels})
+     * &&
+     * @ref satisfies_no_distortion(const KernelPair&,const KernelPair&) "satisfies_no_distortion"(@pref{decompose_kernels}, @pref{reconstruct_kernels})
+     * </code>
      *
      * @copydetails satisfies_alias_cancellation(const KernelPair&, const KernelPair&)
      */
