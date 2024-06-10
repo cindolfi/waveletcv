@@ -11,6 +11,18 @@
 namespace cvwt
 {
 /**
+ * @brief FilterBank Detail Subband Identifiers.
+ */
+enum DetailSubband {
+    /** Lowpass - Highpass Subband */
+    HORIZONTAL = 0,
+    /** Highpass - Lowpass Subband */
+    VERTICAL = 1,
+    /** Highpass - Highpass Subband */
+    DIAGONAL = 2,
+};
+
+/**
  * @brief A pair of lowpass and highpass filter kernels.
  */
 class KernelPair

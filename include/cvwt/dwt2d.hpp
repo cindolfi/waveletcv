@@ -13,19 +13,6 @@ namespace cvwt
 /** \addtogroup dwt2d Discrete Wavelet Transform
  *  @{
  */
-/**
- * @brief DWT2D detail subband identifier.
- */
-enum Subband {
-    /** Coefficients computed by cascading the low pass filter into the high pass filter */
-    HORIZONTAL = 0,
-    /** Coefficients computed by cascading the high pass filter into the low pass filter */
-    VERTICAL = 1,
-    /** Coefficients computed by cascading the high pass filter into the high pass filter */
-    DIAGONAL = 2,
-};
-
-
 namespace internal
 {
 class Dwt2dCoeffsImpl
@@ -629,14 +616,14 @@ public:
          * @brief Returns the detail coefficients at a given level and subband.
          *
          * @param[in] level
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          */
         cv::Mat detail(int level, int subband) const;
 
         /**
          * @brief Returns the smallest scale detail coefficients in a given subband.
          *
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          */
         cv::Mat detail(int subband) const { return detail(0, subband); }
 
@@ -658,7 +645,7 @@ public:
          * @brief Sets the detail coefficients at a given level and subband.
          *
          * @param[in] level The scale level.
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          * @param[in] coeffs The detail subband coefficients.  This must be one of:
          *  - A matrix of size @ref detail_size(int) const "detail_size()" with
          *    channels() number of channels
@@ -666,14 +653,14 @@ public:
          *
          * @throws cv::Exception
          *  - If @pref{coeffs} is an incompatible matrix or scalar.
-         *  - If @pref{subband} is not a valid #Subband.
+         *  - If @pref{subband} is not a valid #DetailSubband.
          */
         void set_detail(int level, int subband, cv::InputArray coeffs);
 
         /**
          * @brief Sets the smallest scale detail coefficients in a given subband.
          *
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          * @param[in] coeffs The detail subband coefficients.  This must be one of:
          *  - A matrix of size @ref detail_size(int) const "detail_size()" with
          *    channels() number of channels
@@ -681,7 +668,7 @@ public:
          *
          * @throws cv::Exception
          *  - If @pref{coeffs} is an incompatible matrix or scalar.
-         *  - If @pref{subband} is not a valid #Subband.
+         *  - If @pref{subband} is not a valid #DetailSubband.
          */
         void set_detail(int subband, cv::InputArray coeffs) { set_detail(0, subband, coeffs); }
 
@@ -697,14 +684,14 @@ public:
          *
          * For illustration, consider a coefficient matrix returned by a four
          * level DWT2D.
-         * The result of `collect_details(Subband::HORIZONTAL)` is a vector
+         * The result of `collect_details(DetailSubband::HORIZONTAL)` is a vector
          * containing the shaded submatrices H0, H1, H2, and H3.
          *
          * <div class="shade H0 H1 H2 H3">
          * @copydetails common_four_level_coeff_matrix
          * </div>
          *
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          *
          * @see
          *  - collect_horizontal_details()
@@ -766,7 +753,7 @@ public:
          * @brief Returns a collection of horizontal subband detail coefficients at each level.
          *
          * This is equivalent to
-         * @ref collect_details(int) const "collect_details(Subband::HORIZONTAL)".
+         * @ref collect_details(int) const "collect_details(DetailSubband::HORIZONTAL)".
          */
         std::vector<cv::Mat> collect_horizontal_details() const { return collect_details(HORIZONTAL); }
         ///@}
@@ -809,7 +796,7 @@ public:
          * @brief Returns a collection of vertical subband detail coefficients at each level.
          *
          * This is equivalent to
-         * @ref collect_details(int) const "collect_details(Subband::VERTICAL)".
+         * @ref collect_details(int) const "collect_details(DetailSubband::VERTICAL)".
          */
         std::vector<cv::Mat> collect_vertical_details() const { return collect_details(VERTICAL); }
         ///@}
@@ -852,7 +839,7 @@ public:
          * @brief Returns a collection of diagonal subband detail coefficients at each level.
          *
          * This is equivalent to
-         * @ref collect_details(int) const "collect_details(Subband::DIAGONAL)".
+         * @ref collect_details(int) const "collect_details(DetailSubband::DIAGONAL)".
          */
         std::vector<cv::Mat> collect_diagonal_details() const { return collect_details(DIAGONAL); }
         ///@}
@@ -918,14 +905,14 @@ public:
          * @brief The region containing the coefficients for the given level and subband.
          *
          * @param[in] level
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          */
         cv::Rect detail_rect(int level, int subband) const;
 
         /**
          * @brief The region containing the smallest scale coefficients in the given subband.
          *
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          */
         cv::Rect detail_rect(int subband) const { return detail_rect(0, subband); }
 
@@ -1021,7 +1008,7 @@ public:
          * @brief The mask indicating the subband coefficients at a level.
          *
          * @param[in] levels
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          */
         cv::Mat detail_mask(int level, int subband) const;
 
@@ -1036,7 +1023,7 @@ public:
          * @brief The mask indicating the subband coefficients at a range of levels.
          *
          * @param[in] levels
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          */
         cv::Mat detail_mask(const cv::Range& levels, int subband) const;
 
@@ -1045,7 +1032,7 @@ public:
          *
          * @param[in] lower_level
          * @param[in] upper_level
-         * @param[in] subband The detail subband.  This must be a #Subband.
+         * @param[in] subband The detail subband.  This must be a #DetailSubband.
          */
         cv::Mat detail_mask(int lower_level, int upper_level, int subband) const;
 
@@ -1453,46 +1440,6 @@ public:
             cv::InputArray write_mask = cv::noArray()
         ) const;
 
-        // /**
-        //  * @brief Scales and shifts detail coefficients to [0, 1].
-        //  *
-        //  * This function maps detail coefficients centered at 0.5 to detail
-        //  * coefficients centered at 0.
-        //  *
-        //  * The normalized coefficients \f$\tilde\w\f$ are
-        //  * \f{equation}{
-        //  *     \tilde\w = \alpha w + \frac{1}{2}
-        //  * \f}
-        //  * where
-        //  * \f{equation}{
-        //  *     \alpha = \frac{1}{2 \max(|w|)}
-        //  * \f}
-        //  *
-        //  * @note This function is useful for displaying and saving coefficients
-        //  *       as a normal image.  Only the detail coefficients are transformed.
-        //  *       The approximation coefficients are left unchanged, thereby
-        //  *       changing the relative scale between the approximation and
-        //  *       detail coefficients. Reconstruction from the normalized
-        //  *       coefficients will result in distortion.
-        //  *
-        //  * @see
-        //  *  - map_details_from_unit_interval()
-        //  *  - map_detail_to_unit_interval_scale()
-        //  *
-        //  * @param[out] normalized_coeffs
-        //  * @param[in] read_mask Indicates which coefficients are used to compute the
-        //  *                      map parameters. This can be a single channel or
-        //  *                      multichannel matrix with depth CV_8U.
-        //  * @param[in] write_mask Indicates which coefficients are mapped.
-        //  *                       This can be a single channel or multichannel matrix
-        //  *                       with depth CV_8U.
-        //  */
-        // double map_details_to_unit_interval(
-        //     Coeffs& normalized_coeffs,
-        //     cv::InputArray read_mask = cv::noArray(),
-        //     cv::InputArray write_mask = cv::noArray()
-        // ) const;
-
         /**
          * @brief Scales and shifts detail coefficients from [0, 1].
          *
@@ -1579,6 +1526,7 @@ public:
                 && _p->wavelet == other._p->wavelet
                 && _p->border_type == other._p->border_type;
         }
+
         /**
          * @private
          */
@@ -1593,7 +1541,6 @@ public:
         friend std::ostream& operator<<(std::ostream& stream, const Coeffs& wavelet);
 
     protected:
-        //  Helpers
         /**
          * @brief Copies the source to the destination.
          *

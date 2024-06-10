@@ -131,6 +131,9 @@ enum AllowedMaskChannels
  * @brief Throws a bad size exception if the array is not a single channel row or column vector.
  *
  * @param[in] array The array to check.  This must be convertible to cv::InputArray.
+ * @param[in] channels The number of channels the array must have.  If this is
+                       less than or equal to zero, any number of channels is
+                       allowed.
  */
 #define throw_if_not_vector(array, channels, ...) internal::_throw_if_not_vector(array, channels, #array, CV_Func, __FILE__, __LINE__ __VA_OPT__(,) __VA_ARGS__)
 
