@@ -538,18 +538,22 @@ public:
          */
         Coeffs clone() const;
         /**
-         * @brief Returns an empty Coeffs with a deep copy of the metadata.
+         * @brief Returns a Coeffs with an empty coefficients matrix and a deep copy of the metadata.
          */
         Coeffs empty_clone() const;
 
         /**
-         * @brief Returns an Coeffs with a coefficient matrix and a deep copy of the metadata.
+         * @brief Returns a Coeffs with a given coefficients matrix and a deep copy of the metadata.
          */
         Coeffs clone_and_assign(cv::InputArray coeff_matrix) const;
         /**@} Copy*/
 
         //  --------------------------------------------------------------------
         //  Get & Set Sub-coefficients
+        /**
+         * @name Subcoefficients
+         * @{
+         */
         /**
          * @brief Returns the coefficients at and above a decomposition level.
          *
@@ -591,6 +595,7 @@ public:
          *                       scalar.
          */
         void set_from_level(int level, cv::InputArray coeffs);
+        /**@} Subcoefficients*/
 
         //  --------------------------------------------------------------------
         //  Get & Set Approximation Coefficients
