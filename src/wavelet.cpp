@@ -1,8 +1,8 @@
 #include "cvwt/wavelet.hpp"
-#include "cvwt/daubechies.hpp"
-#include "cvwt/symlets.hpp"
-#include "cvwt/coiflets.hpp"
-#include "cvwt/biorthogonal.hpp"
+#include "cvwt/filters/daubechies.hpp"
+#include "cvwt/filters/symlets.hpp"
+#include "cvwt/filters/coiflets.hpp"
+#include "cvwt/filters/biorthogonal.hpp"
 #include "cvwt/utils.hpp"
 #include "cvwt/exception.hpp"
 #include <opencv2/imgproc.hpp>
