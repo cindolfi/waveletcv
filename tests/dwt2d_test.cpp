@@ -43,7 +43,7 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, WaveletIsInvalid)
 
 //  ----------------------------------------------------------------------------
 //  getters
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, AtLevelIsError)
 {
     EXPECT_THROW({ coeffs.from_level(0); }, cv::Exception);
@@ -56,36 +56,30 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxIsError)
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, HorizontalDetailIsError)
 {
-    EXPECT_THROW({ coeffs.horizontal_detail(); }, cv::Exception);
     EXPECT_THROW({ coeffs.horizontal_detail(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, VerticalDetailIsError)
 {
-    EXPECT_THROW({ coeffs.vertical_detail(); }, cv::Exception);
     EXPECT_THROW({ coeffs.vertical_detail(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, DiagaonlDetailIsError)
 {
-    EXPECT_THROW({ coeffs.diagonal_detail(); }, cv::Exception);
     EXPECT_THROW({ coeffs.diagonal_detail(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailIsError)
 {
-    EXPECT_THROW({ coeffs.detail(HORIZONTAL); }, cv::Exception);
-    EXPECT_THROW({ coeffs.detail(VERTICAL); }, cv::Exception);
-    EXPECT_THROW({ coeffs.detail(DIAGONAL); }, cv::Exception);
     EXPECT_THROW({ coeffs.detail(0, HORIZONTAL); }, cv::Exception);
     EXPECT_THROW({ coeffs.detail(0, VERTICAL); }, cv::Exception);
     EXPECT_THROW({ coeffs.detail(0, DIAGONAL); }, cv::Exception);
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+#endif  // CVWT_DWT2D_EXCEPTIONS_ENABLED
 
 //  ----------------------------------------------------------------------------
 //  setters
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetLevelIsError)
 {
     EXPECT_THROW({ coeffs.set_from_level(0, cv::Mat()); }, cv::Exception);
@@ -98,36 +92,30 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetApproxIsError)
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetHorizontalDetailIsError)
 {
-    EXPECT_THROW({ coeffs.set_horizontal_detail(cv::Mat()); }, cv::Exception);
     EXPECT_THROW({ coeffs.set_horizontal_detail(0, cv::Mat()); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetVerticalDetailIsError)
 {
-    EXPECT_THROW({ coeffs.set_vertical_detail(cv::Mat()); }, cv::Exception);
     EXPECT_THROW({ coeffs.set_vertical_detail(0, cv::Mat()); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetDiagaonlDetailIsError)
 {
-    EXPECT_THROW({ coeffs.set_diagonal_detail(cv::Mat()); }, cv::Exception);
     EXPECT_THROW({ coeffs.set_diagonal_detail(0, cv::Mat()); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, SetDetailIsError)
 {
-    EXPECT_THROW({ coeffs.set_detail(HORIZONTAL, cv::Mat()); }, cv::Exception);
-    EXPECT_THROW({ coeffs.set_detail(VERTICAL, cv::Mat()); }, cv::Exception);
-    EXPECT_THROW({ coeffs.set_detail(DIAGONAL, cv::Mat()); }, cv::Exception);
     EXPECT_THROW({ coeffs.set_detail(0, HORIZONTAL, cv::Mat()); }, cv::Exception);
     EXPECT_THROW({ coeffs.set_detail(0, VERTICAL, cv::Mat()); }, cv::Exception);
     EXPECT_THROW({ coeffs.set_detail(0, DIAGONAL, cv::Mat()); }, cv::Exception);
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+#endif  // CVWT_DWT2D_EXCEPTIONS_ENABLED
 
 //  ----------------------------------------------------------------------------
 //  sizes & rects
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, LevelSizeIsError)
 {
     EXPECT_THROW({ coeffs.level_size(0); }, cv::Exception);
@@ -145,42 +133,35 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxRectIsError)
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, HorizontalDetailRectIsError)
 {
-    EXPECT_THROW({ coeffs.horizontal_detail_rect(); }, cv::Exception);
     EXPECT_THROW({ coeffs.horizontal_detail_rect(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, VerticalDetailRectIsError)
 {
-    EXPECT_THROW({ coeffs.vertical_detail_rect(); }, cv::Exception);
     EXPECT_THROW({ coeffs.vertical_detail_rect(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, DiagaonlDetailRectIsError)
 {
-    EXPECT_THROW({ coeffs.diagonal_detail_rect(); }, cv::Exception);
     EXPECT_THROW({ coeffs.diagonal_detail_rect(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailSizeIsError)
 {
-    EXPECT_THROW({ coeffs.detail_size(); }, cv::Exception);
     EXPECT_THROW({ coeffs.detail_size(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailRectIsError)
 {
-    EXPECT_THROW({ coeffs.detail_rect(HORIZONTAL); }, cv::Exception);
-    EXPECT_THROW({ coeffs.detail_rect(VERTICAL); }, cv::Exception);
-    EXPECT_THROW({ coeffs.detail_rect(DIAGONAL); }, cv::Exception);
     EXPECT_THROW({ coeffs.detail_rect(0, HORIZONTAL); }, cv::Exception);
     EXPECT_THROW({ coeffs.detail_rect(0, VERTICAL); }, cv::Exception);
     EXPECT_THROW({ coeffs.detail_rect(0, DIAGONAL); }, cv::Exception);
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+#endif  // CVWT_DWT2D_EXCEPTIONS_ENABLED
 
 //  ----------------------------------------------------------------------------
 //  mask
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxMaskIsError)
 {
     EXPECT_THROW({ coeffs.approx_mask(); }, cv::Exception);
@@ -188,17 +169,17 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, ApproxMaskIsError)
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, HorizontalDetailMaskIsError)
 {
-    EXPECT_THROW({ coeffs.horizontal_detail_mask(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.horizontal_detail_mask(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, VerticalDetailMaskIsError)
 {
-    EXPECT_THROW({ coeffs.vertical_detail_mask(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.vertical_detail_mask(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, DiagaonlDetailMaskIsError)
 {
-    EXPECT_THROW({ coeffs.diagonal_detail_mask(); }, cv::Exception);
+    EXPECT_THROW({ coeffs.diagonal_detail_mask(0); }, cv::Exception);
 }
 
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailMaskIsError)
@@ -207,7 +188,7 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, DetailMaskIsError)
     EXPECT_THROW({ coeffs.detail_mask(); }, cv::Exception);
     EXPECT_THROW({ coeffs.detail_mask(); }, cv::Exception);
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+#endif  // CVWT_DWT2D_EXCEPTIONS_ENABLED
 
 //  ----------------------------------------------------------------------------
 //  collect details
@@ -420,7 +401,7 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromScalar)
     EXPECT_THAT(new_coeffs, MatrixAllEq(scalar));
 }
 
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
 TEST_P(Dwt2dCoeffsTest, AssignmentFromWrongSizeMatrixIsError)
 {
     EXPECT_THROW(
@@ -435,7 +416,7 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromWrongSizeMatrixIsError)
         cv::Exception
     );
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+#endif  // CVWT_DWT2D_EXCEPTIONS_ENABLED
 
 TEST_P(Dwt2dCoeffsTest, CollectedHorizontalDetailsSizeEqualsLevels)
 {
@@ -450,23 +431,6 @@ TEST_P(Dwt2dCoeffsTest, CollectedVerticalDetailsSizeEqualsLevels)
 TEST_P(Dwt2dCoeffsTest, CollectedDiagonalDetailsSizeEqualsLevels)
 {
     EXPECT_EQ(coeffs.collect_diagonal_details().size(), expected_levels);
-}
-
-TEST_P(Dwt2dCoeffsTest, LevelIteratorConsistentWithAt)
-{
-    int level = 0;
-    for (auto level_coeffs : coeffs) {
-        EXPECT_THAT(
-            level_coeffs,
-            MatrixEq(coeffs.from_level(level))
-        ) << "iterator and at() are inconsistent at level " << level;
-        ++level;
-    }
-
-    EXPECT_EQ(
-        level,
-        coeffs.levels()
-    ) << "iterator and levels() are inconsistent";
 }
 
 TEST_P(Dwt2dCoeffsTest, LevelRectWithNegativeLevel)
@@ -713,7 +677,7 @@ protected:
         //  view semantics are followed - i.e. assignment should be reflected
         //  in these objects, it should NOT force a copy of the underlying matrix.
         auto detail_from_full_coeffs_before_assign = full_coeffs.detail(level, subband);
-        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(subband);
+        auto detail_from_level_coeffs_before_assign = level_coeffs.detail(0, subband);
 
         // //  Update expected
         // expected_modified_full_matrix = expected_modified_full_matrix.clone();
@@ -726,7 +690,7 @@ protected:
         set_detail(full_coeffs, level, subband, new_value);
 
         auto detail_from_full_coeffs_after_assign = full_coeffs.detail(level, subband);
-        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(subband);
+        auto detail_from_level_coeffs_after_assign = level_coeffs.detail(0, subband);
 
         assert_set_detail(
             full_coeffs,
@@ -1083,7 +1047,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentFromMatrix)
     EXPECT_THAT(level_coeffs, MatrixEq(expected_level_matrix));
 }
 
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
 TEST_P(Dwt2dCoeffsLevelsTest, SetLevelToWrongSizeMatrixIsError)
 {
     EXPECT_THROW(
@@ -1107,7 +1071,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentToWrongSizeMatrixIsError)
         cv::Exception
     );
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+#endif  // CVWT_DWT2D_EXCEPTIONS_ENABLED
 
 TEST_P(Dwt2dCoeffsLevelsTest, SetLevelWritesIntoOriginalCoeffs)
 {
@@ -1390,7 +1354,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, AssignScalarToDetails)
     }
 }
 
-#if CVWT_ARGUMENT_CHECKING_ENABLED
+#if CVWT_DWT2D_EXCEPTIONS_ENABLED
 TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToWrongSizeMatrixIsError)
 {
     for (auto [subband, detail_rect] : expected_subband_detail_rects) {
@@ -1408,7 +1372,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, SetDetailsToWrongSizeMatrixIsError)
         ) << "did not throw exception when setting " << get_subband_name(subband) << " details to an ill-sized matrix";
     }
 }
-#endif  // CVWT_ARGUMENT_CHECKING_ENABLED
+#endif  // CVWT_DWT2D_EXCEPTIONS_ENABLED
 
 TEST_P(Dwt2dCoeffsLevelsTest, CollectHorizontalDetails)
 {
@@ -2007,7 +1971,7 @@ TEST_P(DWT2DDecomposeTest, CoeffSizeForInput)
 TEST_P(DWT2DDecomposeTest, Decompose)
 {
     if (expected_output.empty()) {
-        #if CVWT_ARGUMENT_CHECKING_ENABLED
+        #if CVWT_DWT2D_EXCEPTIONS_ENABLED
         EXPECT_THROW({ dwt.decompose(input, levels); }, cv::Exception);
         #endif
     } else {
@@ -2029,7 +1993,7 @@ TEST_P(DWT2DDecomposeTest, Decompose)
 TEST_P(DWT2DDecomposeTest, CallOperator)
 {
     if (expected_output.empty()) {
-        #if CVWT_ARGUMENT_CHECKING_ENABLED
+        #if CVWT_DWT2D_EXCEPTIONS_ENABLED
         EXPECT_THROW({ dwt(input, levels); }, cv::Exception);
         #endif
     } else {
@@ -2085,7 +2049,7 @@ protected:
 TEST_P(DWT2DReconstructTest, Reconstruct)
 {
     if (coeffs.empty()) {
-        #if CVWT_ARGUMENT_CHECKING_ENABLED
+        #if CVWT_DWT2D_EXCEPTIONS_ENABLED
         EXPECT_THROW({ dwt.reconstruct(coeffs); }, cv::Exception);
         #endif
     } else {
@@ -2103,7 +2067,7 @@ TEST_P(DWT2DReconstructTest, Reconstruct)
 TEST_P(DWT2DReconstructTest, Invert)
 {
     if (coeffs.empty()) {
-        #if CVWT_ARGUMENT_CHECKING_ENABLED
+        #if CVWT_DWT2D_EXCEPTIONS_ENABLED
         EXPECT_THROW({ coeffs.reconstruct(); }, cv::Exception);
         #endif
     } else {

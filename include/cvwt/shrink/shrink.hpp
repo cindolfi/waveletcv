@@ -1245,7 +1245,7 @@ public:
      */
     virtual cv::Scalar compute_noise_stdev(const DWT2D::Coeffs& coeffs) const
     {
-        return compute_stdev(coeffs.diagonal_detail());
+        return compute_stdev(coeffs.diagonal_detail(0));
     }
 
 protected:
