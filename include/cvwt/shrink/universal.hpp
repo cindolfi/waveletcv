@@ -191,7 +191,7 @@ public:
     /**
      * @brief Computes the universal shrinkage threshold.
      *
-     * This is an convenience function equivalent to
+     * @equivalentto
      * @code{cpp}
      * compute_universal_threshold(coeffs, coeffs.detail_mask(), stdev);
      * @endcode
@@ -209,7 +209,7 @@ public:
     /**
      * @brief Computes the universal shrinkage threshold.
      *
-     * This is an convenience function equivalent to
+     * @equivalentto
      * @code{cpp}
      * compute_universal_threshold(details.total(), stdev);
      * @endcode
@@ -225,7 +225,7 @@ public:
     /**
      * @brief Computes the universal shrinkage threshold.
      *
-     * This is an convenience function equivalent to
+     * @equivalentto
      * @code{cpp}
      * compute_universal_threshold(collect_masked(details, mask), stdev);
      * @endcode

@@ -58,6 +58,9 @@ if (DOXYGEN_FOUND)
         [[pref{1}="<span class=\"paramref paramname\">\1</span>"]]
         [[pref{2}="<span class=\"paramref paramname\">\1</span>.@ref \2"]]
         [[pref{3}="<span class=\"paramref paramname\">\1</span>.@ref \3 \"\2\""]]
+        [[equivalentto="This function is equivalent to:"]]
+        [[when_noise_unknown{2}="@note Use this overload when the coefficient noise must be *estimated* from the coefficients.  If the noise is *known* use this @ref \1 \"\2\" instead."]]
+        [[when_noise_known{2}="@note Use this overload when the coefficient noise is *known*.  If the noise is must be *estimated* from the coefficients use this @ref \1 \"\2\" instead."]]
     )
     set(DOXYGEN_VERBATIM_VARS DOXYGEN_ALIASES)
 

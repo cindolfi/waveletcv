@@ -360,7 +360,7 @@ public:
          * This operation is implemented for interoperability with OpenCV functions.
          * Users should never need to use it directly.
          *
-         * This operation is equivalent to:
+         * @equivalentto
          * @code{cpp}
          * cv::_InputArray(static_cast<cv::Mat>(*this));
          * @endcode
@@ -376,7 +376,7 @@ public:
          * This operation is implemented for interoperability with OpenCV functions.
          * Users should never need to use it directly.
          *
-         * This operation is equivalent to:
+         * @equivalentto
          * @code{cpp}
          * cv::_OutputArray(static_cast<cv::Mat>(*this));
          * @endcode
@@ -392,7 +392,7 @@ public:
          * This operation is implemented for interoperability with OpenCV functions.
          * Users should never need to use it directly.
          *
-         * This operation is equivalent to:
+         * @equivalentto
          * @code{cpp}
          * cv::_InputOutputArray(static_cast<cv::Mat>(*this));
          * @endcode
@@ -543,7 +543,7 @@ public:
         /**
          * @brief Returns a collection of detail coefficients at each level in a given subband.
          *
-         * This is equivalent to:
+         * @equivalentto
          * @code{cpp}
          * std::vector<cv::Mat> collected_details(this->levels());
          * for (int level = 0; level < this->levels(); ++level)
@@ -596,7 +596,7 @@ public:
         /**
          * @brief Returns a collection of horizontal subband detail coefficients at each level.
          *
-         * This is equivalent to
+         * @equivalentto
          * @ref collect_details(int) const "collect_details(DetailSubband::HORIZONTAL)".
          */
         std::vector<cv::Mat> collect_horizontal_details() const { return collect_details(HORIZONTAL); }
@@ -625,7 +625,7 @@ public:
         /**
          * @brief Returns a collection of vertical subband detail coefficients at each level.
          *
-         * This is equivalent to
+         * @equivalentto
          * @ref collect_details(int) const "collect_details(DetailSubband::VERTICAL)".
          */
         std::vector<cv::Mat> collect_vertical_details() const { return collect_details(VERTICAL); }
@@ -654,7 +654,7 @@ public:
         /**
          * @brief Returns a collection of diagonal subband detail coefficients at each level.
          *
-         * This is equivalent to
+         * @equivalentto
          * @ref collect_details(int) const "collect_details(DetailSubband::DIAGONAL)".
          */
         std::vector<cv::Mat> collect_diagonal_details() const { return collect_details(DIAGONAL); }
@@ -1537,7 +1537,7 @@ public:
      * @brief Creates a zero initialized DWT2D::Coeffs object.
      *
      * This is a overloaded member function, provided for convenience.
-     * It is equivalent to:
+     * @equivalentto
      * @code{cpp}
      * this->create_coeffs(image.size(), image.type(), levels);
      * @endcode
@@ -1554,7 +1554,7 @@ public:
      * @brief Creates a zero initialized DWT2D::Coeffs object.
      *
      * This is a overloaded member function, provided for convenience.
-     * It is equivalent to:
+     * @equivalentto
      * @code{cpp}
      * this->create_coeffs(cv::Size(image_cols, image_rows), type, levels);
      * @endcode
@@ -1590,7 +1590,7 @@ public:
      * @brief Returns the size of the DWT2D::Coeffs required to perfectly represent the given image.
      *
      * This is a overloaded member function, provided for convenience.
-     * It is equivalent to:
+     * @equivalentto
      * @code{cpp}
      * this->coeffs_size_for_image(image.size(), levels);
      * @endcode
@@ -1607,7 +1607,7 @@ public:
      * @brief Returns the size of the DWT2D::Coeffs required to perfectly represent the given image size.
      *
      * This is a overloaded member function, provided for convenience.
-     * It is equivalent to:
+     * @equivalentto
      * @code{cpp}
      * this->coeffs_size_for_image(cv::Size(image_cols, image_rows), levels);
      * @endcode
@@ -1708,7 +1708,7 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& coeffs);
  * @brief Performs a multiscale discrete wavelet transform.
  *
  * This convenience wrapper around a DWT2D object.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
  * return dwt.decompose(image, levels);
@@ -1732,7 +1732,7 @@ DWT2D::Coeffs dwt2d(
  * @overload
  *
  * This convenience wrapper around a DWT2D object.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
  * dwt.decompose(image, output, levels);
@@ -1758,7 +1758,7 @@ void dwt2d(
  * @overload
  *
  * This is a overloaded function, provided for convenience.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * dwt2d(image, Wavelet::create(wavelet), levels, border_type);
  * @endcode
@@ -1779,7 +1779,7 @@ DWT2D::Coeffs dwt2d(
  * @overload
  *
  * This is a overloaded function, provided for convenience.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * dwt2d(image, output, Wavelet::create(wavelet), levels, border_type);
  * @endcode
@@ -1804,7 +1804,7 @@ void dwt2d(
  * @overload
  *
  * This convenience wrapper around a DWT2D object.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
  * return dwt.decompose(image);
@@ -1826,7 +1826,7 @@ DWT2D::Coeffs dwt2d(
  * @overload
  *
  * This convenience wrapper around a DWT2D object.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
  * dwt.decompose(image, output);
@@ -1850,7 +1850,7 @@ void dwt2d(
  * @overload
  *
  * This is a overloaded member function, provided for convenience.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * dwt2d(image, Wavelet::create(wavelet), border_type);
  * @endcode
@@ -1871,7 +1871,7 @@ DWT2D::Coeffs dwt2d(
  * @overload
  *
  * This is a overloaded function, provided for convenience.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * dwt2d(image, output, Wavelet::create(wavelet), border_type);
  * @endcode
@@ -1894,7 +1894,7 @@ void dwt2d(
  * @brief Reconstructs an image from DWT coefficients.
  *
  * This convenience wrapper around a DWT2D object.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
  * return dwt.reconstruct(coeffs);
@@ -1916,7 +1916,7 @@ cv::Mat idwt2d(
  * @overload
  *
  * This convenience wrapper around a DWT2D object.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
  * dwt.reconstruct(coeffs, output);
@@ -1940,7 +1940,7 @@ void idwt2d(
  * @brief Reconstructs an image from DWT coefficients.
  *
  * This is a overloaded function, provided for convenience.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * idwt2d(coeffs, Wavelet::create(wavelet), border_type);
  * @endcode
@@ -1961,7 +1961,7 @@ cv::Mat idwt2d(
  * @overload
  *
  * This is a overloaded function, provided for convenience.
- * It is equivalent to:
+ * @equivalentto
  * @code{cpp}
  * idwt2d(coeffs, output, Wavelet::create(wavelet), border_type);
  * @endcode

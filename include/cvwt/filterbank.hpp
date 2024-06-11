@@ -430,7 +430,7 @@ public:
      * In the z-domain these are
      * @copydetailscommon_perfect_reconstruction_zdomain_contraints
      *
-     * This function is equivalent to
+     * @equivalentto
      * `satisfies_alias_cancellation() && satisfies_no_distortion()`.
      */
     bool is_biorthogonal() const;
@@ -600,7 +600,7 @@ protected:
     /**
      * @brief Returns true if the kernels satisfy the perfect reconstruction constraints.
      *
-     * This is equivalent to
+     * @equivalentto
      * <code>
      * @ref satisfies_alias_cancellation(const KernelPair&,const KernelPair&) "satisfies_alias_cancellation"(@pref{decompose_kernels}, @pref{reconstruct_kernels})
      * &&
