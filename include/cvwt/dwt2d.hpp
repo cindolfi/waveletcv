@@ -873,7 +873,7 @@ public:
         /**@} Subband Masks*/
 
         //  --------------------------------------------------------------------
-        //  Convenience cv::Mat Wrappers
+        //  cv::Mat Wrappers
         /**
          * @name cv::Mat Wrappers
          * @{
@@ -1534,12 +1534,11 @@ public:
     Coeffs create_coeffs(const cv::Size& image_size, int type, int levels) const;
 
     /**
-     * @brief Creates a zero initialized DWT2D::Coeffs object.
+     * @overload
      *
-     * This is a overloaded member function, provided for convenience.
      * @equivalentto
      * @code{cpp}
-     * this->create_coeffs(image.size(), image.type(), levels);
+     * create_coeffs(image.size(), image.type(), levels);
      * @endcode
      *
      * @param[in] image
@@ -1551,12 +1550,11 @@ public:
     }
 
     /**
-     * @brief Creates a zero initialized DWT2D::Coeffs object.
+     * @overload
      *
-     * This is a overloaded member function, provided for convenience.
      * @equivalentto
      * @code{cpp}
-     * this->create_coeffs(cv::Size(image_cols, image_rows), type, levels);
+     * create_coeffs(cv::Size(image_cols, image_rows), type, levels);
      * @endcode
      *
      * @param[in] image_rows
@@ -1587,12 +1585,11 @@ public:
     cv::Size coeffs_size_for_image(const cv::Size& image_size, int levels) const;
 
     /**
-     * @brief Returns the size of the DWT2D::Coeffs required to perfectly represent the given image.
+     * @overload
      *
-     * This is a overloaded member function, provided for convenience.
      * @equivalentto
      * @code{cpp}
-     * this->coeffs_size_for_image(image.size(), levels);
+     * coeffs_size_for_image(image.size(), levels);
      * @endcode
      *
      * @param[in] image
@@ -1604,12 +1601,11 @@ public:
     }
 
     /**
-     * @brief Returns the size of the DWT2D::Coeffs required to perfectly represent the given image size.
+     * @overload
      *
-     * This is a overloaded member function, provided for convenience.
      * @equivalentto
      * @code{cpp}
-     * this->coeffs_size_for_image(cv::Size(image_cols, image_rows), levels);
+     * coeffs_size_for_image(cv::Size(image_cols, image_rows), levels);
      * @endcode
      *
      * @param[in] image_rows
@@ -1705,9 +1701,8 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& coeffs);
 //  ----------------------------------------------------------------------------
 /** @{ DWT Functional API */
 /**
- * @brief Performs a multiscale discrete wavelet transform.
+ * @brief Performs a two dimensional multiscale discrete wavelet transform.
  *
- * This convenience wrapper around a DWT2D object.
  * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
@@ -1731,7 +1726,6 @@ DWT2D::Coeffs dwt2d(
 /**
  * @overload
  *
- * This convenience wrapper around a DWT2D object.
  * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
@@ -1757,7 +1751,6 @@ void dwt2d(
 /**
  * @overload
  *
- * This is a overloaded function, provided for convenience.
  * @equivalentto
  * @code{cpp}
  * dwt2d(image, Wavelet::create(wavelet), levels, border_type);
@@ -1778,7 +1771,6 @@ DWT2D::Coeffs dwt2d(
 /**
  * @overload
  *
- * This is a overloaded function, provided for convenience.
  * @equivalentto
  * @code{cpp}
  * dwt2d(image, output, Wavelet::create(wavelet), levels, border_type);
@@ -1803,7 +1795,6 @@ void dwt2d(
 /**
  * @overload
  *
- * This convenience wrapper around a DWT2D object.
  * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
@@ -1825,7 +1816,6 @@ DWT2D::Coeffs dwt2d(
 /**
  * @overload
  *
- * This convenience wrapper around a DWT2D object.
  * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
@@ -1849,7 +1839,6 @@ void dwt2d(
 /**
  * @overload
  *
- * This is a overloaded member function, provided for convenience.
  * @equivalentto
  * @code{cpp}
  * dwt2d(image, Wavelet::create(wavelet), border_type);
@@ -1870,7 +1859,6 @@ DWT2D::Coeffs dwt2d(
 /**
  * @overload
  *
- * This is a overloaded function, provided for convenience.
  * @equivalentto
  * @code{cpp}
  * dwt2d(image, output, Wavelet::create(wavelet), border_type);
@@ -1891,9 +1879,8 @@ void dwt2d(
 );
 
 /**
- * @brief Reconstructs an image from DWT coefficients.
+ * @brief Reconstructs an image from multiscale discrete wavelet transform coefficients.
  *
- * This convenience wrapper around a DWT2D object.
  * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
@@ -1915,7 +1902,6 @@ cv::Mat idwt2d(
 /**
  * @overload
  *
- * This convenience wrapper around a DWT2D object.
  * @equivalentto
  * @code{cpp}
  * DWT2D dwt(wavelet, border_type);
@@ -1937,9 +1923,8 @@ void idwt2d(
 );
 
 /**
- * @brief Reconstructs an image from DWT coefficients.
+ * @overload
  *
- * This is a overloaded function, provided for convenience.
  * @equivalentto
  * @code{cpp}
  * idwt2d(coeffs, Wavelet::create(wavelet), border_type);
@@ -1960,7 +1945,6 @@ cv::Mat idwt2d(
 /**
  * @overload
  *
- * This is a overloaded function, provided for convenience.
  * @equivalentto
  * @code{cpp}
  * idwt2d(coeffs, output, Wavelet::create(wavelet), border_type);
