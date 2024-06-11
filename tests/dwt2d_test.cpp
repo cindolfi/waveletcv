@@ -1911,7 +1911,7 @@ public:
 TEST_P(DWT2DMaxLevelsTest, MaxLevelsWithoutBorderEffects)
 {
     auto param = GetParam();
-    auto actual_max_levels_without_border_effects = dwt.max_levels_without_border_effects(param.input_size);
+    auto actual_max_levels_without_border_effects = dwt.max_reconstructable_levels(param.input_size);
 
     EXPECT_EQ(
         actual_max_levels_without_border_effects,

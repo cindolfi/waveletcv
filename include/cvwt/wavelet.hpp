@@ -494,7 +494,8 @@ Wavelet create_haar();
 /**
  * @brief Creates a Daubechies Wavelet.
  *
- * @param[in] order The order of the wavelet.  Must be 2 <= order <= 38.
+ * @param[in] order The order of the wavelet.
+ *                  Must be 2 \f$\le\f$ @pref{order} \f$\le\f$ 38.
  * @throws cv::Exception If @pref{order} is invalid.
  */
 Wavelet create_daubechies(int order);
@@ -502,7 +503,8 @@ Wavelet create_daubechies(int order);
 /**
  * @brief Creates a Symlets Wavelet.
  *
- * @param[in] order The order of the wavelet.  Must be 2 <= order <= 20.
+ * @param[in] order The order of the wavelet.
+ *                  Must be 2 \f$\le\f$ @pref{order} \f$\le\f$ 20.
  * @throws cv::Exception If @pref{order} is invalid.
  */
 Wavelet create_symlets(int order);
@@ -510,7 +512,8 @@ Wavelet create_symlets(int order);
 /**
  * @brief Creates a Coiflets Wavelet.
  *
- * @param[in] order The order of the wavelet.  Must be 1 <= order <= 17.
+ * @param[in] order The order of the wavelet.
+ *                  Must be 1 \f$\le\f$ @pref{order} \f$\le\f$ 17.
  * @throws cv::Exception If @pref{order} is invalid.
  */
 Wavelet create_coiflets(int order);

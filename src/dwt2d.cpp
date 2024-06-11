@@ -843,7 +843,7 @@ DWT2D::DWT2D(const Wavelet& wavelet, cv::BorderTypes border_type) :
 
 void DWT2D::decompose(cv::InputArray image, DWT2D::Coeffs& coeffs, int levels) const
 {
-    throw_if_levels_out_of_range(levels);
+    throw_if_levels_out_of_range(levels, image.size());
     warn_if_border_effects_will_occur(levels, image);
     coeffs.reset(
         coeffs_size_for_image(image, levels),
@@ -908,17 +908,15 @@ void DWT2D::reconstruct(const DWT2D::Coeffs& coeffs, cv::OutputArray image) cons
         approx.copyTo(image);
 }
 
-DWT2D::Coeffs DWT2D::create_coeffs(
-    cv::InputArray coeffs_matrix,
+DWT2D::Coeffs DWT2D::create_empty_coeffs(
     const cv::Size& image_size,
     int levels
 ) const
 {
-    throw_if_levels_out_of_range(levels);
-    throw_if_inconsistent_coeffs_and_image_sizes(coeffs_matrix, image_size, levels);
+    throw_if_levels_out_of_range(levels, image_size);
 
     return Coeffs(
-        coeffs_matrix.getMat(),
+        cv::Mat(0, 0, wavelet.filter_bank().depth()),
         levels,
         image_size,
         calc_subband_sizes(image_size, levels),
@@ -927,15 +925,17 @@ DWT2D::Coeffs DWT2D::create_coeffs(
     );
 }
 
-DWT2D::Coeffs DWT2D::create_empty_coeffs(
+DWT2D::Coeffs DWT2D::create_coeffs(
+    cv::InputArray coeffs_matrix,
     const cv::Size& image_size,
     int levels
 ) const
 {
-    throw_if_levels_out_of_range(levels);
+    throw_if_levels_out_of_range(levels, image_size);
+    throw_if_inconsistent_coeffs_and_image_sizes(coeffs_matrix, image_size, levels);
 
     return Coeffs(
-        cv::Mat(0, 0, wavelet.filter_bank().depth()),
+        coeffs_matrix.getMat(),
         levels,
         image_size,
         calc_subband_sizes(image_size, levels),
@@ -969,7 +969,7 @@ std::vector<cv::Size> DWT2D::calc_subband_sizes(const cv::Size& image_size, int 
 
 cv::Size DWT2D::coeffs_size_for_image(const cv::Size& image_size, int levels) const
 {
-    throw_if_levels_out_of_range(levels);
+    throw_if_levels_out_of_range(levels, image_size);
 
     cv::Size level_subband_size = wavelet.filter_bank().subband_size(image_size);
     cv::Size accumulator = level_subband_size;
@@ -984,25 +984,37 @@ cv::Size DWT2D::coeffs_size_for_image(const cv::Size& image_size, int levels) co
     return accumulator;
 }
 
-int DWT2D::max_levels_without_border_effects(int image_rows, int image_cols) const
+int DWT2D::max_levels(const cv::Size& image_size)
 {
-    double data_length = std::min(image_rows, image_cols);
+    double data_length = std::min(image_size.width, image_size.height);
     if (data_length <= 0)
         return 0;
 
-    int max_levels = std::floor(std::log2(data_length / (wavelet.filter_length() - 1.0)));
+    int max_levels = std::floor(std::log2(data_length));
+    return std::max(max_levels, 0);
+}
+
+int DWT2D::max_reconstructable_levels(const cv::Size& image_size) const
+{
+    double data_length = std::min(image_size.width, image_size.height);
+    if (data_length <= 0)
+        return 0;
+
+    int max_levels = std::floor(
+        std::log2(data_length / (wavelet.filter_length() - 1.0))
+    );
     return std::max(max_levels, 0);
 }
 
 inline
-void DWT2D::throw_if_levels_out_of_range(int levels) const CVWT_DWT2D_NOEXCEPT
+void DWT2D::throw_if_levels_out_of_range(int levels, const cv::Size& image_size) const CVWT_DWT2D_NOEXCEPT
 {
 #if CVWT_DWT2D_EXCEPTIONS_ENABLED
-    if (levels < 1) {
+    if (levels < 1 || levels > max_levels(image_size)) {
         throw_out_of_range(
             "DWT2D: levels is out of range. ",
-            "Must be levels >= 1, ",
-            "got levels = ", levels,  "."
+            "Must be 1 <= levels <= ", max_levels(image_size), ". ",
+            "Got levels = ", levels,  "."
         );
     }
 #endif
@@ -1021,8 +1033,8 @@ void DWT2D::throw_if_inconsistent_coeffs_and_image_sizes(
         throw_bad_size(
             "DWT2D: coefficients size is not consistent with image size. ",
             "Coefficients size must be ", required_coeffs_size, " ",
-            "for image size = ", image_size, " and levels = ", levels, ", ",
-            "got coeffs.size() = ", coeffs.size(), ". ",
+            "for image size = ", image_size, " and levels = ", levels, ". ",
+            "Got coeffs.size() = ", coeffs.size(), ". ",
             "(Note: use DWT2D::coeffs_size_for_input() to get the required size)"
         );
     }
@@ -1036,7 +1048,7 @@ void DWT2D::warn_if_border_effects_will_occur(
 ) const noexcept
 {
 #if CVWT_DWT2D_WARNINGS_ENABLED
-    int max_levels = max_levels_without_border_effects(image_size);
+    int max_levels = max_reconstructable_levels(image_size);
     if (levels > max_levels) {
         std::stringstream message;
         message

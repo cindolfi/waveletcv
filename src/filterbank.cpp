@@ -534,16 +534,33 @@ void FilterBankImpl::throw_if_wrong_type(
 } // namespace internal
 
 
-/**
- * =============================================================================
- * Public API
- * =============================================================================
-*/
-/**
- * -----------------------------------------------------------------------------
- * KernelPair
- * -----------------------------------------------------------------------------
-*/
+//  ============================================================================
+//  Public API
+//  ============================================================================
+//  ----------------------------------------------------------------------------
+//  KernelPair
+//  ----------------------------------------------------------------------------
+KernelPair make_kernel_pair(cv::InputArray lowpass, cv::InputArray highpass)
+{
+    if (lowpass.size() != highpass.size()) {
+        throw_bad_size(
+            "Kernels must be the same size. ",
+            "Got lowpass.size() = ", lowpass.size(),
+            " and highpass.size() = ", highpass.size(), "."
+        );
+    }
+
+    if (lowpass.type() != highpass.type()) {
+        throw_bad_arg(
+            "Kernels must be the same type. ",
+            "Got lowpass.type() = ", internal::get_type_name(lowpass.type()),
+            " and highpass.type() = ", internal::get_type_name(highpass.type()), "."
+        );
+    }
+
+    return KernelPair(lowpass.getMat(), highpass.getMat());
+}
+
 bool KernelPair::operator==(const KernelPair& other) const
 {
     return this == &other || (
@@ -552,11 +569,9 @@ bool KernelPair::operator==(const KernelPair& other) const
     );
 }
 
-/**
- * -----------------------------------------------------------------------------
- * FilterBank
- * -----------------------------------------------------------------------------
-*/
+//  ----------------------------------------------------------------------------
+//  FilterBank
+//  ----------------------------------------------------------------------------
 FilterBank::FilterBank() :
     _p(std::make_shared<internal::FilterBankImpl>())
 {

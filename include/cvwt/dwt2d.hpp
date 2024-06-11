@@ -92,12 +92,12 @@ public:
 class CoeffsExpr;
 
 /**
- * @brief A two dimensional multiscale discrete wavelet transform.
+ * @brief A two dimensional multiscale discrete wavelet transform (DWT).
  *
  * @image html dwt2d.png "Discrete Wavelet Transform Block Diagram"
  *
- * Image decomposition, which is also called analysis or the forward
- * transformation in the literature, is performed by decompose().
+ * Image decomposition (i.e. analysis or forward transformation) is performed
+ * by decompose().
  * @code{cpp}
  * cv::Mat image = ...;
  * DWT2D dwt(Wavelet::create("db2"));
@@ -112,8 +112,8 @@ class CoeffsExpr;
  * DWT2D::Coeffs coeffs = dwt2d(image, "db2");
  * @endcode
  *
- * Image reconstruction, which is also called synthesis or the inverse
- * transformation in the literature, is accomplished with reconstruct().
+ * Image reconstruction (i.e. synthesis or inverse transformation) is
+ * accomplished with reconstruct().
  * @code{cpp}
  * cv::Mat reconstructed_image = dwt.reconstruct(coeffs);
  * @endcode
@@ -132,7 +132,7 @@ class DWT2D
 {
 public:
     /**
-     * @brief The result of a multiscale discrete wavelet transformation.
+     * @brief The result of a multiscale discrete wavelet transformation (DWT).
      *
      * This class is a **view** onto a cv::Mat containing the DWT coefficients.
      * The coefficients at each decomposition level are comprised of three
@@ -1418,11 +1418,17 @@ public:
      * @param[in] border_type The border exptrapolation method.
      */
     DWT2D(const Wavelet& wavelet, cv::BorderTypes border_type=cv::BORDER_DEFAULT);
+
+    /**
+     * @private
+     */
     DWT2D() = delete;
+
     /**
      * @brief Copy Constructor.
      */
     DWT2D(const DWT2D& other) = default;
+
     /**
      * @brief Move Constructor.
      */
@@ -1434,10 +1440,12 @@ public:
     auto operator()(auto&&... args) const { return decompose(std::forward<decltype(args)>(args)...); }
 
     /**
-     * @brief Performs a multiscale discrete wavelet transformation.
+     * @brief Performs a multiscale DWT.
      *
      * @param[in] image The image to be transformed.
-     * @param[in] levels
+     * @param[in] levels The number of decomposition levels.  Must be
+     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     * @throws cv::Exception If @pref{levels} is out of range.
      */
     Coeffs decompose(cv::InputArray image, int levels) const
     {
@@ -1450,13 +1458,20 @@ public:
      * @overload
      *
      * @param[in]  image The image to be transformed.
-     * @param[out] coeffs The result of the discrete wavelet transformation.
-     * @param[in]  levels The number of levels.
+     * @param[out] coeffs The resulting DWT coefficients.
+     * @param[in]  levels The number of decomposition levels.  Must be
+     *                    1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     * @throws cv::Exception If @pref{levels} is out of range.
      */
     void decompose(cv::InputArray image, Coeffs& coeffs, int levels) const;
 
     /**
      * @overload
+     *
+     * @equivalentto
+     * @code{cpp}
+     * decompose(image, max_reconstructable_levels(image));
+     * @endcode
      *
      * @param[in] image The image to be transformed.
      */
@@ -1470,20 +1485,23 @@ public:
     /**
      * @overload
      *
+     * @equivalentto
+     * @code{cpp}
+     * decompose(image, coeffs, max_reconstructable_levels(image));
+     * @endcode
+     *
      * @param[in]  image The image to be transformed.
-     * @param[out] coeffs The result of the discrete wavelet transformation.
+     * @param[out] coeffs The resulting DWT coefficients.
      */
     void decompose(cv::InputArray image, Coeffs& coeffs) const
     {
-        decompose(image, coeffs, max_levels_without_border_effects(image));
+        decompose(image, coeffs, max_reconstructable_levels(image));
     }
 
     /**
-     * @brief Reconstructs an image from DWT coefficients.
+     * @brief Performs an multiscale inverse DWT.
      *
-     * This performs an inverse multilevel discrete wavelet transformation.
-     *
-     * @param[in] coeffs
+     * @param[in] coeffs The DWT coefficients.
      */
     cv::Mat reconstruct(const Coeffs& coeffs) const
     {
@@ -1495,17 +1513,34 @@ public:
     /**
      * @overload
      *
-     * @param[in]  coeffs The discrete wavelet transform coefficients.
+     * @param[in]  coeffs The DWT coefficients.
      * @param[out] image The reconstructed image.
      */
     void reconstruct(const Coeffs& coeffs, cv::OutputArray image) const;
 
     /**
+     * @brief Creates an empty DWT2D::Coeffs object.
+     *
+     * @param[in] image_size The size of the reconstructed image.
+     * @param[in] levels The number of decomposition levels.  Must be
+     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     */
+    Coeffs create_empty_coeffs(
+        const cv::Size& image_size,
+        int levels
+    ) const;
+
+    /**
      * @brief Creates a DWT2D::Coeffs object.
      *
-     * @param[in] coeffs_matrix The initial discrete wavelet transform coefficients.
+     * @param[in] coeffs_matrix The DWT coefficients.
+     *                          Must have size equal to coeffs_size_for_image().
      * @param[in] image_size The size of the reconstructed image.
-     * @param[in] levels The number of levels.
+     * @param[in] levels The number of decomposition levels.  Must be
+     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     * @throws cv::Exception If @pref{levels} is out of range or
+     *                       @pref{coeffs_matrx,size(),DWT2D::Coeffs::size} and
+     *                       @pref{image_size} are incompatible.
      */
     Coeffs create_coeffs(
         cv::InputArray coeffs_matrix,
@@ -1514,40 +1549,15 @@ public:
     ) const;
 
     /**
-     * @brief Creates an empty DWT2D::Coeffs object.
-     *
-     * @param[in] image_size The size of the reconstructed image.
-     * @param[in] levels The number of levels.
-     */
-    Coeffs create_empty_coeffs(
-        const cv::Size& image_size,
-        int levels
-    ) const;
-
-    /**
      * @brief Creates a zero initialized DWT2D::Coeffs object.
      *
      * @param[in] image_size The size of the reconstructed image.
-     * @param[in] type The type of the reconstructed image.
-     * @param[in] levels The number of levels.
+     * @param[in] type The coefficients matrix type.
+     * @param[in] levels The number of decomposition levels.  Must be
+     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     * @throws cv::Exception If @pref{levels} is out of range.
      */
     Coeffs create_coeffs(const cv::Size& image_size, int type, int levels) const;
-
-    /**
-     * @overload
-     *
-     * @equivalentto
-     * @code{cpp}
-     * create_coeffs(image.size(), image.type(), levels);
-     * @endcode
-     *
-     * @param[in] image
-     * @param[in] levels
-     */
-    Coeffs create_coeffs(cv::InputArray image, int levels) const
-    {
-        return create_coeffs(image.size(), image.type(), levels);
-    }
 
     /**
      * @overload
@@ -1557,10 +1567,12 @@ public:
      * create_coeffs(cv::Size(image_cols, image_rows), type, levels);
      * @endcode
      *
-     * @param[in] image_rows
-     * @param[in] image_cols
-     * @param[in] type
-     * @param[in] levels
+     * @param[in] image_rows The number of rows in the reconstructed image.
+     * @param[in] image_cols The number of columns in the reconstructed image.
+     * @param[in] type The coefficients matrix type.
+     * @param[in] levels The number of decomposition levels.  Must be
+     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     * @throws cv::Exception If @pref{levels} is out of range.
      */
     Coeffs create_coeffs(int image_rows, int image_cols, int type, int levels) const
     {
@@ -1568,17 +1580,19 @@ public:
     }
 
     /**
-     * @brief Returns the size of the DWT2D::Coeffs required to perfectly represent the given image size.
-     *
+     * @brief Returns the size of the DWT2D::Coeffs that reconstruct an image of a given size.
+
      * Decomposing an image typically produces a coefficients matrix that is
      * larger than the image itself because the filter bank must extrapolate the
      * image along the border.
      *
-     * The size of the multiscale decomposition coefficients is a function
-     * of the input size, the number of levels, and the Wavelet::filter_length().
+     * The size of the decomposition coefficients is a function of the image
+     * size, the number of decomposition levels, and the Wavelet::filter_length().
      *
-     * @param[in] image_size
-     * @param[in] levels
+     * @param[in] image_size The size of the reconstructed image.
+     * @param[in] levels The number of decomposition levels.  Must be
+     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     * @throws cv::Exception If @pref{levels} is out of range.
      *
      * @see FilterBank::subband_size
      */
@@ -1592,8 +1606,10 @@ public:
      * coeffs_size_for_image(image.size(), levels);
      * @endcode
      *
-     * @param[in] image
-     * @param[in] levels
+     * @param[in] image The reconstructed image.
+     * @param[in] levels The number of decomposition levels.  Must be
+     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     * @throws cv::Exception If @pref{levels} is out of range.
      */
     cv::Size coeffs_size_for_image(cv::InputArray image, int levels) const
     {
@@ -1608,9 +1624,11 @@ public:
      * coeffs_size_for_image(cv::Size(image_cols, image_rows), levels);
      * @endcode
      *
-     * @param[in] image_rows
-     * @param[in] image_cols
-     * @param[in] levels
+     * @param[in] image_rows The number of rows in the reconstructed image.
+     * @param[in] image_cols The number of columns in the reconstructed image.
+     * @param[in] levels The number of decomposition levels.  Must be
+     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     * @throws cv::Exception If @pref{levels} is out of range.
      */
     cv::Size coeffs_size_for_image(int image_rows, int image_cols, int levels) const
     {
@@ -1618,37 +1636,83 @@ public:
     }
 
     /**
-     * @brief Returns the maximum number of decomposition levels possible while maintaining perfect reconstruction.
+     * @brief Returns the maximum number of decomposition levels that can be perfectly reconstructed.
      *
-     * @param[in] image_size
+     * @param[in] image_size The size of the image to be decomposed.
      */
-    int max_levels_without_border_effects(const cv::Size& image_size) const
+    int max_reconstructable_levels(const cv::Size& image_size) const;
+
+    /**
+     * @overload
+     *
+     * @equivalentto
+     * @code{cpp}
+     * max_reconstructable_levels(cv::Size(image_cols, image_rows));
+     * @endcode
+     *
+     * @param[in] image_rows The number of rows in the image to be decomposed.
+     * @param[in] image_cols The number of columns in the image to be decomposed.
+     */
+    int max_reconstructable_levels(int image_rows, int image_cols) const
     {
-        return max_levels_without_border_effects(image_size.height, image_size.width);
+        return max_reconstructable_levels(cv::Size(image_cols, image_rows));
     }
 
     /**
-     * @brief Returns the maximum number of decomposition levels possible while maintaining perfect reconstruction.
+     * @overload
      *
-     * @param[in] image_rows
-     * @param[in] image_cols
+     * @equivalentto
+     * @code{cpp}
+     * max_reconstructable_levels(image.size());
+     * @endcode
+     *
+     * @param[in] image The image to be decomposed.
      */
-    int max_levels_without_border_effects(int image_rows, int image_cols) const;
+    int max_reconstructable_levels(cv::InputArray image) const
+    {
+        return max_reconstructable_levels(image.size());
+    }
 
     /**
-     * @brief Returns the maximum number of decomposition levels possible while maintaining perfect reconstruction.
+     * @brief Returns the maximum number of decomposition levels for a given image size.
      *
-     * @param[in] image
+     * @param[in] image_size The size of the image to be decomposed.
      */
-    int max_levels_without_border_effects(cv::InputArray image) const
+    static int max_levels(const cv::Size& image_size);
+
+    /**
+     * @overload
+     *
+     * @equivalentto
+     * @code{cpp}
+     * max_levels(cv::Size(image_cols, image_rows));
+     * @endcode
+     *
+     * @param[in] image_rows The number of rows in the image to be decomposed.
+     * @param[in] image_cols The number of columns in the image to be decomposed.
+     */
+    static int max_levels(int image_rows, int image_cols)
     {
-        return max_levels_without_border_effects(image.size());
+        return max_levels(cv::Size(image_cols, image_rows));
+    }
+
+    /**
+     * @overload
+     *
+     * @equivalentto
+     * @code{cpp}
+     * max_levels(image.size());
+     * @endcode
+     *
+     * @param[in] image The image to be decomposed.
+     */
+    static int max_levels(cv::InputArray image)
+    {
+        return max_levels(image.size());
     }
 
     /**
      * @brief Two transforms are equal if their wavelets are equal and their border types are equal.
-     *
-     * @param other
      */
     bool operator==(const DWT2D& other) const
     {
@@ -1657,7 +1721,10 @@ public:
 private:
     //  Argument Checkers - these can be disabled by building with cmake
     //  option CVWT_ENABLE_DWT2D_EXCEPTIONS = OFF
-    void throw_if_levels_out_of_range(int levels) const CVWT_DWT2D_NOEXCEPT;
+    void throw_if_levels_out_of_range(
+        int levels,
+        const cv::Size& image_size
+    ) const CVWT_DWT2D_NOEXCEPT;
     void throw_if_inconsistent_coeffs_and_image_sizes(
         cv::InputArray coeffs,
         const cv::Size& image_size,
@@ -1701,7 +1768,7 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& coeffs);
 //  ----------------------------------------------------------------------------
 /** @{ DWT Functional API */
 /**
- * @brief Performs a two dimensional multiscale discrete wavelet transform.
+ * @brief Performs a two dimensional multiscale discrete wavelet transform (DWT).
  *
  * @equivalentto
  * @code{cpp}
@@ -1879,7 +1946,7 @@ void dwt2d(
 );
 
 /**
- * @brief Reconstructs an image from multiscale discrete wavelet transform coefficients.
+ * @brief Reconstructs an image from multiscale discrete wavelet transform (DWT) coefficients.
  *
  * @equivalentto
  * @code{cpp}

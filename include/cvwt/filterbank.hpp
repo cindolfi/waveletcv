@@ -92,26 +92,7 @@ private:
  * @param[in] highpass The highpass kernel coefficients.
  * @throws cv::Exception If the sizes and types are not equal.
  */
-KernelPair make_kernel_pair(cv::InputArray lowpass, cv::InputArray highpass)
-{
-    if (lowpass.size() != highpass.size()) {
-        throw_bad_size(
-            "Kernels must be the same size. ",
-            "Got lowpass.size() = ", lowpass.size(),
-            " and highpass.size() = ", highpass.size(), "."
-        );
-    }
-
-    if (lowpass.type() != highpass.type()) {
-        throw_bad_arg(
-            "Kernels must be the same type. ",
-            "Got lowpass.type() = ", internal::get_type_name(lowpass.type()),
-            " and highpass.type() = ", internal::get_type_name(highpass.type()), "."
-        );
-    }
-
-    return KernelPair(lowpass.getMat(), highpass.getMat());
-}
+KernelPair make_kernel_pair(cv::InputArray lowpass, cv::InputArray highpass);
 
 
 namespace internal
