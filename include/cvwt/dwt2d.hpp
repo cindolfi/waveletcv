@@ -120,13 +120,8 @@ class CoeffsExpr;
  * Alternatively, the image can be reconstructed using DWT2D::Coeffs::reconstruct().
  * @code{cpp}
  * cv::Mat reconstructed_image = coeffs.reconstruct();
- * @endcode
- * A third option is the functional interface.
- * @code{cpp}
- * cv::Mat reconstructed_image = idwt2d(coeffs, "db2");
- * @endcode
  *
- * @see FilterBank, dwt2d, idwt2d
+ * @see FilterBank, dwt2d
  */
 class DWT2D
 {
@@ -1781,7 +1776,7 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& coeffs);
  * @param[in] levels
  * @param[in] border_type
  *
- * @see DWT2D, idwt2d
+ * @see DWT2D
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -1805,7 +1800,7 @@ DWT2D::Coeffs dwt2d(
  * @param[in] levels
  * @param[in] border_type
  *
- * @see DWT2D, idwt2d
+ * @see DWT2D
  */
 void dwt2d(
     cv::InputArray image,
@@ -1849,7 +1844,7 @@ DWT2D::Coeffs dwt2d(
  * @param[in] levels
  * @param[in] border_type
  *
- * @see DWT2D, idwt2d
+ * @see DWT2D
  */
 void dwt2d(
     cv::InputArray image,
@@ -1872,7 +1867,7 @@ void dwt2d(
  * @param[in] wavelet
  * @param[in] border_type
  *
- * @see DWT2D, idwt2d
+ * @see DWT2D
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -1894,7 +1889,7 @@ DWT2D::Coeffs dwt2d(
  * @param[in] wavelet
  * @param[in] border_type
  *
- * @see DWT2D, idwt2d
+ * @see DWT2D
  */
 void dwt2d(
     cv::InputArray image,
@@ -1915,7 +1910,7 @@ void dwt2d(
  * @param[in] wavelet
  * @param[in] border_type
  *
- * @see DWT2D, idwt2d
+ * @see DWT2D
  */
 DWT2D::Coeffs dwt2d(
     cv::InputArray image,
@@ -1936,97 +1931,11 @@ DWT2D::Coeffs dwt2d(
  * @param[in] wavelet
  * @param[in] border_type
  *
- * @see DWT2D, idwt2d
+ * @see DWT2D
  */
 void dwt2d(
     cv::InputArray image,
     DWT2D::Coeffs& coeffs,
-    const std::string& wavelet,
-    cv::BorderTypes border_type=cv::BORDER_DEFAULT
-);
-
-/**
- * @brief Reconstructs an image from multiscale discrete wavelet transform (DWT) coefficients.
- *
- * @equivalentto
- * @code{cpp}
- * DWT2D dwt(wavelet, border_type);
- * return dwt.reconstruct(coeffs);
- * @endcode
- *
- * @param[in] coeffs
- * @param[in] wavelet
- * @param[in] border_type
- *
- * @see DWT2D, dwt2d
- */
-cv::Mat idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    const Wavelet& wavelet,
-    cv::BorderTypes border_type=cv::BORDER_DEFAULT
-);
-
-/**
- * @overload
- *
- * @equivalentto
- * @code{cpp}
- * DWT2D dwt(wavelet, border_type);
- * dwt.reconstruct(coeffs, output);
- * @endcode
- *
- * @param[in] coeffs
- * @param[out] image
- * @param[in] wavelet
- * @param[in] border_type
- *
- * @see DWT2D, dwt2d
- */
-void idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    cv::OutputArray image,
-    const Wavelet& wavelet,
-    cv::BorderTypes border_type=cv::BORDER_DEFAULT
-);
-
-/**
- * @overload
- *
- * @equivalentto
- * @code{cpp}
- * idwt2d(coeffs, Wavelet::create(wavelet), border_type);
- * @endcode
- *
- * @param[in] coeffs
- * @param[in] wavelet
- * @param[in] border_type
- *
- * @see DWT2D, dwt2d
- */
-cv::Mat idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    const std::string& wavelet,
-    cv::BorderTypes border_type=cv::BORDER_DEFAULT
-);
-
-/**
- * @overload
- *
- * @equivalentto
- * @code{cpp}
- * idwt2d(coeffs, output, Wavelet::create(wavelet), border_type);
- * @endcode
- *
- * @param[in] coeffs
- * @param[out] image
- * @param[in] wavelet
- * @param[in] border_type
- *
- * @see DWT2D, dwt2d
- */
-void idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    cv::OutputArray image,
     const std::string& wavelet,
     cv::BorderTypes border_type=cv::BORDER_DEFAULT
 );

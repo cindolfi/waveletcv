@@ -1165,44 +1165,5 @@ void dwt2d(
 {
     dwt2d(image, coeffs, Wavelet::create(wavelet), levels, border_type);
 }
-
-cv::Mat idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    const Wavelet& wavelet,
-    cv::BorderTypes border_type
-)
-{
-    return DWT2D(wavelet, border_type).reconstruct(coeffs);
-}
-
-cv::Mat idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    const std::string& wavelet,
-    cv::BorderTypes border_type
-)
-{
-    return idwt2d(coeffs, Wavelet::create(wavelet), border_type);
-}
-
-void idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    cv::OutputArray image,
-    const Wavelet& wavelet,
-    cv::BorderTypes border_type
-)
-{
-    DWT2D(wavelet, border_type).reconstruct(coeffs, image);
-}
-
-void idwt2d(
-    const DWT2D::Coeffs& coeffs,
-    cv::OutputArray image,
-    const std::string& wavelet,
-    cv::BorderTypes border_type
-)
-{
-    idwt2d(coeffs, image, Wavelet::create(wavelet), border_type);
-}
-
 } // namespace cvwt
 
