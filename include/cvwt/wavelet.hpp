@@ -21,6 +21,9 @@ enum class Symmetry {
     ASYMMETRIC,
 };
 
+/**
+ * @brief The degree of Wavelet orthogonality.
+ */
 enum class Orthogonality {
     ORTHOGONAL,
     BIORTHOGONAL,
@@ -29,12 +32,13 @@ enum class Orthogonality {
     NONE,
 };
 
+
 /**
- * @brief A Wavelet.
+ * @brief A %Wavelet.
  *
  * Predefined Wavelets
  * ===================
- * The following predefined wavelets can be constructed using the indicated
+ * The following predefined wavelets can be constructed by the indicated
  * factory or by create() using one of the indicated names.
  *  - Haar
  *      - Factory: create_haar()
@@ -75,8 +79,8 @@ enum class Orthogonality {
  * using FilterBank::is_symmetric().  Only Symmetry::SYMMETRIC can be inferred.
  * Symmetry::NEARLY_SYMMETRIC cannot be inferred and must be set explicity.
  *
- * Support For Constructing Custom Wavelets By Name
- * ------------------------------------------------
+ * Constructing Custom Wavelets By Name
+ * ------------------------------------
  * Providing support for creating custom wavelets by name is straight forward -
  * simply implement a wavelet factory and register each possible parameter set
  * with register_factory().
@@ -86,53 +90,25 @@ enum class Orthogonality {
  * for (int order = 1; order < 39; ++order)
  *     Wavelet::register_factory(create_daubechies, order);
  * @endcode
- * Under the hood, std::bind_front() binds `order` to create_daubechies().
- * The name() of the Wavelet returned by the bound factory is then mapped to the
- * bound factory for use by create().
+ * And creating a 4th order Daubechies wavelet by name is done with
  * @code{cpp}
- * // Create a 4th order Daubechies wavelet
  * Wavelet db4_wavelet = Wavelet::create("db4");
  * @endcode
- * Use this approach whenever the wavelet name() **uniquely** identifies an
- * **entire** set of factory parameters.
+ * Under the hood, std::bind() binds `order` to create_daubechies()
+ * and uses the name() of the wavelet (e.g. "db1") as the factory name.
  *
- * Use the register_factory() overload that takes a factory %name whenever the
- * wavelet name() does not uniquely determine the filter_bank() or the factory
- * depends on unbound parameters provided at creation (i.e. the factory name is
- * associated to some, but not all, factory parameters).
+ * Use this approach whenever the wavelet name() *uniquely* identifies an
+ * *entire* set of factory parameters.
+ * If, however, it is impossible or inpractical to enumerate all possible sets
+ * of factory parameters, or the wavelet name() does not uniquely identify the
+ * filter_bank(), use the version of
+ * @ref register_factory(const std::string& name, Wavelet factory(BoundArgs..., CallArgs...), const BoundArgs&... args) "register_factory()"
+ * that takes a factory name and registers a factory that accepts unbound
+ * parameters at creation.
  *
- * Consider a case where the filter bank is determined by an `order` and some
- * `extra_param`, but the factory %name only depends on the `order`.
- * @code{cpp}
- * FilterBank create_my_wavelet_filter_bank(int order, float extra_param)
- * {
- *     return FilterBank(...);
- * }
- *
- * // Define a wavelet factory
- * Wavelet create_my_wavelet(int order, float extra_param)
- * {
- *     return Wavelet(
- *         create_my_wavelet_filter_bank(order, extra_param),
- *         "my" + std::to_string(order), // name
- *         "MyFamily" // family
- *     );
- * }
- *
- * // Register factories for orders 1, 2, 3, and 4
- * Wavelet::register_factory("my1", create_my_wavelet, 1);
- * Wavelet::register_factory("my2", create_my_wavelet, 2);
- * Wavelet::register_factory("my3", create_my_wavelet, 3);
- * Wavelet::register_factory("my4", create_my_wavelet, 4);
- *
- * // Create a 4th order MyFamily wavelet using extra_param = 6.0
- * Wavelet my4_wavelet = Wavelet::create("my4", 6.0);
- *
- * // Create a 2nd order MyFamily wavelet using extra_param = -4.0
- * Wavelet my2_wavelet = Wavelet::create("my2", -4.0);
- * @endcode
- * Note that in this case the name() of the wavelet returned by
- * create() may or may not be equal to the factory %name.
+ * @note Wavelet objects are designed to be allocated on the stack and should
+ *       **not** be created with `new`.  They contain a single std::shared_ptr,
+ *       making copying and moving an inexpensive operation.
  */
 class Wavelet
 {
@@ -273,12 +249,12 @@ public:
     }
 
     /**
-     * @brief Returns the degree of symmetry of the filter.
+     * @brief The degree of wavelet symmetry.
      */
     Symmetry symmetry() const { return _p->symmetry; }
 
     /**
-     * @brief Returns the degree of symmetry of the filter.
+     * @brief Returns true if wavelet is symmetric.
      */
     bool is_symmetric() const { return _p->symmetry == Symmetry::SYMMETRIC; }
 
@@ -298,7 +274,7 @@ public:
     FilterBank filter_bank() const { return _p->filter_bank; }
 
     /**
-     * @brief The length of the wavelet's filter kernel.
+     * @brief The length of the filter bank kernels.
      */
     int filter_length() const { return _p->filter_bank.filter_length(); }
 
@@ -331,21 +307,26 @@ public:
     }
 
     /**
-     * @brief Returns a collection of wavelet names that can be used with create().
+     * @brief The set of names that are accepted by create().
      */
     static std::set<std::string> available_wavelets();
 
     /**
      * @brief Register a Wavelet factory for use by create().
      *
-     * This function is used to add support for creating custom wavelets by name.
+     * @note Use this overload when all sets of factory parameters can be
+     *       enumerated and the wavelet name() uniquely determines the
+     *       filter_bank().  Otherwise, use
+     *       @ref register_factory(const std::string& name, Wavelet factory(BoundArgs..., CallArgs...), const BoundArgs&... args) "register_factory()"
+     *       instead.
      *
-     * The registered factory function used by create() is
-     * <code>std::bind_front(@pref{factory}, @pref{args}...))</code>.
-     * The registered factory name is the name() of the wavelet created by the
-     * bound factory.
+     * The registered factory function is
+     * <code>std::bind(@pref{factory}, @pref{args}...))</code> and the
+     * registered factory name is the name() of the wavelet created by the bound
+     * factory.
      *
-     * For example:
+     * Consider an example where the filter bank is determined by an `order`
+     * that can be 2, 3, or 4.
      * @code{cpp}
      * // Define a factory function that returns a Wavelet whose name depends on order.
      * Wavelet create_my_custom_wavelet(int order)
@@ -369,6 +350,7 @@ public:
      *
      * @param[in] factory A callable that creates a Wavelet object.
      * @param[in] args All of the arguments passed to @pref{factory}.
+     * @throws cv::Exception If a factory with the same name is already registered.
      */
     template <typename... BoundArgs>
     static void register_factory(
@@ -382,39 +364,50 @@ public:
     }
 
     /**
-     * @brief Register a Wavelet factory for use by create().
      *
-     * This function is used to add support for creating custom wavelets by name.
+     * @overload
      *
-     * The registered factory function used by create() is
+     * @note Use this overload when it is impossible or inpractical to enumerate
+     *       all sets of factory parameters, or when the wavelet name() does not
+     *       uniquely determine the filter_bank().  Otherwise, use
+     *       @ref register_factory(Wavelet factory(BoundArgs...), const BoundArgs&... args) "register_factory()"
+     *       instead.
+     *
+     * The registered factory function is
      * <code>std::bind_front(@pref{factory}, @pref{args}...))</code>.
      *
-     * For example:
+     * Consider an example where the filter bank is determined by an `order`
+     * that can be 2, 3, or 4 and a floating point `extra_param`.  Since
+     * `extra_param` cannot be enumerated, the the factory name only depends on
+     * the `order`.
      * @code{cpp}
-     * // Define a factory function that returns a Wavelet whose name depends on order,
-     * // but not on another_param.
-     * Wavelet create_my_custom_wavelet(int order, float another_param)
+     * // Define a wavelet factory.
+     * Wavelet create_my_wavelet(int order, float extra_param)
      * {
-     *     // Compute or lookup filter bank based on order and another_param.
+     *     // Compute or lookup filter bank based on order and extra_param.
      *     FilterBank filter_bank = ...;
-     *     std::string name = "my" + std::to_string(order);
-     *     std::string family = "My Wavelet";
+     *     std::string name = "my" + std::to_string(order) + "_" + std::to_string(extra_param);
+     *     std::string family = "MyFamily"
      *
      *     return Wavelet(filter_bank, name, family);
      * }
      *
-     * // Register a factory for each possible set of bound factory arguments.
-     * Wavelet::register_factory("my2", create_my_custom_wavelet, 2);
-     * Wavelet::register_factory("my3", create_my_custom_wavelet, 3);
-     * Wavelet::register_factory("my4", create_my_custom_wavelet, 4);
+     * // Register factories for orders 2, 3, and 4.
+     * Wavelet::register_factory("my2", create_my_wavelet, 2);
+     * Wavelet::register_factory("my3", create_my_wavelet, 3);
+     * Wavelet::register_factory("my4", create_my_wavelet, 4);
      *
-     * // Create a 2nd order wavelet by providing the unbound parameters.
-     * Wavelet my2_wavelet = Wavelet::create("my2", 4.0);
+     * // Create two 4th order wavelets.
+     * // The first uses extra_param = 6.0 and the second uses extra_param = 4.0.
+     * Wavelet my4_wavelet1 = Wavelet::create("my4", 6.0);
+     * Wavelet my4_wavelet2 = Wavelet::create("my4", 4.0);
      * @endcode
+     * Note that in this case the wavelet name() and the factory name are different.
      *
      * @param[in] name The name of the wavelet factory.
      * @param[in] factory A callable that creates a Wavelet object.
      * @param[in] args The front arguments passed to @pref{factory}.
+     * @throws cv::Exception If a factory with the same name is already registered.
      */
     template <typename... BoundArgs, typename... CallArgs>
     static void register_factory(
@@ -494,44 +487,51 @@ std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
  * @{
  */
 /**
- * @brief Create a Haar Wavelet.
+ * @brief Creates a Haar Wavelet.
  */
 Wavelet create_haar();
 
 /**
- * @brief Create a Daubechies Wavelet.
+ * @brief Creates a Daubechies Wavelet.
  *
  * @param[in] order The order of the wavelet.  Must be 2 <= order <= 38.
+ * @throws cv::Exception If @pref{order} is invalid.
  */
 Wavelet create_daubechies(int order);
 
 /**
- * @brief Create a Symlets Wavelet.
+ * @brief Creates a Symlets Wavelet.
  *
  * @param[in] order The order of the wavelet.  Must be 2 <= order <= 20.
+ * @throws cv::Exception If @pref{order} is invalid.
  */
 Wavelet create_symlets(int order);
 
 /**
- * @brief Create a Coiflets Wavelet.
+ * @brief Creates a Coiflets Wavelet.
  *
  * @param[in] order The order of the wavelet.  Must be 1 <= order <= 17.
+ * @throws cv::Exception If @pref{order} is invalid.
  */
 Wavelet create_coiflets(int order);
 
 /**
- * @brief Create a Biorthogonal Wavelet.
+ * @brief Creates a Biorthogonal Wavelet.
  *
  * @param[in] wavelet_vanishing_moments The number of vanishing moments of the wavelet function.
  * @param[in] scaling_vanishing_moments The number of vanishing moments of the scaling function.
+ * @throws cv::Exception If @pref{wavelet_vanishing_moments} and
+ *                       @pref{scaling_vanishing_moments} are an invalid pair.
  */
 Wavelet create_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments);
 
 /**
- * @brief Create a Reverse Biorthogonal Wavelet.
+ * @brief Creates a Reverse Biorthogonal Wavelet.
  *
  * @param[in] wavelet_vanishing_moments The number of vanishing moments of the wavelet function.
  * @param[in] scaling_vanishing_moments The number of vanishing moments of the scaling function.
+ * @throws cv::Exception If @pref{wavelet_vanishing_moments} and
+ *                       @pref{scaling_vanishing_moments} are an invalid pair.
  */
 Wavelet create_reverse_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments);
 /** @}*/

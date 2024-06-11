@@ -372,6 +372,12 @@ FilterBankImpl::FilterBankImpl(
         decompose_lowpass,
         decompose_highpass
     );
+    throw_if_wrong_type(
+        reconstruct_lowpass,
+        reconstruct_highpass,
+        decompose_lowpass,
+        decompose_highpass
+    );
 
     cv::flip(as_column_vector(decompose_lowpass), decompose.lowpass, -1);
     cv::flip(as_column_vector(decompose_highpass), decompose.highpass, -1);
@@ -497,6 +503,31 @@ void FilterBankImpl::throw_if_wrong_size(
                 " and reconstruct_highpass.channels() = ", reconstruct_highpass.channels(), "."
             );
         }
+    }
+#endif
+}
+
+inline
+void FilterBankImpl::throw_if_wrong_type(
+    const cv::Mat& reconstruct_lowpass,
+    const cv::Mat& reconstruct_highpass,
+    const cv::Mat& decompose_lowpass,
+    const cv::Mat& decompose_highpass
+) const CVWT_FILTER_BANK_NOEXCEPT
+{
+#if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
+    bool all_same_type = decompose_lowpass.type() == decompose_highpass.type()
+        && decompose_lowpass.type() == reconstruct_lowpass.type()
+        && decompose_lowpass.type() == reconstruct_highpass.type();
+
+    if (!all_same_type) {
+        throw_bad_arg(
+            "FilterBank: Kernels must all be the same type. Got ",
+            "reconstruct_lowpass.type() = ", get_type_name(reconstruct_lowpass.type()), ", ",
+            "reconstruct_highpass.type() = ", get_type_name(reconstruct_highpass.type()), ",  ",
+            "decompose_lowpass.type() = ", get_type_name(decompose_lowpass.type()), ", and ",
+            "decompose_highpass.type() = ", get_type_name(decompose_highpass.type()), "."
+        );
     }
 #endif
 }

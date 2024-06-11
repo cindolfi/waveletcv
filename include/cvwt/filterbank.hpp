@@ -11,7 +11,7 @@
 namespace cvwt
 {
 /**
- * @brief FilterBank Detail Subband Identifiers.
+ * @brief FilterBank detail subband identifiers.
  */
 enum DetailSubband {
     /** Lowpass - Highpass Subband */
@@ -31,7 +31,7 @@ public:
     /**
      * @brief Construct a pair of empty kernels.
      */
-    KernelPair() :
+    KernelPair() noexcept:
         _lowpass(0, 0, CV_64F),
         _highpass(0, 0, CV_64F)
     {}
@@ -39,30 +39,17 @@ public:
     /**
      * @brief Construct a pair of kernels.
      *
-     * The two kernels must be the same size and type.
+     * The two kernels are assumed to be the same size and type.
      *
-     * @param[in] lowpass
-     * @param[in] highpass
+     * @param[in] lowpass The lowpass kernel coefficients.
+     * @param[in] highpass The highpass kernel coefficients.
+     *
+     * @see make_kernel_pair
      */
-    KernelPair(const cv::Mat& lowpass, const cv::Mat& highpass) :
+    KernelPair(const cv::Mat& lowpass, const cv::Mat& highpass) noexcept:
         _lowpass(lowpass),
         _highpass(highpass)
-    {
-        if (lowpass.size() != highpass.size()) {
-            throw_bad_size(
-                "Kernels must be the same size. ",
-                "Got lowpass.size() = ", lowpass.size(),
-                " and highpass.size() = ", highpass.size(), "."
-            );
-        }
-        if (lowpass.type() != highpass.type()) {
-            throw_bad_arg(
-                "Kernels must be the same type. ",
-                "Got lowpass.type() = ", internal::get_type_name(lowpass.type()),
-                " and highpass.type() = ", internal::get_type_name(highpass.type()), "."
-            );
-        }
-    }
+    {}
 
     /**
      * @brief The lowpass kernel coefficients.
@@ -80,12 +67,12 @@ public:
     bool empty() const { return _lowpass.empty(); }
 
     /**
-     * @brief The element type.
+     * @brief The coefficient data type.
      */
     int type() const { return _lowpass.type(); }
 
     /**
-     * @brief The depth of the element type.
+     * @brief The depth of the coefficient data type.
      */
     int depth() const { return _lowpass.depth(); }
 
@@ -97,6 +84,34 @@ private:
     cv::Mat _lowpass;
     cv::Mat _highpass;
 };
+
+/**
+ * @brief Creates a KernelPair
+ *
+ * @param[in] lowpass The lowpass kernel coefficients.
+ * @param[in] highpass The highpass kernel coefficients.
+ * @throws cv::Exception If the sizes and types are not equal.
+ */
+KernelPair make_kernel_pair(cv::InputArray lowpass, cv::InputArray highpass)
+{
+    if (lowpass.size() != highpass.size()) {
+        throw_bad_size(
+            "Kernels must be the same size. ",
+            "Got lowpass.size() = ", lowpass.size(),
+            " and highpass.size() = ", highpass.size(), "."
+        );
+    }
+
+    if (lowpass.type() != highpass.type()) {
+        throw_bad_arg(
+            "Kernels must be the same type. ",
+            "Got lowpass.type() = ", internal::get_type_name(lowpass.type()),
+            " and highpass.type() = ", internal::get_type_name(highpass.type()), "."
+        );
+    }
+
+    return KernelPair(lowpass.getMat(), highpass.getMat());
+}
 
 
 namespace internal
@@ -193,7 +208,12 @@ struct FilterBankImpl
         const cv::Mat& decompose_lowpass,
         const cv::Mat& decompose_highpass
     ) const CVWT_FILTER_BANK_NOEXCEPT;
-
+    void throw_if_wrong_type(
+        const cv::Mat& reconstruct_lowpass,
+        const cv::Mat& reconstruct_highpass,
+        const cv::Mat& decompose_lowpass,
+        const cv::Mat& decompose_highpass
+    ) const CVWT_FILTER_BANK_NOEXCEPT;
 
     int filter_length;
     DecomposeKernels decompose;
@@ -207,15 +227,14 @@ struct FilterBankImpl
 /**
  * @brief Two dimensional discrete wavelet transform filter bank.
  *
- * This class is used as a building block to implement two dimensional multiscale
- * discrete wavelet transforms.
+ * This class is used as a building block to implement two dimensional
+ * multiscale discrete wavelet transforms.
  * It provides both the decomposition (i.e. analysis) and reconstruction
  * (i.e. synthesis) transformations at a single spatial scale.
  *
- * Decomposition is a cascade of two stages where each
- * stage consists of a lowpass filter \f$g_d[n]\f$ and a highpass
- * filter \f$h_d[n]\f$, each of which is followed by downsampling by
- * two.
+ * Decomposition is a two stage cascade where each stage is a two channel
+ * filter bank consisting of a lowpass filter \f$g_d[n]\f$ and a highpass filter
+ * \f$h_d[n]\f$.  At each stage, both channels are downsampled by a factor of two.
  * The first stage convolves along rows and downsamples columns.
  * The second stage convolves along columns and downsamples rows.
  * This results in four outputs:
@@ -229,6 +248,10 @@ struct FilterBankImpl
  * kernels \f$g_r[n]\f$ and \f$h_r[n]\f$, and upsamples
  * instead of downsampling.
  * @image html reconstruct_filter_bank.png "Reconstruction Block Diagram"
+ *
+ * @note FilterBank objects are designed to be allocated on the stack and should
+ *       **not** be created with `new`.  They contain a single std::shared_ptr,
+ *       making copying and moving an inexpensive operation.
  */
 class FilterBank
 {
@@ -264,13 +287,18 @@ public:
      * @brief Construct an empty filter bank.
      */
     FilterBank();
+
     /**
      * @brief Construct a new filter bank.
      *
-     * @param[in] decompose_lowpass
-     * @param[in] decompose_highpass
-     * @param[in] reconstruct_lowpass
-     * @param[in] reconstruct_highpass
+     * @param[in] decompose_lowpass The decomposition lowpass filter kernel \f$g_d[n]\f$.
+     * @param[in] decompose_highpass The decomposition highpass filter kernel \f$h_d[n]\f$.
+     * @param[in] reconstruct_lowpass The reconstruction lowpass filter kernel \f$g_r[n]\f$.
+     * @param[in] reconstruct_highpass The reconstruction highpass filter kernel \f$h_r[n]\f$.
+     * @throws cv::Exception If
+     *  - The decomposition kernels are not vectors of the same size
+     *  - The reconstruction kernels are not vectors of the same size
+     *  - All of the kernels are not the same type
      */
     FilterBank(
         const cv::Mat& decompose_lowpass,
@@ -278,40 +306,16 @@ public:
         const cv::Mat& reconstruct_lowpass,
         const cv::Mat& reconstruct_highpass
     );
+
     /**
      * @brief Copy Constructor.
      */
     FilterBank(const FilterBank& other) = default;
+
     /**
      * @brief Move Constructor.
      */
     FilterBank(FilterBank&& other) = default;
-
-    /**
-     * @brief Returns true if the filter kernels are empty.
-     *
-     * @see cv::Mat::empty
-     */
-    bool empty() const { return _p->decompose.empty(); }
-
-    /**
-     * @brief Returns the filter kernels data type depth.
-     *
-     * @see cv::Mat::depth
-     */
-    int depth() const { return _p->decompose.depth(); }
-
-    /**
-     * @brief Returns the filter kernels data type.
-     *
-     * @see cv::Mat::type
-     */
-    int type() const { return _p->decompose.type(); }
-
-    /**
-     * @brief Returns maximum number of kernel coefficients.
-     */
-    int filter_length() const { return _p->filter_length; }
 
     /**
      * @brief The decomposition kernels.
@@ -324,77 +328,30 @@ public:
     KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
 
     /**
-     * @brief Two filter banks are equal if their decompose_kernels() are equal and their reconstruct_kernels() are equal.
+     * @brief Returns true if the filter kernels are empty.
+     *
+     * @see cv::Mat::empty
      */
-    bool operator==(const FilterBank& other) const;
-    friend std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
+    bool empty() const { return _p->decompose.empty(); }
 
     /**
-     * @brief Decompose an image.
+     * @brief The depth of the filter kernels data type.
      *
-     * The outputs will all have the same number of channels as the input image
-     * and depth equal to
-     * <code>std::max(@pref{image,depth(),cv::Mat::depth}, depth())</code>.
-     *
-     * The size of each output will be equal to subband_size().
-     * Because full convolution requires extrapolating the image by
-     * the filter_length() - 1 on all sides, the size of the outputs will
-     * generally be larger than half the @pref{image.size()}.
-     *
-     * @param[in] image The image to decompose. This can be any type, single channel or multichannel.
-     * @param[out] approx The approximation subband coefficients.
-     * @param[out] horizontal_detail The horizontal detail subband coefficients.
-     * @param[out] vertical_detail The vertical detail subband coefficients.
-     * @param[out] diagonal_detail The diagonal detail subband coefficients.
-     * @param[in] border_type The border extrapolation method.
-     * @param[in] border_value The border extrapolation value if
-     *                         @pref{border_type} is cv::BORDER_CONSTANT.
+     * @see cv::Mat::depth
      */
-    void decompose(
-        cv::InputArray image,
-        cv::OutputArray approx,
-        cv::OutputArray horizontal_detail,
-        cv::OutputArray vertical_detail,
-        cv::OutputArray diagonal_detail,
-        int border_type=cv::BORDER_DEFAULT,
-        const cv::Scalar& border_value=cv::Scalar()
-    ) const;
+    int depth() const { return _p->decompose.depth(); }
 
     /**
-     * @brief Reconstruct an image.
+     * @brief The filter kernels data type.
      *
-     * The coefficients @pref{approx}, @pref{horizontal_detail},
-     * @pref{vertical_detail}, and @pref{diagonal_detail} must all be the same
-     * size, same depth, and have the same number of channels.  If not, an
-     * execption is thrown.
-     *
-     * The output image will have the same number of channels as the
-     * coefficients and depth equal to
-     * <code>std::max(@pref{approx,depth(),cv::Mat::depth}, depth())</code>.
-     *
-     * The @pref{image_size} of the reconstructed image is used to discard the
-     * exptrapolated border added by decompose().
-     * It must be explicitly provided because it cannot be inferred from the
-     * size of the coefficient subbands due to *potential* integer truncation
-     * incurred by the downsampling operation in decompose().
-     *
-     * @param[in] approx The approximation subband coefficients.
-     * @param[in] horizontal_detail The horizontal detail subband coefficients.
-     * @param[in] vertical_detail The vertical detail subband coefficients.
-     * @param[in] diagonal_detail The diagonal detail subband coefficients.
-     * @param[out] image The reconstructed image.
-     * @param[in] image_size The size of the reconstructed image.
-     *                       This must be the size of the image passed to
-     *                       decompose().
+     * @see cv::Mat::type
      */
-    void reconstruct(
-        cv::InputArray approx,
-        cv::InputArray horizontal_detail,
-        cv::InputArray vertical_detail,
-        cv::InputArray diagonal_detail,
-        cv::OutputArray image,
-        const cv::Size& image_size
-    ) const;
+    int type() const { return _p->decompose.type(); }
+
+    /**
+     * @brief The length of the filter kernels.
+     */
+    int filter_length() const { return _p->filter_length; }
 
     /**
      * @brief Returns the size of each subband for the given image size.
@@ -402,12 +359,6 @@ public:
      * @param[in] image_size The size of the decomposed/reconstructed image.
      */
     cv::Size subband_size(const cv::Size& image_size) const;
-
-    /**
-     * @brief Swaps and flips the decomposition and reconstruction kernels.
-     */
-    [[nodiscard]]
-    FilterBank reverse() const;
 
     /**
      * @brief Returns true if this filter bank defines an orthogonal wavelet.
@@ -478,6 +429,91 @@ public:
      */
     bool is_linear_phase() const;
 
+    /**
+     * @brief Decompose an image.
+     *
+     * The outputs will all have the same number of channels as the input image
+     * and depth equal to
+     * <code>std::max(@pref{image,depth(),cv::Mat::depth}, depth())</code>.
+     *
+     * The size of each output will be equal to subband_size().
+     * Because full convolution requires extrapolating the image by
+     * the filter_length() - 1 on all sides, the size of the outputs will
+     * generally be larger than half the @pref{image.size()}.
+     *
+     * @param[in] image The image to decompose. This can be any type, single channel or multichannel.
+     * @param[out] approx The approximation subband coefficients.
+     * @param[out] horizontal_detail The horizontal detail subband coefficients.
+     * @param[out] vertical_detail The vertical detail subband coefficients.
+     * @param[out] diagonal_detail The diagonal detail subband coefficients.
+     * @param[in] border_type The border extrapolation method.
+     * @param[in] border_value The border extrapolation value if
+     *                         @pref{border_type} is cv::BORDER_CONSTANT.
+     * @throws cv::Exception If the width or height of the @pref{image} is less
+     *                       than or equal to one.
+     */
+    void decompose(
+        cv::InputArray image,
+        cv::OutputArray approx,
+        cv::OutputArray horizontal_detail,
+        cv::OutputArray vertical_detail,
+        cv::OutputArray diagonal_detail,
+        int border_type=cv::BORDER_DEFAULT,
+        const cv::Scalar& border_value=cv::Scalar()
+    ) const;
+
+    /**
+     * @brief Reconstruct an image.
+     *
+     * The coefficients @pref{approx}, @pref{horizontal_detail},
+     * @pref{vertical_detail}, and @pref{diagonal_detail} must all be the same
+     * size, same depth, and have the same number of channels.  If not, an
+     * execption is thrown.
+     *
+     * The output image will have the same number of channels as the
+     * coefficients and depth equal to
+     * <code>std::max(@pref{approx,depth(),cv::Mat::depth}, depth())</code>.
+     *
+     * The @pref{image_size} of the reconstructed image is used to discard the
+     * exptrapolated border added by decompose().
+     * It must be explicitly provided because it cannot be inferred from the
+     * size of the coefficient subbands due to *potential* integer truncation
+     * incurred by the downsampling operation in decompose().
+     *
+     * @param[in] approx The approximation subband coefficients.
+     * @param[in] horizontal_detail The horizontal detail subband coefficients.
+     * @param[in] vertical_detail The vertical detail subband coefficients.
+     * @param[in] diagonal_detail The diagonal detail subband coefficients.
+     * @param[out] image The reconstructed image.
+     * @param[in] image_size The size of the reconstructed image.
+     *                       This must be the size of the image passed to
+     *                       decompose().
+     * @throws cv::Exception If @pref{approx}, @pref{horizontal_detail},
+     *                       @pref{vertical_detail}, and @pref{diagonal_detail}
+     *                       are not the same size or do not have the same
+     *                       number of channels.
+     */
+    void reconstruct(
+        cv::InputArray approx,
+        cv::InputArray horizontal_detail,
+        cv::InputArray vertical_detail,
+        cv::InputArray diagonal_detail,
+        cv::OutputArray image,
+        const cv::Size& image_size
+    ) const;
+
+    /**
+     * @brief Swaps and flips the decomposition and reconstruction kernels.
+     */
+    [[nodiscard]]
+    FilterBank reverse() const;
+
+    /**
+     * @brief Two filter banks are equal if their decompose_kernels() are equal and their reconstruct_kernels() are equal.
+     */
+    bool operator==(const FilterBank& other) const;
+    friend std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
+
     /**@{*/
     /**
      * @brief Creates an orthogonal wavelet filter bank.
@@ -491,6 +527,8 @@ public:
      * \f}
      *
      * The resulting filter bank is_orthogonal().
+     *
+     * @note This function clones @pref{reconstruct_lowpass_kernel}.
      *
      * @param[in] reconstruct_lowpass_kernel The reconstruction lowpass kernel \f$g_r[n]\f$.
      */
@@ -510,6 +548,9 @@ public:
      *
      * The resulting filter bank is_biorthogonal().
      *
+     * @note This function clones @pref{decompose_lowpass_kernel} and
+     *       @pref{reconstruct_lowpass_kernel}.
+     *
      * @param[in] reconstruct_lowpass_kernel The reconstruction lowpass kernel \f$g_r[n]\f$.
      * @param[in] decompose_lowpass_kernel The decomposition lowpass kernel \f$g_d[n]\f$.
      */
@@ -519,11 +560,9 @@ public:
     );
     /**@}*/
 
-    /**
-     * @private
-     */
+    /** @private */
     int promote_type(int type) const;
-protected:
+private:
     void extrapolate_border(
         cv::InputArray image,
         cv::OutputArray output,
@@ -563,7 +602,7 @@ protected:
     static bool is_symmetric(cv::InputArray kernel);
 
     /**
-     * @brief Returns true if the kernel is antsymmetric
+     * @brief Returns true if the kernel is antsymmetric.
      *
      * @param kernel
      */
@@ -614,7 +653,6 @@ protected:
         const KernelPair& reconstruct_kernels
     );
 
-private:
     //  Argument Checkers - these can be disabled by building with cmake
     //  option CVWT_FILTER_BANK_EXCEPTIONS_ENABLED = OFF
     void throw_if_decompose_image_is_wrong_size(
