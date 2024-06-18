@@ -68,7 +68,7 @@ struct Threshold
     ) const
     {
         assert(input.channels() == CHANNELS);
-        throw_if_bad_mask_type(mask);
+        throw_if_bad_mask_for_array(input, mask, AllowedMaskChannels::SINGLE);
 
         output.create(input.size(), input.type());
         auto mask_matrix = mask.getMat();

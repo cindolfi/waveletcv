@@ -48,7 +48,6 @@ cv::Scalar UniversalShrinker::compute_universal_threshold(
     const cv::Scalar& stdev
 )
 {
-    throw_if_bad_mask_depth(mask);
     throw_if_bad_mask_for_array(detail_coeffs, mask, AllowedMaskChannels::SINGLE_OR_SAME);
 
     return compute_universal_threshold(

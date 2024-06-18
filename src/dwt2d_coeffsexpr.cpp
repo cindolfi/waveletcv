@@ -7,7 +7,8 @@ namespace cvwt
 inline
 void CoeffsExpr::throw_if_incompatible(
     const DWT2D::Coeffs& coeffs_a,
-    const DWT2D::Coeffs& coeffs_b
+    const DWT2D::Coeffs& coeffs_b,
+    const std::source_location& location
 ) CVWT_DWT2D_COEFFS_NOEXCEPT
 {
 #if CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED
@@ -16,7 +17,8 @@ void CoeffsExpr::throw_if_incompatible(
             "Incompatible DWT2D coefficients. "
             "Must have the same levels(), "
             "got lhs levels() = ", coeffs_a.levels(),
-            " and rhs levels() = ", coeffs_b.levels(), "."
+            " and rhs levels() = ", coeffs_b.levels(), ".",
+            location
         );
 
     if (coeffs_a.image_size() != coeffs_b.image_size())
@@ -24,7 +26,8 @@ void CoeffsExpr::throw_if_incompatible(
             "Incompatible DWT2D coefficients. "
             "Must have the same image_size(), "
             "got lhs image_size() = ", coeffs_a.image_size(),
-            " and rhs image_size() = ", coeffs_b.image_size(), "."
+            " and rhs image_size() = ", coeffs_b.image_size(), ".",
+            location
         );
 
     if (coeffs_a.wavelet() != coeffs_b.wavelet())
@@ -32,7 +35,8 @@ void CoeffsExpr::throw_if_incompatible(
             "Incompatible DWT2D coefficients. "
             "Must have the same wavelet(), "
             "got lhs wavelet() = ", coeffs_a.wavelet(),
-            " and rhs wavelet() = ", coeffs_b.wavelet(), "."
+            " and rhs wavelet() = ", coeffs_b.wavelet(), ".",
+            location
         );
 
     if (coeffs_a.border_type() != coeffs_b.border_type())
@@ -40,7 +44,8 @@ void CoeffsExpr::throw_if_incompatible(
             "Incompatible DWT2D coefficients. "
             "Must have the same border_type(), "
             "got lhs border_type() = ", coeffs_a.border_type(),
-            " and rhs border_type() = ", coeffs_b.border_type(), "."
+            " and rhs border_type() = ", coeffs_b.border_type(), ".",
+            location
         );
 #endif
 }

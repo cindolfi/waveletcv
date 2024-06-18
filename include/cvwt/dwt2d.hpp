@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <source_location>
 #include <opencv2/core.hpp>
 #include "cvwt/wavelet.hpp"
 #include "cvwt/utils.hpp"
@@ -1390,16 +1391,50 @@ public:
     private:
         //  Argument Checkers - these can be disabled by building with cmake
         //  option CVWT_ENABLE_DWT2D_COEFFS_EXCEPTIONS = OFF
-        void throw_if_bad_mask_for_normalize(cv::InputArray mask, const std::string mask_name) const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_wrong_size_for_assignment(cv::InputArray matrix) const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_wrong_size_for_set_level(cv::InputArray matrix, int level) const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_wrong_size_for_set_detail(cv::InputArray matrix, int level, int subband) const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_wrong_size_for_set_all_detail_levels(cv::InputArray matrix) const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_wrong_size_for_set_approx(cv::InputArray matrix) const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_level_out_of_range(int level) const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_levels_out_of_range(int lower_level, int upper_level) const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_this_is_empty() const CVWT_DWT2D_COEFFS_NOEXCEPT;
-        void throw_if_invalid_subband(int subband) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_bad_mask_for_normalize(
+            cv::InputArray mask,
+            const std::string mask_name,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_assignment(
+            cv::InputArray matrix,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_set_level(
+            cv::InputArray matrix,
+            int level,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_set_detail(
+            cv::InputArray matrix,
+            int level,
+            int subband,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_set_all_detail_levels(
+            cv::InputArray matrix,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_wrong_size_for_set_approx(
+            cv::InputArray matrix,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_level_out_of_range(
+            int level,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_levels_out_of_range(
+            int lower_level,
+            int upper_level,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_this_is_empty(
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
+        void throw_if_invalid_subband(
+            int subband,
+            const std::source_location& location = std::source_location::current()
+        ) const CVWT_DWT2D_COEFFS_NOEXCEPT;
 
     private:
         std::shared_ptr<internal::Dwt2dCoeffsImpl> _p;
@@ -1718,12 +1753,14 @@ private:
     //  option CVWT_ENABLE_DWT2D_EXCEPTIONS = OFF
     void throw_if_levels_out_of_range(
         int levels,
-        const cv::Size& image_size
+        const cv::Size& image_size,
+        const std::source_location& location = std::source_location::current()
     ) const CVWT_DWT2D_NOEXCEPT;
     void throw_if_inconsistent_coeffs_and_image_sizes(
         cv::InputArray coeffs,
         const cv::Size& image_size,
-        int levels
+        int levels,
+            const std::source_location& location = std::source_location::current()
     ) const CVWT_DWT2D_NOEXCEPT;
 
     //  Log warnings - these can be disabled by defining CVWT_DISABLE_DWT_WARNINGS_ENABLED
@@ -1761,7 +1798,10 @@ std::ostream& operator<<(std::ostream& stream, const DWT2D::Coeffs& coeffs);
 //  ----------------------------------------------------------------------------
 //  Functional Interface
 //  ----------------------------------------------------------------------------
-/** @{ DWT Functional API */
+/**
+ * @name DWT Functional API
+ * @{
+ */
 /**
  * @brief Performs a two dimensional multiscale discrete wavelet transform (DWT).
  *
@@ -2035,7 +2075,8 @@ public:
 
     static void throw_if_incompatible(
         const DWT2D::Coeffs& coeffs_a,
-        const DWT2D::Coeffs& coeffs_b
+        const DWT2D::Coeffs& coeffs_b,
+        const std::source_location& location = std::source_location::current()
     ) CVWT_DWT2D_COEFFS_NOEXCEPT;
 
 public:

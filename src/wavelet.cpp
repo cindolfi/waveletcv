@@ -435,7 +435,8 @@ void throw_if_invalid_wavelet_name(
     const std::string& name,
     const std::string& family,
     const std::map<std::string, CoeffsCollection>& filter_coeffs,
-    const std::string& name_prefix
+    const std::string& name_prefix,
+    const std::source_location& location
 ) CVWT_WAVELET_NOEXCEPT
 {
 #if CVWT_WAVELET_EXCEPTIONS_ENABLED
@@ -449,7 +450,8 @@ void throw_if_invalid_wavelet_name(
         throw_bad_arg(
             "Invalid ", family, " wavelet order. ",
             "Must be one of: ", available_names.str(), ". ",
-            "Got ", name_prefix + name, "."
+            "Got ", name_prefix + name, ".",
+            location
         );
     }
 #endif

@@ -231,10 +231,8 @@ void Shrinker::shrink_subsets(
     const cv::Range& levels
 ) const
 {
-    throw_member_not_implemented(
-        typeid(*this).name(),
-        "shrink_subsets()"
-    );
+    throw_not_implemented();
+    std::unreachable();
 }
 
 cv::Scalar Shrinker::compute_global_threshold(
@@ -243,10 +241,8 @@ cv::Scalar Shrinker::compute_global_threshold(
     const cv::Scalar& stdev
 ) const
 {
-    throw_member_not_implemented(
-        typeid(*this).name(),
-        "compute_global_threshold()"
-    );
+    throw_not_implemented();
+    std::unreachable();
 }
 
 cv::Scalar Shrinker::compute_level_threshold(
@@ -255,10 +251,8 @@ cv::Scalar Shrinker::compute_level_threshold(
     const cv::Scalar& stdev
 ) const
 {
-    throw_member_not_implemented(
-        typeid(*this).name(),
-        "compute_level_threshold()"
-    );
+    throw_not_implemented();
+    std::unreachable();
 }
 
 cv::Scalar Shrinker::compute_subband_threshold(
@@ -268,10 +262,8 @@ cv::Scalar Shrinker::compute_subband_threshold(
     const cv::Scalar& stdev
 ) const
 {
-    throw_member_not_implemented(
-        typeid(*this).name(),
-        "compute_subband_threshold()"
-    );
+    throw_not_implemented();
+    std::unreachable();
 }
 
 cv::Mat4d Shrinker::compute_subset_thresholds(
@@ -280,10 +272,8 @@ cv::Mat4d Shrinker::compute_subset_thresholds(
     const cv::Scalar& stdev
 ) const
 {
-    throw_member_not_implemented(
-        typeid(*this).name(),
-        "compute_subset_thresholds()"
-    );
+    throw_not_implemented();
+    std::unreachable();
 }
 
 void Shrinker::expand_subset_thresholds(
@@ -293,10 +283,8 @@ void Shrinker::expand_subset_thresholds(
     cv::Mat& expanded_thresholds
 ) const
 {
-    throw_member_not_implemented(
-        typeid(*this).name(),
-        "expand_subset_thresholds()"
-    );
+    throw_not_implemented();
+    std::unreachable();
 }
 
 cv::Mat4d Shrinker::compute_level_thresholds(

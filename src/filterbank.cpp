@@ -455,7 +455,8 @@ void FilterBankImpl::throw_if_wrong_size(
     const cv::Mat& reconstruct_lowpass,
     const cv::Mat& reconstruct_highpass,
     const cv::Mat& decompose_lowpass,
-    const cv::Mat& decompose_highpass
+    const cv::Mat& decompose_highpass,
+    const std::source_location& location
 ) const CVWT_FILTER_BANK_NOEXCEPT
 {
 #if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
@@ -476,7 +477,8 @@ void FilterBankImpl::throw_if_wrong_size(
                 (reconstruct_lowpass.empty() ? "empty" : "nonempty"), " reconstruct_lowpass, ",
                 (reconstruct_highpass.empty() ? "empty" : "nonempty"), " reconstruct_highpass, ",
                 (decompose_lowpass.empty() ? "empty" : "nonempty"), " decompose_lowpass, and ",
-                (decompose_highpass.empty() ? "empty" : "nonempty"), " decompose_highpass."
+                (decompose_highpass.empty() ? "empty" : "nonempty"), " decompose_highpass.",
+                location
             );
         }
 
@@ -488,7 +490,8 @@ void FilterBankImpl::throw_if_wrong_size(
                 "Got decompose_lowpass.size() = ", decompose_lowpass.size(),
                 " and decompose_highpass.size() = ", decompose_highpass.size(), ". ",
                 "Got decompose_lowpass.channels() = ", decompose_lowpass.channels(),
-                " and decompose_highpass.channels() = ", decompose_highpass.channels(), "."
+                " and decompose_highpass.channels() = ", decompose_highpass.channels(), ".",
+                location
             );
         }
 
@@ -500,7 +503,8 @@ void FilterBankImpl::throw_if_wrong_size(
                 "Got reconstruct_lowpass.size() = ", reconstruct_lowpass.size(),
                 " and reconstruct_highpass.size() = ", reconstruct_highpass.size(), ". ",
                 "Got reconstruct_lowpass.channels() = ", reconstruct_lowpass.channels(),
-                " and reconstruct_highpass.channels() = ", reconstruct_highpass.channels(), "."
+                " and reconstruct_highpass.channels() = ", reconstruct_highpass.channels(), ".",
+                location
             );
         }
     }
@@ -512,7 +516,8 @@ void FilterBankImpl::throw_if_wrong_type(
     const cv::Mat& reconstruct_lowpass,
     const cv::Mat& reconstruct_highpass,
     const cv::Mat& decompose_lowpass,
-    const cv::Mat& decompose_highpass
+    const cv::Mat& decompose_highpass,
+    const std::source_location& location
 ) const CVWT_FILTER_BANK_NOEXCEPT
 {
 #if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
@@ -526,7 +531,8 @@ void FilterBankImpl::throw_if_wrong_type(
             "reconstruct_lowpass.type() = ", get_type_name(reconstruct_lowpass.type()), ", ",
             "reconstruct_highpass.type() = ", get_type_name(reconstruct_highpass.type()), ",  ",
             "decompose_lowpass.type() = ", get_type_name(decompose_lowpass.type()), ", and ",
-            "decompose_highpass.type() = ", get_type_name(decompose_highpass.type()), "."
+            "decompose_highpass.type() = ", get_type_name(decompose_highpass.type()), ".",
+            location
         );
     }
 #endif
@@ -1058,13 +1064,15 @@ bool FilterBank::operator==(const FilterBank& other) const
 
 inline
 void FilterBank::throw_if_decompose_image_is_wrong_size(
-    cv::InputArray image
+    cv::InputArray image,
+    const std::source_location& location
 ) const CVWT_FILTER_BANK_NOEXCEPT
 {
 #if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
     if (image.rows() <= 1 || image.cols() <= 1) {
         throw_bad_size(
-            "FilterBank: Input size must be greater [1 x 1], got ", image.size()
+            "FilterBank: Input size must be greater [1 x 1], got ", image.size(),
+            location
         );
     }
 #endif
@@ -1075,7 +1083,8 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
     cv::InputArray approx,
     cv::InputArray horizontal_detail,
     cv::InputArray vertical_detail,
-    cv::InputArray diagonal_detail
+    cv::InputArray diagonal_detail,
+    const std::source_location& location
 ) const CVWT_FILTER_BANK_NOEXCEPT
 {
 #if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
@@ -1087,7 +1096,8 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
             "approx.size() = ", approx.size(), ", ",
             "horizontal_detail.size() = ", horizontal_detail.size(), ", ",
             "vertical_detail.size() = ", vertical_detail.size(), ", and ",
-            "diagonal_detail.size() = ", diagonal_detail.size(), "."
+            "diagonal_detail.size() = ", diagonal_detail.size(), ".",
+            location
         );
     }
 
@@ -1099,7 +1109,8 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
             "approx.channels() = ", approx.channels(), ", ",
             "horizontal_detail.channels() = ", horizontal_detail.channels(), ", ",
             "vertical_detail.channels() = ", vertical_detail.channels(), ", and ",
-            "diagonal_detail.channels() = ", diagonal_detail.channels(), "."
+            "diagonal_detail.channels() = ", diagonal_detail.channels(), ".",
+            location
         );
     }
 #endif
@@ -1118,4 +1129,18 @@ std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank)
     return stream;
 }
 } // namespace cvwt
+
+namespace std
+{
+string to_string(cvwt::DetailSubband subband)
+{
+    switch (subband) {
+        case cvwt::HORIZONTAL: return "HORIZONTAL";
+        case cvwt::VERTICAL: return "VERTICAL";
+        case cvwt::DIAGONAL: return "DIAGONAL";
+    }
+
+    return "";
+}
+} // namespace std
 

@@ -1,13 +1,14 @@
 #ifndef CVWT_WAVELET_HPP
 #define CVWT_WAVELET_HPP
 
-#include <opencv2/core.hpp>
 #include <string>
 #include <memory>
 #include <vector>
 #include <set>
 #include <array>
 #include <map>
+#include <source_location>
+#include <opencv2/core.hpp>
 #include "cvwt/filterbank.hpp"
 
 namespace cvwt
@@ -433,12 +434,16 @@ private:
     Symmetry infer_symmetry(const FilterBank& filter_bank) const;
 
     template <typename... CallArgs>
-    static void throw_if_already_registered(const std::string& name) CVWT_WAVELET_NOEXCEPT
+    static void throw_if_already_registered(
+        const std::string& name,
+        const std::source_location& location = std::source_location::current()
+    ) CVWT_WAVELET_NOEXCEPT
     {
     #if CVWT_WAVELET_EXCEPTIONS_ENABLED
         if (_wavelet_factories<CallArgs...>.contains(name)) {
             throw_bad_arg(
-                "A wavelet factory has already been registered to `", name, "`."
+                "A wavelet factory has already been registered to `", name, "`.",
+                location
             );
         }
     #endif
@@ -668,7 +673,8 @@ namespace internal
         const std::string& name,
         const std::string& family,
         const std::map<std::string, V>& filter_coeffs,
-        const std::string& name_prefix = ""
+        const std::string& name_prefix = "",
+        const std::source_location& location = std::source_location::current()
     ) CVWT_WAVELET_NOEXCEPT;
 
 } // namespace internal

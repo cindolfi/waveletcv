@@ -1,11 +1,12 @@
 #ifndef CVWT_FILTERBANK_HPP
 #define CVWT_FILTERBANK_HPP
 
-#include <opencv2/core.hpp>
 #include <string>
 #include <memory>
 #include <vector>
 #include <array>
+#include <source_location>
+#include <opencv2/core.hpp>
 #include "cvwt/exception.hpp"
 
 namespace cvwt
@@ -187,13 +188,15 @@ struct FilterBankImpl
         const cv::Mat& reconstruct_lowpass,
         const cv::Mat& reconstruct_highpass,
         const cv::Mat& decompose_lowpass,
-        const cv::Mat& decompose_highpass
+        const cv::Mat& decompose_highpass,
+        const std::source_location& location = std::source_location::current()
     ) const CVWT_FILTER_BANK_NOEXCEPT;
     void throw_if_wrong_type(
         const cv::Mat& reconstruct_lowpass,
         const cv::Mat& reconstruct_highpass,
         const cv::Mat& decompose_lowpass,
-        const cv::Mat& decompose_highpass
+        const cv::Mat& decompose_highpass,
+        const std::source_location& location = std::source_location::current()
     ) const CVWT_FILTER_BANK_NOEXCEPT;
 
     int filter_length;
@@ -637,13 +640,15 @@ private:
     //  Argument Checkers - these can be disabled by building with cmake
     //  option CVWT_FILTER_BANK_EXCEPTIONS_ENABLED = OFF
     void throw_if_decompose_image_is_wrong_size(
-        cv::InputArray image
+        cv::InputArray image,
+        const std::source_location& location = std::source_location::current()
     ) const CVWT_FILTER_BANK_NOEXCEPT;
     void throw_if_reconstruct_coeffs_are_wrong_size(
         cv::InputArray approx,
         cv::InputArray horizontal_detail,
         cv::InputArray vertical_detail,
-        cv::InputArray diagonal_detail
+        cv::InputArray diagonal_detail,
+        const std::source_location& location = std::source_location::current()
     ) const CVWT_FILTER_BANK_NOEXCEPT;
 
 private:
@@ -656,5 +661,9 @@ private:
 std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
 } // namespace cvwt
 
+namespace std
+{
+string to_string(cvwt::DetailSubband subband);
+} // namespace std
 #endif  // CVWT_FILTERBANK_HPP
 

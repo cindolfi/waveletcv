@@ -8,8 +8,26 @@
 #include <atomic>
 #include <type_traits>
 #include <iostream>
+#include <utility>
 #include <opencv2/core.hpp>
 #include "cvwt/exception.hpp"
+
+namespace std
+{
+#ifndef __cpp_lib_unreachable
+[[noreturn]] inline void unreachable()
+{
+    // Uses compiler specific extensions if possible.
+    // Even if no extension is used, undefined behavior is still raised by
+    // an empty function body and the noreturn attribute.
+#if defined(_MSC_VER) && !defined(__clang__) // MSVC
+    __assume(false);
+#else // GCC, Clang
+    __builtin_unreachable();
+#endif
+}
+#endif
+}
 
 namespace cvwt
 {
@@ -79,6 +97,7 @@ auto dispatch_on_pixel_type(int type, auto&&... args)
     throw_not_implemented(
         "Dispatch on pixel type ", get_type_name(type), " is not implemented."
     );
+    std::unreachable();
 }
 
 template <template <typename T, auto ...> class Functor, auto ...TemplateArgs>
@@ -104,6 +123,7 @@ auto dispatch_on_pixel_depth(int type, auto&&... args)
     throw_not_implemented(
         "Dispatch on pixel ", get_type_name(type), " is not implemented."
     );
+    std::unreachable();
 }
 
 template <template <typename T, auto ...> class Functor, auto ...TemplateArgs, typename ...ConstructorArgs>
@@ -175,6 +195,7 @@ auto dispatch_on_pixel_depth(std::tuple<ConstructorArgs...>&& constructor_args, 
     throw_not_implemented(
         "Dispatch on pixel depth ", get_type_name(type), " is not implemented."
     );
+    std::unreachable();
 }
 
 template <template <typename T1, typename T2, auto ...> class Functor, auto ...TemplateArgs>
@@ -325,6 +346,7 @@ auto dispatch_on_pixel_depths(int type1, int type2, auto&&... args)
         get_type_name(type2),
         " is not implemented."
     );
+    std::unreachable();
 }
 }   // namespace internal
 

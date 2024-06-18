@@ -40,7 +40,6 @@ struct CollectMasked
 {
     void operator()(cv::InputArray input, cv::OutputArray output, cv::InputArray mask) const
     {
-        throw_if_bad_mask_type(mask);
         throw_if_bad_mask_for_array(input, mask, AllowedMaskChannels::SINGLE);
         if (input.empty())
             output.create(cv::Size(), input.type());
@@ -653,20 +652,26 @@ struct Compare
         );
     }
 
-    void throw_if_comparing_different_sizes(cv::InputArray a, cv::InputArray b) const
+    void throw_if_comparing_different_sizes(
+        cv::InputArray a,
+        cv::InputArray b,
+        const std::source_location& location = std::source_location::current()
+    ) const
     {
         if (a.size() != b.size())
             throw_bad_size(
                 "Cannot compare matrices of different sizes. ",
                 "Got a.size() = ", a.size(),
-                " and b.size() = ", b.size(), "."
+                " and b.size() = ", b.size(), ".",
+                location
             );
 
         if (a.channels() != b.channels())
             throw_bad_size(
                 "Cannot compare matrices of with different number of channels. ",
                 "Got a.channels() = ", a.channels(),
-                " and b.channels() = ", b.channels(), "."
+                " and b.channels() = ", b.channels(), ".",
+                location
             );
     }
 };
@@ -1026,25 +1031,13 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
             result = abs_max(array_matrix.reshape(1), cv::noArray());
         }
     } else {
-        throw_if_bad_mask_type(mask);
-        throw_if_empty(
+        throw_if_bad_mask_for_array(
+            array,
             mask,
-            "Mask is empty. Use cv::noArray() to indicate no mask."
+            AllowedMaskChannels::SINGLE_OR_SAME
         );
-        if (mask.size() != array.size())
-            throw_bad_size(
-                "The array and mask must be the same size, ",
-                "got array.size() = ", array.size(),
-                " and mask.size() = ", mask.size(), "."
-            );
 
         if (array.channels() == 1) {
-            if (mask.channels() > 1) {
-                throw_bad_size(
-                    "Wrong number of mask channels for single channel array. ",
-                    "Must be 1, got mask.channels() = ", mask.channels(), "."
-                );
-            }
             result = abs_max(array, mask);
         } else {
             std::vector<cv::Mat> array_channels;
@@ -1061,13 +1054,6 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
                         abs_max(array_channels.at(i), mask_channels.at(i))
                     );
                 }
-            } else {
-                throw_bad_size(
-                    "Wrong number of mask channels for ",
-                    "array.channels() = ", array.channels(), ". ",
-                    "Must be 1 or ", array.channels(),
-                    ", got mask.channels() = ", mask.channels(), "."
-                );
             }
         }
     }
