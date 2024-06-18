@@ -1602,7 +1602,7 @@ public:
      *
      * @param[in] image The image to be transformed.
      * @param[in] levels The number of decomposition levels.  Must be
-     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                   @pref{levels} \f$\gt\f$ 1.
      * @throws cv::Exception If @pref{levels} is out of range.
      */
     Coeffs decompose(cv::InputArray image, int levels) const
@@ -1618,7 +1618,7 @@ public:
      * @param[in]  image The image to be transformed.
      * @param[out] coeffs The resulting DWT coefficients.
      * @param[in]  levels The number of decomposition levels.  Must be
-     *                    1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                    @pref{levels} \f$\gt\f$ 1.
      * @throws cv::Exception If @pref{levels} is out of range.
      */
     void decompose(cv::InputArray image, Coeffs& coeffs, int levels) const;
@@ -1681,7 +1681,7 @@ public:
      *
      * @param[in] image_size The size of the reconstructed image.
      * @param[in] levels The number of decomposition levels.  Must be
-     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                   @pref{levels} \f$\gt\f$ 1.
      */
     Coeffs create_empty_coeffs(
         const cv::Size& image_size,
@@ -1695,7 +1695,7 @@ public:
      *                          Must have size equal to coeffs_size_for_image().
      * @param[in] image_size The size of the reconstructed image.
      * @param[in] levels The number of decomposition levels.  Must be
-     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                   @pref{levels} \f$\gt\f$ 1.
      * @throws cv::Exception If @pref{levels} is out of range or
      *                       @pref{coeffs_matrx,size(),DWT2D::Coeffs::size} and
      *                       @pref{image_size} are incompatible.
@@ -1712,7 +1712,7 @@ public:
      * @param[in] image_size The size of the reconstructed image.
      * @param[in] type The coefficients matrix type.
      * @param[in] levels The number of decomposition levels.  Must be
-     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                   @pref{levels} \f$\gt\f$ 1.
      * @throws cv::Exception If @pref{levels} is out of range.
      */
     Coeffs create_coeffs(const cv::Size& image_size, int type, int levels) const;
@@ -1729,7 +1729,7 @@ public:
      * @param[in] image_cols The number of columns in the reconstructed image.
      * @param[in] type The coefficients matrix type.
      * @param[in] levels The number of decomposition levels.  Must be
-     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                   @pref{levels} \f$\gt\f$ 1.
      * @throws cv::Exception If @pref{levels} is out of range.
      */
     Coeffs create_coeffs(int image_rows, int image_cols, int type, int levels) const
@@ -1749,7 +1749,7 @@ public:
      *
      * @param[in] image_size The size of the reconstructed image.
      * @param[in] levels The number of decomposition levels.  Must be
-     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                   @pref{levels} \f$\gt\f$ 1.
      * @throws cv::Exception If @pref{levels} is out of range.
      *
      * @see FilterBank::subband_size
@@ -1766,7 +1766,7 @@ public:
      *
      * @param[in] image The reconstructed image.
      * @param[in] levels The number of decomposition levels.  Must be
-     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                   @pref{levels} \f$\gt\f$ 1.
      * @throws cv::Exception If @pref{levels} is out of range.
      */
     cv::Size coeffs_size_for_image(cv::InputArray image, int levels) const
@@ -1785,7 +1785,7 @@ public:
      * @param[in] image_rows The number of rows in the reconstructed image.
      * @param[in] image_cols The number of columns in the reconstructed image.
      * @param[in] levels The number of decomposition levels.  Must be
-     *                   1 \f$\le\f$ @pref{levels} \f$\le\f$ max_levels().
+     *                   @pref{levels} \f$\gt\f$ 1.
      * @throws cv::Exception If @pref{levels} is out of range.
      */
     cv::Size coeffs_size_for_image(int image_rows, int image_cols, int levels) const
@@ -1829,44 +1829,6 @@ public:
     int max_reconstructable_levels(cv::InputArray image) const
     {
         return max_reconstructable_levels(image.size());
-    }
-
-    /**
-     * @brief Returns the maximum number of decomposition levels for a given image size.
-     *
-     * @param[in] image_size The size of the image to be decomposed.
-     */
-    static int max_levels(const cv::Size& image_size);
-
-    /**
-     * @overload
-     *
-     * @equivalentto
-     * @code{cpp}
-     * max_levels(cv::Size(image_cols, image_rows));
-     * @endcode
-     *
-     * @param[in] image_rows The number of rows in the image to be decomposed.
-     * @param[in] image_cols The number of columns in the image to be decomposed.
-     */
-    static int max_levels(int image_rows, int image_cols)
-    {
-        return max_levels(cv::Size(image_cols, image_rows));
-    }
-
-    /**
-     * @overload
-     *
-     * @equivalentto
-     * @code{cpp}
-     * max_levels(image.size());
-     * @endcode
-     *
-     * @param[in] image The image to be decomposed.
-     */
-    static int max_levels(cv::InputArray image)
-    {
-        return max_levels(image.size());
     }
 
     /**

@@ -1052,15 +1052,6 @@ cv::Size DWT2D::coeffs_size_for_image(const cv::Size& image_size, int levels) co
     return accumulator;
 }
 
-int DWT2D::max_levels(const cv::Size& image_size)
-{
-    double data_length = std::min(image_size.width, image_size.height);
-    if (data_length <= 0)
-        return 0;
-
-    return std::log2(data_length);
-}
-
 int DWT2D::max_reconstructable_levels(const cv::Size& image_size) const
 {
     double data_length = std::min(image_size.width, image_size.height);
