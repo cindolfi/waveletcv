@@ -19,13 +19,21 @@ namespace internal
 class Dwt2dCoeffsImpl
 {
 public:
+    enum Flags
+    {
+        NONE = 0,
+        SUBCOEFFS = 1,
+    };
+
     Dwt2dCoeffsImpl() :
         coeff_matrix(),
         levels(0),
         image_size(),
         diagonal_subband_rects(),
         wavelet(),
-        border_type(cv::BORDER_DEFAULT)
+        border_type(cv::BORDER_DEFAULT),
+        level(0),
+        flags(Flags::NONE)
     {
     }
 
@@ -35,14 +43,18 @@ public:
         const cv::Size& image_size,
         const std::vector<cv::Rect>& diagonal_subband_rects,
         const Wavelet& wavelet,
-        cv::BorderTypes border_type
+        cv::BorderTypes border_type,
+        int level,
+        int flags
     ) :
         coeff_matrix(coeff_matrix),
         levels(levels),
         image_size(image_size),
         diagonal_subband_rects(diagonal_subband_rects),
         wavelet(wavelet),
-        border_type(border_type)
+        border_type(border_type),
+        level(level),
+        flags(flags)
     {
     }
 
@@ -52,14 +64,18 @@ public:
         const cv::Size& image_size,
         const std::vector<cv::Size>& subband_sizes,
         const Wavelet& wavelet,
-        cv::BorderTypes border_type
+        cv::BorderTypes border_type,
+        int level,
+        int flags
     ) :
         coeff_matrix(coeff_matrix),
         levels(levels),
         image_size(image_size),
         diagonal_subband_rects(),
         wavelet(wavelet),
-        border_type(border_type)
+        border_type(border_type),
+        level(level),
+        flags(flags)
     {
         build_diagonal_subband_rects(subband_sizes);
     }
@@ -85,6 +101,8 @@ public:
     std::vector<cv::Rect> diagonal_subband_rects;
     Wavelet wavelet;
     cv::BorderTypes border_type;
+    int level;
+    int flags;
 };
 } // namespace internal
 
@@ -114,13 +132,14 @@ class CoeffsExpr;
  * @endcode
  *
  * Image reconstruction (i.e. synthesis or inverse transformation) is
- * accomplished with reconstruct().
+ * accomplished with reconstruct()
  * @code{cpp}
  * cv::Mat reconstructed_image = dwt.reconstruct(coeffs);
  * @endcode
- * Alternatively, the image can be reconstructed using DWT2D::Coeffs::reconstruct().
+ * or DWT2D::Coeffs::reconstruct()
  * @code{cpp}
  * cv::Mat reconstructed_image = coeffs.reconstruct();
+ * @endcode
  *
  * @see FilterBank, dwt2d
  */
@@ -136,9 +155,9 @@ public:
      * and the horizontal detail subband.
      * There is a single submatrix of approximation coefficients stored
      * alongside the coarsest details.
-     * Smaller level indices correspond to smaller scales (i.e. higher resolutions).
-     * The submatrices are layed out as (a 4-level decomposition is shown for
-     * illustration):
+     * Smaller level indices correspond to smaller scales (i.e. higher
+     * resolutions).  The submatrices are layed out as (a 4-level decomposition
+     * is shown for illustration):
      *
      * @copydetails common_four_level_coeff_matrix
      *
@@ -149,14 +168,17 @@ public:
      * (i.e. coarsest) coefficients.
      * The approximation coefficients are labeled A.
      *
-     * DWT2D::Coeffs objects are not constructed directly, but are created by
-     * one of the following methods:
-     *  - Returned by DWT2D::decompose()
-     *  - Cloned using clone() or empty_clone()
-     *  - Created DWT2D::create_coeffs() or DWT2D::create_empty_coeffs()
+     * ## Constructing DWT2D::Coeffs Objects
      *
-     * The last method is less common and is only used when algorithmically
-     * generating the coefficients (as opposed to computing them using a DWT2D).
+     * DWT2D::Coeffs objects are created by one of the following methods:
+     *  1. Computed by DWT2D::decompose()
+     *  2. Cloned by clone(), empty_clone(), or clone_and_assign()
+     *  3. Created by DWT2D::create_coeffs() or DWT2D::create_empty_coeffs()
+     *
+     * The third method is less common and is only used when the coefficients
+     * are generated algorithmically (as opposed to computing them with a
+     * DWT2D).
+     *
      * The only caveat is that default constructed DWT2D::Coeffs can be used as
      * DWT2D output parameters.
      * @code{cpp}
@@ -175,40 +197,75 @@ public:
      * The difference is a matter of style.  The first method is more
      * idiomatic of OpenCV code while the second is a bit more succinct.
      *
-     * DWT2D::Coeffs objects are implicitly castable to cv::Mat, cv::InputArray,
-     * cv::OutputArray, and cv::InputOutputArray.  In each case, the private
-     * cv::Mat member is returned.  Since cv::Mat objects share the underlying
-     * data, any modification of the casted value will result in modification
-     * of the coefficients.  **This means that DWT2D::Coeffs can be passed to
-     * any OpenCV function and acted on like a normal cv::Mat.**
+     * ## Interoperability With OpenCV
      *
-     * In addition to the coefficients matrix, a DWT2D::Coeffs object contains
-     * metadata defining the structure of subband submatrices and the DWT2D object.
-     * In cases where an empty DWT2D::Coeffs object is needed it should be
-     * created from an existing DWT2D::Coeffs with empty_clone() so that the
-     * metadata is retained.
-     * For example, consider taking the log of a DWT2D::Coeffs.
+     * ### Converting Between cv::Mat And DWT2D::Coeffs
+     * DWT2D::Coeffs objects are implicitly converted to cv::Mat.
+     *
      * @code{cpp}
+     * void foo(const cv::Mat& matrix) {...}
+     *
+     * // Functions that accept a cv::Mat also accept a DWT2D::Coeffs.
      * DWT2D::Coeffs coeffs = ...;
-     * auto log_coeffs = coeffs.empty_clone();
-     * cv::log(coeffs, log_coeffs);
+     * foo(coeffs);
      * @endcode
      *
-     * In some situations it may be necessary to expicitly cast to a cv::Mat,
-     * thereby discarding the metadata.
+     * @note Converting a DWT2D::Coeffs to a cv::Mat discards the metadata
+     *       that defines the subband submatrices and the associated DWT2D.
+     *
      * @code{cpp}
-     * // Using clone_and_assign() ensures metadata is retained.
-     * cv::Mat matrix = static_cast<cv::Mat>(coeffs);
-     * matrix = do_something(matrix);
+     * // The matrix has the same numerical data but can no longer be used as
+     * // a DWT2D::Coeffs because the metadata has been lost.
+     * cv::Mat matrix = coeffs;
      * @endcode
-     * In such cases the metadata can be retained with clone_and_assign()
+     *
+     * @note Converting a DWT2D::Coeffs to a cv::Mat returns the private
+     *       cv::Mat member.  Since cv::Mat objects share the underlying data,
+     *       any modification of the matrix is a modification of the coefficients.
+     *
      * @code{cpp}
-     * // Using clone_and_assign() ensures metadata is retained.
+     * // Be careful, matrix and coeffs share the same data.
+     * // This sets all matrix elements and coefficients to zero.
+     * matrix = 0.0;
+     * @endcode
+     *
+     * Converting a cv::Mat to a DWT2D::Coeffs can be done in one of two ways.
+     * In both cases an existing DWT2D::Coeffs object is required to provide the
+     * necessary metadata.
+     * 1. Use clone_and_assign() on the existing coefficients
+     * @code{cpp}
      * auto new_coeffs = coeffs.clone_and_assign(matrix);
      * @endcode
-     * or by assigning the matrix to original DWT2D::Coeffs
+     * 2. Assignment to the existing coefficients
      * @code{cpp}
      * coeffs = matrix;
+     * @endcode
+     *
+     * ### Calling OpenCV Functions
+     * DWT2D::Coeffs objects are implicitly converted to
+     * @ref cv::_InputArray "cv::InputArray",
+     * @ref cv::_OutputArray "cv::OutputArray", and
+     * @ref cv::_InputOutputArray "cv::InputOutputArray".  In each case, the
+     * private cv::Mat member is returned and since cv::Mat objects share the
+     * underlying data, any modification of the converted value is a
+     * modification of the coefficients.  **This means that DWT2D::Coeffs can be
+     * passed to any OpenCV function and acted on like a normal cv::Mat.**
+     *
+     * #### Output Arguments
+     * Many OpenCV functions return their result via an output argument.
+     * Consider the taking the log:
+     * @code{cpp}
+     * cv::Mat log_coeffs;
+     * cv::log(coeffs, log_coeffs);
+     * @endcode
+     * This does correctly compute `log_coeffs`, but it loses the
+     * DWT2D::Coeffs metadata.
+     *
+     * To make `log_coeffs` a DWT2D::Coeffs, and not just a cv::Mat,
+     * initialize it with empty_clone().
+     * @code{cpp}
+     * DWT2D::Coeffs log_coeffs = coeffs.empty_clone();
+     * cv::log(coeffs, log_coeffs);
      * @endcode
      */
     class Coeffs
@@ -236,6 +293,12 @@ public:
          *  - A cv::Scalar if channels() is less than or equal to 4
          */
 
+        /**
+         * @class common_assignment_semantics_depends_on_is_subcoeffs
+         *
+         * @note Assigment semantics depend on is_subcoeffs().  See
+         *       @ref operator=(cv::InputArray) "operator=()" for details.
+         */
         /**
          * @class common_four_level_coeff_matrix
          *
@@ -299,8 +362,9 @@ public:
         /**
          * @brief Copy Assignment.
          *
-         * The reference to the underlying data is copied.  After assighment
-         * both `this` and @pref{coeffs} will refer to the same data.
+         * The **reference** to the underlying data is copied.  After assighment
+         * `this` and @pref{coeffs} will be views onto the same coefficients
+         * matrix.
          */
         Coeffs& operator=(const Coeffs& coeffs) = default;
 
@@ -312,10 +376,12 @@ public:
         /**
          * @brief Assignment from a matrix or scalar
          *
-         * @warning Despite being a wrapper around cv::Mat, DWT2D::Coeffs and
-         *          cv::Mat have different assigment semantics.  DWT2D::Coeffs
-         *          **copies the values** from the matrix whereas cv::Mat copies
-         *          the reference to the underlying data.
+         * Assignment behaves the same as cv::Mat whenever is_subcoeffs() is
+         * false.
+         *
+         * If is_subcoeffs() is true, the @pref{coeffs} data is always copied to
+         * this object.  That is, data is always copied to coefficients returned
+         * by from_level().
          *
          * @param[in] coeffs The coefficients.  This must be one of:
          *  - A matrix of size @ref level_size() "level_size(0)" with channels()
@@ -342,8 +408,8 @@ public:
          * this operation back to a DWT2D::Coeffs object.
          *
          * This operation does **not** copy the underlying data (i.e. it is O(1)).
-         * Rather, it returns a copy of the private cv::Mat object,
-         * which has a shared pointer to the underlying data.
+         * Rather, it returns the private cv::Mat object, which has a shared
+         * pointer to the underlying data.
          *
          * @warning Modifying the elements of the returned cv::Mat
          *          will modify the coefficients stored by this object.
@@ -409,6 +475,7 @@ public:
          * @brief Returns a deep copy of the coefficients matrix and metadata.
          */
         Coeffs clone() const;
+
         /**
          * @brief Returns a Coeffs with an empty coefficients matrix and a deep copy of the metadata.
          */
@@ -429,6 +496,11 @@ public:
         /**
          * @brief Returns the coefficients at and above a decomposition level.
          *
+         * The returned Coeffs have is_subcoeffs() set to true and
+         * level() set to @pref{level}.
+         *
+         * @copydetails common_assignment_semantics_depends_on_is_subcoeffs
+         *
          * Consider a coefficient matrix returned by a four level DWT2D.
          * The result of `from_level(2)` is the shaded submatrix comprised of
          * the approximation coefficients A and the detail subbands H2, V2, D2,
@@ -441,6 +513,18 @@ public:
          * @param[in] level
          */
         Coeffs from_level(int level) const;
+
+        /**
+         * @brief Returns the coefficients at and above a decomposition level.
+         *
+         * This function is the same as from_level() except that the result
+         * has is_subcoeffs() set to false and level() set to zero.
+         *
+         * @copydetails common_assignment_semantics_depends_on_is_subcoeffs
+         *
+         * @param[in] level
+         */
+        Coeffs extract_from_level(int level) const;
 
         /**
          * @brief Sets the coefficients at and above a decomposition level.
@@ -466,6 +550,25 @@ public:
          *                       scalar.
          */
         void set_from_level(int level, cv::InputArray coeffs);
+
+        /**
+         * @brief The level of the finest scale coefficients
+         *
+         * This is the value passed to from_level().  It is 0 for default
+         * constructed objects and objects returned by DWT2D::decompose(),
+         * DWT2D::create_coeffs(), DWT2D::create_empty_coeffs(), and
+         * extract_from_level().
+         */
+        int level() const { return _p->level; }
+
+        /**
+         * @brief Returns true if this was created by from_level().
+         *
+         * @copydetails common_assignment_semantics_depends_on_is_subcoeffs
+         */
+        bool is_subcoeffs() const { return _p->flags & internal::Dwt2dCoeffsImpl::Flags::SUBCOEFFS; }
+
+
         /**@} Subcoefficients*/
 
         //  --------------------------------------------------------------------
@@ -1279,7 +1382,9 @@ public:
             const cv::Size& image_size,
             const std::vector<cv::Size>& subband_sizes,
             const Wavelet& wavelet,
-            cv::BorderTypes border_type
+            cv::BorderTypes border_type,
+            int level = 0,
+            int flags = internal::Dwt2dCoeffsImpl::Flags::NONE
         );
 
         /**
@@ -1301,7 +1406,9 @@ public:
             const cv::Size& image_size,
             const std::vector<cv::Rect>& diagonal_subband_rects,
             const Wavelet& wavelet,
-            cv::BorderTypes border_type
+            cv::BorderTypes border_type,
+            int level = 0,
+            int flags = internal::Dwt2dCoeffsImpl::Flags::NONE
         );
 
         /**
@@ -1324,8 +1431,12 @@ public:
             const cv::Size& image_size,
             const std::vector<cv::Size>& subband_sizes,
             const Wavelet& wavelet,
-            cv::BorderTypes border_type
+            cv::BorderTypes border_type,
+            int level = 0,
+            int flags = internal::Dwt2dCoeffsImpl::Flags::NONE
         );
+
+        std::vector<cv::Rect> diagonal_subband_rects_from_level(int level) const;
 
         /**
          * @brief Copies the source to the destination.
@@ -1343,15 +1454,31 @@ public:
         )
         {
             assert(destination.type() == type());
-
             if (is_scalar(source)) {
                 destination.setTo(source, mask);
-            } else if (source.type() != destination.type()) {
-                cv::Mat converted;
-                source.getMat().convertTo(converted, type());
-                converted.copyTo(destination, mask);
             } else {
-                source.copyTo(destination, mask);
+                cv::Mat converted_source;
+                convert(source, converted_source);
+                converted_source.copyTo(destination, mask);
+            }
+        }
+
+        void convert_and_assign(cv::InputArray source, cv::Mat& destination)
+        {
+            assert(destination.type() == type());
+            if (is_scalar(source))
+                destination.setTo(source);
+            else
+                convert(source, destination);
+        }
+
+        void convert(cv::InputArray source, cv::Mat& converted) const
+        {
+            if (source.depth() == depth()) {
+                converted = source.getMat();
+            } else {
+                cv::Mat converted_source;
+                source.getMat().convertTo(converted, depth());
             }
         }
 

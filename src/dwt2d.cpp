@@ -19,7 +19,9 @@ DWT2D::Coeffs::Coeffs(
     const cv::Size& image_size,
     const std::vector<cv::Size>& subband_sizes,
     const Wavelet& wavelet,
-    cv::BorderTypes border_type
+    cv::BorderTypes border_type,
+    int level,
+    int flags
 ) :
     _p(
         std::make_shared<internal::Dwt2dCoeffsImpl>(
@@ -28,7 +30,9 @@ DWT2D::Coeffs::Coeffs(
             image_size,
             subband_sizes,
             wavelet,
-            border_type
+            border_type,
+            level,
+            flags
         )
     )
 {
@@ -40,7 +44,9 @@ DWT2D::Coeffs::Coeffs(
     const cv::Size& image_size,
     const std::vector<cv::Rect>& diagonal_subband_rects,
     const Wavelet& wavelet,
-    cv::BorderTypes border_type
+    cv::BorderTypes border_type,
+    int level,
+    int flags
 ) :
     _p(
         std::make_shared<internal::Dwt2dCoeffsImpl>(
@@ -49,7 +55,9 @@ DWT2D::Coeffs::Coeffs(
             image_size,
             diagonal_subband_rects,
             wavelet,
-            border_type
+            border_type,
+            level,
+            flags
         )
     )
 {
@@ -62,7 +70,9 @@ void DWT2D::Coeffs::reset(
     const cv::Size& image_size,
     const std::vector<cv::Size>& subband_sizes,
     const Wavelet& wavelet,
-    cv::BorderTypes border_type
+    cv::BorderTypes border_type,
+    int level,
+    int flags
 )
 {
     _p->coeff_matrix.create(size, type);
@@ -71,12 +81,18 @@ void DWT2D::Coeffs::reset(
     _p->wavelet = wavelet;
     _p->border_type = border_type;
     _p->build_diagonal_subband_rects(subband_sizes);
+    _p->level = level;
+    _p->flags = flags;
 }
 
 DWT2D::Coeffs& DWT2D::Coeffs::operator=(cv::InputArray coeffs)
 {
     throw_if_wrong_size_for_assignment(coeffs);
-    convert_and_copy(coeffs, _p->coeff_matrix);
+    if (is_subcoeffs())
+        convert_and_copy(coeffs, _p->coeff_matrix);
+    else
+        convert_and_assign(coeffs, _p->coeff_matrix);
+
     return *this;
 }
 
@@ -88,7 +104,9 @@ DWT2D::Coeffs DWT2D::Coeffs::clone() const
         _p->image_size,
         _p->diagonal_subband_rects,
         _p->wavelet,
-        _p->border_type
+        _p->border_type,
+        _p->level,
+        _p->flags
     );
 }
 
@@ -100,7 +118,9 @@ DWT2D::Coeffs DWT2D::Coeffs::empty_clone() const
         _p->image_size,
         _p->diagonal_subband_rects,
         _p->wavelet,
-        _p->border_type
+        _p->border_type,
+        _p->level,
+        _p->flags
     );
 }
 
@@ -113,7 +133,9 @@ DWT2D::Coeffs DWT2D::Coeffs::clone_and_assign(cv::InputArray coeff_matrix) const
         _p->image_size,
         _p->diagonal_subband_rects,
         _p->wavelet,
-        _p->border_type
+        _p->border_type,
+        _p->level,
+        _p->flags
     );
 }
 
@@ -130,8 +152,40 @@ DWT2D::Coeffs DWT2D::Coeffs::from_level(int level) const
 {
     throw_if_level_out_of_range(level);
     level = resolve_level(level);
+
+    return DWT2D::Coeffs(
+        _p->coeff_matrix(level_rect(level)),
+        levels() - level,
+        image_size(level),
+        diagonal_subband_rects_from_level(level),
+        wavelet(),
+        border_type(),
+        level,
+        _p->flags | internal::Dwt2dCoeffsImpl::Flags::SUBCOEFFS
+    );
+}
+
+DWT2D::Coeffs DWT2D::Coeffs::extract_from_level(int level) const
+{
+    throw_if_level_out_of_range(level);
+    level = resolve_level(level);
+
+    return DWT2D::Coeffs(
+        _p->coeff_matrix(level_rect(level)).clone(),
+        levels() - level,
+        image_size(level),
+        diagonal_subband_rects_from_level(level),
+        wavelet(),
+        border_type(),
+        0,
+        _p->flags & ~internal::Dwt2dCoeffsImpl::Flags::SUBCOEFFS
+    );
+}
+
+std::vector<cv::Rect> DWT2D::Coeffs::diagonal_subband_rects_from_level(int level) const
+{
     if (level == 0)
-        return *this;
+        return _p->diagonal_subband_rects;
 
     std::vector<cv::Rect> detail_rects;
     detail_rects.insert(
@@ -140,14 +194,7 @@ DWT2D::Coeffs DWT2D::Coeffs::from_level(int level) const
         _p->diagonal_subband_rects.end()
     );
 
-    return DWT2D::Coeffs(
-        _p->coeff_matrix(level_rect(level)),
-        levels() - level,
-        image_size(level),
-        detail_rects,
-        wavelet(),
-        border_type()
-    );
+    return detail_rects;
 }
 
 void DWT2D::Coeffs::set_from_level(int level, cv::InputArray coeffs)
@@ -171,7 +218,7 @@ cv::Mat DWT2D::Coeffs::detail(int level, int subband) const
         case DIAGONAL: return diagonal_detail(level);
     }
 
-    return cv::Mat();
+    return cv::Mat(0, 0, type());
 }
 
 void DWT2D::Coeffs::set_all_detail_levels(cv::InputArray coeffs)
@@ -553,7 +600,7 @@ void DWT2D::Coeffs::throw_if_bad_mask_for_normalize(
         mask,
         AllowedMaskChannels::SINGLE_OR_SAME,
         location
-        );
+    );
 #endif
 }
 
@@ -816,7 +863,9 @@ std::vector<DWT2D::Coeffs> split(const DWT2D::Coeffs& coeffs)
                 coeffs._p->image_size,
                 coeffs._p->diagonal_subband_rects,
                 coeffs._p->wavelet,
-                coeffs._p->border_type
+                coeffs._p->border_type,
+                coeffs._p->level,
+                coeffs._p->flags
             )
         );
     }
@@ -844,7 +893,9 @@ DWT2D::Coeffs merge(const std::vector<DWT2D::Coeffs>& coeffs)
         coeffs[0]._p->image_size,
         coeffs[0]._p->diagonal_subband_rects,
         coeffs[0]._p->wavelet,
-        coeffs[0]._p->border_type
+        coeffs[0]._p->border_type,
+        coeffs[0]._p->level,
+        coeffs[0]._p->flags
     );
 }
 

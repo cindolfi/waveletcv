@@ -31,6 +31,16 @@ TEST_F(Dwt2dCoeffsDefaultConstructorTest, LevelsIsZero)
     ASSERT_EQ(coeffs.levels(), 0);
 }
 
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, LevelIsZero)
+{
+    ASSERT_EQ(coeffs.level(), 0);
+}
+
+TEST_F(Dwt2dCoeffsDefaultConstructorTest, IsSubcoeffsIsFalse)
+{
+    ASSERT_FALSE(coeffs.is_subcoeffs());
+}
+
 TEST_F(Dwt2dCoeffsDefaultConstructorTest, InputSizeIsEmpty)
 {
     ASSERT_TRUE(coeffs.image_size().empty());
@@ -266,6 +276,21 @@ TEST_P(Dwt2dCoeffsTest, TypeIsCorrect)
     ASSERT_EQ(coeffs.type(), type);
 }
 
+TEST_P(Dwt2dCoeffsTest, LevelsIsCorrect)
+{
+    ASSERT_EQ(coeffs.levels(), expected_levels);
+}
+
+TEST_P(Dwt2dCoeffsTest, LevelIsCorrect)
+{
+    ASSERT_EQ(coeffs.level(), 0);
+}
+
+TEST_P(Dwt2dCoeffsTest, IsSubcoeffsIsCorrect)
+{
+    ASSERT_FALSE(coeffs.is_subcoeffs());
+}
+
 TEST_P(Dwt2dCoeffsTest, InitializedToAllZeros)
 {
     auto zero_initialized_coeffs = dwt.create_coeffs(rows, cols, type, expected_levels);
@@ -279,11 +304,6 @@ TEST_P(Dwt2dCoeffsTest, InitializedCorrectly)
     auto expected_coeffs = create_matrix(rows, cols, type);
 
     EXPECT_THAT(coeffs, MatrixEq(expected_coeffs));
-}
-
-TEST_P(Dwt2dCoeffsTest, LevelsIsCorrect)
-{
-    ASSERT_EQ(coeffs.levels(), expected_levels);
 }
 
 TEST_P(Dwt2dCoeffsTest, CastToMatrix)
@@ -375,7 +395,24 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrix)
     new_coeffs = expected_matrix;
 
     EXPECT_THAT(new_coeffs, MatrixEq(expected_matrix));
-    EXPECT_FALSE(is_data_shared(new_coeffs, expected_matrix));
+    // EXPECT_FALSE(is_data_shared(new_coeffs, expected_matrix));
+    EXPECT_TRUE(is_data_shared(new_coeffs, expected_matrix));
+}
+
+TEST_P(Dwt2dCoeffsTest, SubcoefficientAssignmentFromMatrix)
+{
+    auto new_coeffs = dwt.create_coeffs(
+        expected_matrix.size(),
+        expected_matrix.type(),
+        expected_levels
+    );
+    auto expected_submatrix = expected_matrix(new_coeffs.level_rect(1));
+    auto new_subcoeffs = new_coeffs.from_level(1);
+
+    new_subcoeffs = expected_submatrix;
+
+    EXPECT_THAT(new_subcoeffs, MatrixEq(expected_submatrix));
+    EXPECT_FALSE(is_data_shared(new_subcoeffs, expected_submatrix));
 }
 
 TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrixExpr)
@@ -385,20 +422,24 @@ TEST_P(Dwt2dCoeffsTest, AssignmentFromMatrixExpr)
         expected_matrix.type(),
         expected_levels
     );
-    new_coeffs = 1 + expected_matrix;
-    cv::Mat h = 1 + expected_matrix;
+    cv::Mat expected_matrix_values = 1 + expected_matrix;
 
-    EXPECT_THAT(new_coeffs, MatrixEq(h));
+    new_coeffs = 1 + expected_matrix;
+
+    EXPECT_THAT(new_coeffs, MatrixEq(expected_matrix_values));
     EXPECT_FALSE(is_data_shared(new_coeffs, expected_matrix));
 }
 
 TEST_P(Dwt2dCoeffsTest, AssignmentFromScalar)
 {
     auto new_coeffs = dwt.create_coeffs(size, type, expected_levels);
+    cv::Mat new_coeffs_matrix = new_coeffs;
     auto scalar = cv::Scalar(0.5, 1.5, 2.5, 3.5);
+
     new_coeffs = scalar;
 
     EXPECT_THAT(new_coeffs, MatrixAllEq(scalar));
+    EXPECT_TRUE(is_identical(new_coeffs, new_coeffs_matrix));
 }
 
 #if CVWT_DWT2D_EXCEPTIONS_ENABLED
@@ -991,6 +1032,20 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelsIsCorrect)
     EXPECT_EQ(level_coeffs.levels(), expected_levels);
 }
 
+TEST_P(Dwt2dCoeffsLevelsTest, LevelIsCorrect)
+{
+    auto level_coeffs = coeffs.from_level(level);
+
+    EXPECT_EQ(level_coeffs.level(), level);
+}
+
+TEST_P(Dwt2dCoeffsLevelsTest, IsSubcoeffsIsCorrect)
+{
+    auto level_coeffs = coeffs.from_level(level);
+
+    EXPECT_TRUE(level_coeffs.is_subcoeffs());
+}
+
 TEST_P(Dwt2dCoeffsLevelsTest, ValuesAreCorrect)
 {
     auto level_coeffs = coeffs.from_level(level);
@@ -1045,6 +1100,7 @@ TEST_P(Dwt2dCoeffsLevelsTest, LevelAssignmentFromMatrix)
     level_coeffs = expected_level_matrix;
 
     EXPECT_THAT(level_coeffs, MatrixEq(expected_level_matrix));
+    EXPECT_FALSE(is_data_shared(level_coeffs, expected_level_matrix));
 }
 
 #if CVWT_DWT2D_EXCEPTIONS_ENABLED
