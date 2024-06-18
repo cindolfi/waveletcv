@@ -1007,14 +1007,13 @@ int DWT2D::max_levels(const cv::Size& image_size)
     if (data_length <= 0)
         return 0;
 
-    int max_levels = std::floor(std::log2(data_length));
-    return std::max(max_levels, 0);
+    return std::log2(data_length);
 }
 
 int DWT2D::max_reconstructable_levels(const cv::Size& image_size) const
 {
     double data_length = std::min(image_size.width, image_size.height);
-    if (data_length <= 0)
+    if (data_length <= 0 || wavelet.filter_length() <= 1)
         return 0;
 
     int max_levels = std::floor(
