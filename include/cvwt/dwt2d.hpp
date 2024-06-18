@@ -318,7 +318,7 @@ public:
          *          the reference to the underlying data.
          *
          * @param[in] coeffs The coefficients.  This must be one of:
-         *  - A matrix of size level_size() "level_size(0)" with channels()
+         *  - A matrix of size @ref level_size() "level_size(0)" with channels()
          *    number of channels
          *  - @copydetails common_scalar_definition_list
          *
@@ -667,8 +667,9 @@ public:
          * @brief The size of the coefficents starting at the given level.
          *
          * The level size will be empty if and only if the image_size() is
-         * empty.  This differs from size(), which equals level_size(0) when
-         * this is nonempty and empty when this is empty().
+         * empty.  This differs from size(), which equals
+         * @ref level_size() "level_size(0)" when this is nonempty and empty
+         * when this is empty().
          *
          * The difference is that size() measures the size of the coefficients
          * matrix, whereas level_size() is effectively the sum of subband sizes,
