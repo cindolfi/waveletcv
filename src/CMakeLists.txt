@@ -38,9 +38,10 @@ target_sources (
         ${CVWT_INCLUDE_DIR}/cvwt/shrinkage.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/utils.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/dispatch.hpp
-        ${CVWT_INCLUDE_DIR}/cvwt/compare.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/array.hpp
-        ${CVWT_INCLUDE_DIR}/cvwt/statistics.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/array/compare.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/array/array.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/array/statistics.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/filters/daubechies.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/filters/symlets.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/filters/coiflets.hpp
@@ -56,9 +57,9 @@ target_sources (
         dwt2d.cpp
         dwt2d_coeffsexpr.cpp
         utils.cpp
-        compare.cpp
-        statistics.cpp
-        array.cpp
+        array/compare.cpp
+        array/statistics.cpp
+        array/array.cpp
         shrink/shrink.cpp
         shrink/bayes.cpp
         shrink/sure.cpp

@@ -1,5 +1,5 @@
-#ifndef CVWT_COMPARE_HPP
-#define CVWT_COMPARE_HPP
+#ifndef CVWT_ARRAY_COMPARE_HPP
+#define CVWT_ARRAY_COMPARE_HPP
 
 #include <type_traits>
 #include <utility>
@@ -248,5 +248,5 @@ void compare(
 /** @}*/
 }   // namespace cvwt
 
-#endif  // CVWT_COMPARE_HPP
+#endif  // CVWT_ARRAY_COMPARE_HPP
 

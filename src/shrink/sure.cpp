@@ -5,7 +5,7 @@
 #include <nlopt.hpp>
 #include "cvwt/dispatch.hpp"
 #include "cvwt/exception.hpp"
-#include "cvwt/array.hpp"
+#include "cvwt/array/array.hpp"
 #include "cvwt/shrink/universal.hpp"
 
 namespace cvwt

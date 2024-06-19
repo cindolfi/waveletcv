@@ -2,7 +2,7 @@
  * Compare Unit Test
 */
 #include <numeric>
-#include <cvwt/compare.hpp>
+#include <cvwt/array/compare.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

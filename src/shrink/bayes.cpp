@@ -3,7 +3,7 @@
 
 #include "cvwt/dispatch.hpp"
 #include "cvwt/exception.hpp"
-#include "cvwt/array.hpp"
+#include "cvwt/array/array.hpp"
 
 namespace cvwt
 {

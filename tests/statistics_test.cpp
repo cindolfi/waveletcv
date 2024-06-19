@@ -2,7 +2,7 @@
  * Statistics Unit Test
 */
 #include <numeric>
-#include <cvwt/statistics.hpp>
+#include <cvwt/array/statistics.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

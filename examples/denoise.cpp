@@ -11,7 +11,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <cvwt/dwt2d.hpp>
-#include <cvwt/compare.hpp>
+#include <cvwt/array.hpp>
 #include <cvwt/shrinkage.hpp>
 #include "common.hpp"
 

@@ -1,7 +1,7 @@
 #include "cvwt/dwt2d.hpp"
 
 #include "cvwt/exception.hpp"
-#include "cvwt/compare.hpp"
+#include "cvwt/array/compare.hpp"
 
 namespace cvwt
 {

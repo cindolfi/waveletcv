@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <numeric>
-#include "cvwt/array.hpp"
+#include "cvwt/array/array.hpp"
 
 namespace cvwt
 {

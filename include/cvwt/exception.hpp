@@ -5,7 +5,7 @@
 #include <source_location>
 #include <opencv2/core.hpp>
 #include "cvwt/utils.hpp"
-#include "cvwt/array.hpp"
+#include "cvwt/array/array.hpp"
 
 namespace cvwt
 {

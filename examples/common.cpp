@@ -8,7 +8,7 @@
 #include <opencv2/highgui.hpp>
 #include <cvwt/wavelet.hpp>
 #include <cvwt/utils.hpp>
-#include <cvwt/statistics.hpp>
+#include <cvwt/array.hpp>
 
 using namespace cvwt;
 

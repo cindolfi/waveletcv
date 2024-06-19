@@ -1,5 +1,5 @@
-#ifndef CVWT_STATISTICS_HPP
-#define CVWT_STATISTICS_HPP
+#ifndef CVWT_ARRAY_STATISTICS_HPP
+#define CVWT_ARRAY_STATISTICS_HPP
 
 #include <opencv2/core.hpp>
 
@@ -61,6 +61,6 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray
 
 }   // namespace cvwt
 
-#endif  // #define CVWT_STATISTICS_HPP
+#endif  // #define CVWT_ARRAY_STATISTICS_HPP
 
 

@@ -1,10 +1,10 @@
-#include "cvwt/compare.hpp"
+#include "cvwt/array/compare.hpp"
 
 #include <atomic>
 #include "cvwt/dispatch.hpp"
 #include "cvwt/exception.hpp"
 #include "cvwt/utils.hpp"
-#include "cvwt/array.hpp"
+#include "cvwt/array/array.hpp"
 
 
 namespace cvwt

@@ -6,9 +6,9 @@
 #include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/logger.hpp>
-#include "cvwt/statistics.hpp"
+#include "cvwt/array/statistics.hpp"
 #include "cvwt/exception.hpp"
-#include "cvwt/array.hpp"
+#include "cvwt/array/array.hpp"
 
 namespace cvwt
 {
