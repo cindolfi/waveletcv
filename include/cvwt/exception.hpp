@@ -1,18 +1,14 @@
 #ifndef CVWT_EXCEPTION_HPP
 #define CVWT_EXCEPTION_HPP
 
-#include <span>
-#include <ranges>
-#include <memory>
 #include <string>
 #include <source_location>
 #include <opencv2/core.hpp>
+#include "cvwt/utils.hpp"
+#include "cvwt/array.hpp"
 
 namespace cvwt
 {
-//  forward declarations (defined in utils.cpp)
-bool is_vector(cv::InputArray vector, int channels);
-
 /**
  * @brief Allowed number of mask channels that can be used with given array.
  */
@@ -26,9 +22,6 @@ enum AllowedMaskChannels
 
 namespace internal
 {
-//  forward declarations (defined in utils.cpp)
-std::string get_type_name(int type);
-
 template <std::size_t... Indices>
 struct concatable_index_sequence : std::index_sequence<Indices...>
 {

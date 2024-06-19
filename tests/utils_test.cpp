@@ -3,6 +3,9 @@
 */
 #include <numeric>
 #include <cvwt/utils.hpp>
+#include <cvwt/compare.hpp>
+#include <cvwt/statistics.hpp>
+#include <cvwt/array.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

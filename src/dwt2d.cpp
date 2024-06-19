@@ -1,10 +1,14 @@
+#include "cvwt/dwt2d.hpp"
+
+#include <string>
+#include <vector>
 #include <algorithm>
+#include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/logger.hpp>
-#include "cvwt/dwt2d.hpp"
-#include "cvwt/utils.hpp"
+#include "cvwt/statistics.hpp"
 #include "cvwt/exception.hpp"
-#include <iostream>
+#include "cvwt/array.hpp"
 
 namespace cvwt
 {

@@ -1,8 +1,9 @@
 
 #include "cvwt/shrink/bayes.hpp"
 
-#include "cvwt/utils.hpp"
+#include "cvwt/dispatch.hpp"
 #include "cvwt/exception.hpp"
+#include "cvwt/array.hpp"
 
 namespace cvwt
 {

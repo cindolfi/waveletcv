@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <nlopt.hpp>
 #include <cvwt/shrinkage.hpp>
+#include <cvwt/array.hpp>
 #include "common.hpp"
 #include "json.hpp"
 

@@ -5,6 +5,7 @@
 // #include <sstream>
 // #include <algorithm>
 #include <cvwt/dwt2d.hpp>
+// #include <cvwt/compare.hpp>
 // #include <cvwt/utils.hpp>
 #include "common.hpp"
 // #include "base_dwt2d.hpp"

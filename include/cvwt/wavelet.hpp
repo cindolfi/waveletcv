@@ -3,13 +3,12 @@
 
 #include <string>
 #include <memory>
-#include <vector>
 #include <set>
-#include <array>
 #include <map>
 #include <source_location>
 #include <opencv2/core.hpp>
 #include "cvwt/filterbank.hpp"
+#include "cvwt/exception.hpp"
 
 namespace cvwt
 {

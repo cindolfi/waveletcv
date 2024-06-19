@@ -2,7 +2,6 @@
  * Base Test Class For DWT2D and Filter Bank Unit Tests
 */
 #include <fstream>
-#include <ranges>
 #include "common.hpp"
 #include "json.hpp"
 #include "base_dwt2d.hpp"

@@ -5,8 +5,9 @@
 #include <utility>
 #include <opencv2/core.hpp>
 #include "cvwt/dwt2d.hpp"
-#include "cvwt/utils.hpp"
+#include "cvwt/dispatch.hpp"
 #include "cvwt/exception.hpp"
+#include "cvwt/statistics.hpp"
 
 namespace cvwt
 {

@@ -2,12 +2,8 @@
 #define CVWT_FILTERBANK_HPP
 
 #include <string>
-#include <memory>
-#include <vector>
-#include <array>
 #include <source_location>
 #include <opencv2/core.hpp>
-#include "cvwt/exception.hpp"
 
 namespace cvwt
 {

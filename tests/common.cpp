@@ -3,7 +3,7 @@
 #include <numeric>
 #include <opencv2/imgproc.hpp>
 #include <cvwt/dwt2d.hpp>
-#include <cvwt/utils.hpp>
+#include <cvwt/dispatch.hpp>
 #include "common.hpp"
 
 using namespace testing;

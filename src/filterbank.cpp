@@ -1,10 +1,11 @@
 #include "cvwt/filterbank.hpp"
 
-#include <functional>
 #include <opencv2/imgproc.hpp>
-#include <ranges>
-#include <numbers>
 #include "cvwt/utils.hpp"
+#include "cvwt/array.hpp"
+#include "cvwt/dispatch.hpp"
+#include "cvwt/compare.hpp"
+#include "cvwt/exception.hpp"
 
 namespace cvwt
 {

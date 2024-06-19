@@ -3,8 +3,9 @@
 
 #include <opencv2/core/utils/logger.hpp>
 #include <nlopt.hpp>
-#include "cvwt/utils.hpp"
+#include "cvwt/dispatch.hpp"
 #include "cvwt/exception.hpp"
+#include "cvwt/array.hpp"
 #include "cvwt/shrink/universal.hpp"
 
 namespace cvwt

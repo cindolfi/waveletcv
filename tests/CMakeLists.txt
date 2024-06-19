@@ -25,12 +25,14 @@ add_executable(
     json.cpp
     base_dwt2d.hpp
     base_dwt2d.cpp
-    utils_test.cpp
     wavelet_test.cpp
     filterbank_test.cpp
     dwt2d_test.cpp
     dwt2d_coeffsexpr_test.cpp
     shrinkage_test.cpp
+    array_test.cpp
+    compare_test.cpp
+    statistics_test.cpp
 )
 
 target_link_libraries (

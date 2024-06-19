@@ -1,3 +1,5 @@
+#include "common.hpp"
+
 #include <iostream>
 #include <sstream>
 #include <set>
@@ -6,7 +8,7 @@
 #include <opencv2/highgui.hpp>
 #include <cvwt/wavelet.hpp>
 #include <cvwt/utils.hpp>
-#include "common.hpp"
+#include <cvwt/statistics.hpp>
 
 using namespace cvwt;
 

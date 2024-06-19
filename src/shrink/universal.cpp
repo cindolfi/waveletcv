@@ -2,7 +2,6 @@
 #include "cvwt/shrink/universal.hpp"
 
 #include "cvwt/utils.hpp"
-#include "cvwt/exception.hpp"
 
 namespace cvwt
 {

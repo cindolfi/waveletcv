@@ -1,14 +1,15 @@
 #include "cvwt/wavelet.hpp"
+
+#include <ranges>
+#include <functional>
+#include <sstream>
+#include <opencv2/imgproc.hpp>
 #include "cvwt/filters/daubechies.hpp"
 #include "cvwt/filters/symlets.hpp"
 #include "cvwt/filters/coiflets.hpp"
 #include "cvwt/filters/biorthogonal.hpp"
-#include "cvwt/utils.hpp"
+// #include "cvwt/utils.hpp"
 #include "cvwt/exception.hpp"
-#include <opencv2/imgproc.hpp>
-#include <ranges>
-#include <functional>
-#include <sstream>
 
 namespace cvwt
 {

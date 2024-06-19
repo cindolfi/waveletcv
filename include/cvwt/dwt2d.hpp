@@ -1,13 +1,11 @@
 #ifndef CVWT_DWT2D_HPP
 #define CVWT_DWT2D_HPP
 
-#include <string>
-#include <vector>
 #include <memory>
 #include <source_location>
 #include <opencv2/core.hpp>
 #include "cvwt/wavelet.hpp"
-#include "cvwt/utils.hpp"
+#include "cvwt/array.hpp"
 
 namespace cvwt
 {
