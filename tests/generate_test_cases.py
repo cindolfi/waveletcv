@@ -18,7 +18,7 @@ import cv2
 WAVELET_TEST_DATA_FILENAME = 'wavelet_test_data.json'
 DWT2D_TEST_DATA_FILENAME = 'dwt2d_test_data.json'
 SHRINK_THRESHOLDS_TEST_DATA_FILENAME = 'shrink_thresholds_test_data.json'
-LENA_FILEPATH = 'inputs/lena.png'
+LENA_FILEPATH = 'images/lena.png'
 SEED = 42
 
 random = np.random.default_rng(SEED)
