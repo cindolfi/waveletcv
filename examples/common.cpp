@@ -181,7 +181,6 @@ cv::Mat normalize_details(
 
 void show_coeffs(
     const DWT2D::Coeffs& coeffs,
-    const Wavelet& wavelet,
     const std::string& normalization_method,
     bool split_channels,
     const std::string& title,
@@ -196,7 +195,7 @@ void show_coeffs(
         split_channels,
         title,
         make_title(
-            wavelet.name(), ", ",
+            coeffs.wavelet().name(), ", ",
             coeffs.levels(), " levels, ",
             normalization_method, (title_info.empty() ? "" : ", "),
             title_info

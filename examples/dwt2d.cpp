@@ -12,39 +12,32 @@ using namespace cvwt;
 
 const std::string PROGRAM_NAME = "dwt2d";
 
-void show(
-    const cv::Mat& image,
-    const DWT2D::Coeffs& coeffs,
-    const std::filesystem::path& filepath,
-    const Wavelet& wavelet
-)
-{
-    cv::imshow(
-        make_title("Image (", filepath.filename(), ")"),
-        image
-    );
-    cv::imshow(
-        make_title("DWT Coefficients(", wavelet.name(), ", ",
-                   coeffs.levels(), " levels)"),
-        coeffs.map_details_to_unit_interval()
-    );
-}
-
 void main_program(const cxxopts::ParseResult& args)
 {
     auto [image, filepath] = open_image(args["image_file"].as<std::string>());
-    auto wavelet = Wavelet::create(args["wavelet"].as<std::string>());
+    auto wavelet = args["wavelet"].as<std::string>();
     auto levels = args["levels"].as<int>();
+    auto split_channels = args["split-channels"].as<bool>();
     auto coeffs = levels > 0 ? dwt2d(image, wavelet, levels)
                              : dwt2d(image, wavelet);
 
     if (args.count("out"))
         save_coeffs(coeffs, args["out"].as<std::string>());
 
+    bool wait_for_key_press = false;
     if (args.count("show")) {
-        show(image, coeffs, filepath, wavelet);
-        cv::waitKey(0);
+        show_image(image, split_channels, "Image", filepath.filename());
+        wait_for_key_press = true;
     }
+
+    if (args.count("show-coeffs")) {
+        auto normalization_method = args["show-coeffs"].as<std::string>();
+        show_coeffs(coeffs, normalization_method, split_channels);
+        wait_for_key_press = true;
+    }
+
+    if (wait_for_key_press)
+        cv::waitKey(0);
 }
 
 int main(int argc, char* argv[])
@@ -54,7 +47,7 @@ int main(int argc, char* argv[])
     options.add_options()
         (
             "s, show",
-            "Show image and DWT coefficients."
+            "Show image."
         )
         (
             "o, out",

@@ -45,7 +45,6 @@ void show_image(
 );
 void show_coeffs(
     const cvwt::DWT2D::Coeffs& coeffs,
-    const cvwt::Wavelet& wavelet,
     const std::string& normalization_method,
     bool split_channels,
     const std::string& title = "DWT Coefficients",

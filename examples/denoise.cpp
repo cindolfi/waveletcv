@@ -1,5 +1,5 @@
 /**
- * Denoises image using DWT
+ * Denoises image by shrinking DWT
 */
 #include <iostream>
 #include <set>
@@ -64,7 +64,7 @@ void show_images(
 void add_noise(cv::InputArray input, cv::OutputArray output, double stdev)
 {
     auto image = input.getMat();
-    cv::Mat noise(image.size(), image.type(), 0.0);
+    cv::Mat noise(image.size(), image.type());
     cv::randn(noise, 0, stdev);
     cv::add(image, noise, output);
 }
@@ -105,7 +105,7 @@ void main_program(const cxxopts::ParseResult& args)
 {
     verify_args(args);
     auto [image, filepath] = open_image(args["image_file"].as<std::string>());
-    auto wavelet = Wavelet::create(args["wavelet"].as<std::string>());
+    auto wavelet = args["wavelet"].as<std::string>();
     int levels = args.count("levels") ? args["levels"].as<int>() : 0;
     double stdev = args.count("add-noise") ? args["add-noise"].as<double>() : 0.0;
     auto shrink_method = args["method"].as<std::string>();
@@ -113,7 +113,7 @@ void main_program(const cxxopts::ParseResult& args)
     auto split_channels = args["split-channels"].as<bool>();
 
     cv::Mat noisy_image;
-    if (stdev > 0)
+    if (stdev > 0.0)
         add_noise(image, noisy_image, stdev);
     else
         noisy_image = image;
@@ -208,7 +208,6 @@ void main_program(const cxxopts::ParseResult& args)
         auto normalization_method = args["show-coeffs"].as<std::string>();
         show_coeffs(
             coeffs,
-            wavelet,
             normalization_method,
             split_channels,
             "DWT Coefficients",
@@ -216,7 +215,6 @@ void main_program(const cxxopts::ParseResult& args)
         );
         show_coeffs(
             shrunk_coeffs,
-            wavelet,
             normalization_method,
             split_channels,
             "Shrunk DWT Coefficients",
