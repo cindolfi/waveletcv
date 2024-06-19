@@ -7,7 +7,7 @@
 
 namespace cvwt
 {
-/** @addtogroup shrinkage
+/** @addtogroup shrink
  *  @{
  */
 /**
@@ -179,7 +179,7 @@ DWT2D::Coeffs bayes_shrink(const DWT2D::Coeffs& coeffs);
 void bayes_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
 /** @}*/
 
-/** @} shrinkage */
+/** @} shrink */
 } // namespace cvwt
 
 #endif  // CVWT_SHRINK_BAYES_HPP

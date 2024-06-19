@@ -11,7 +11,7 @@
 
 namespace cvwt
 {
-/** @addtogroup shrinkage Shrink DWT Coefficients
+/** @addtogroup shrink Shrink DWT Coefficients
  *  @{
  */
 /**
@@ -1615,7 +1615,7 @@ private:
     StdDevFunction _stdev_function;
     mutable std::mutex _mutex;
 };
-/** @} shrinkage*/
+/** @} shrink*/
 
 } // namespace cvwt
 

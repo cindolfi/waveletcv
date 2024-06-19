@@ -35,7 +35,6 @@ target_sources (
         ${CVWT_INCLUDE_DIR}/cvwt/wavelet.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/filterbank.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/dwt2d.hpp
-        ${CVWT_INCLUDE_DIR}/cvwt/shrinkage.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/utils.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/dispatch.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/array.hpp
@@ -47,6 +46,7 @@ target_sources (
         ${CVWT_INCLUDE_DIR}/cvwt/filters/coiflets.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/filters/biorthogonal.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/exception.hpp
+        ${CVWT_INCLUDE_DIR}/cvwt/shrink.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/shrink/shrink.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/shrink/bayes.hpp
         ${CVWT_INCLUDE_DIR}/cvwt/shrink/sure.hpp

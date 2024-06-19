@@ -7,7 +7,7 @@
 
 namespace cvwt
 {
-/** @addtogroup shrinkage
+/** @addtogroup shrink
  *  @{
  */
 //  ----------------------------------------------------------------------------
@@ -359,7 +359,7 @@ DWT2D::Coeffs visu_shrink(DWT2D::Coeffs& coeffs, int levels);
 void visu_shrink(DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels);
 /** @}*/
 
-/** @} shrinkage */
+/** @} shrink */
 } // namespace cvwt
 
 #endif  // CVWT_SHRINK_UNIVERSAL_HPP

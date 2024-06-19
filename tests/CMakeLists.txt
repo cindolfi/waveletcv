@@ -29,7 +29,7 @@ add_executable(
     filterbank_test.cpp
     dwt2d_test.cpp
     dwt2d_coeffsexpr_test.cpp
-    shrinkage_test.cpp
+    shrink_test.cpp
     array_test.cpp
     compare_test.cpp
     statistics_test.cpp
@@ -49,7 +49,7 @@ target_compile_definitions(
     PRIVATE
     WAVELET_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/wavelet_test_data.json"
     DWT2D_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/dwt2d_test_data.json"
-    SHRINKAGE_THRESHOLD_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/shrinkage_thresholds_test_data.json"
+    SHRINK_THRESHOLD_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/shrink_thresholds_test_data.json"
 )
 
 #   ----------------------------------------------------------------------------

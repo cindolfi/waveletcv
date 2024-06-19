@@ -6,7 +6,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <nlopt.hpp>
-#include <cvwt/shrinkage.hpp>
+#include <cvwt/shrink.hpp>
 #include <cvwt/array.hpp>
 #include "common.hpp"
 #include "json.hpp"
@@ -3286,8 +3286,8 @@ public:
 
     static std::vector<ParamType> create_params()
     {
-        //  SHRINKAGE_THRESHOLD_TEST_DATA_PATH is defined in CMakeLists.txt
-        std::ifstream test_case_data_file(SHRINKAGE_THRESHOLD_TEST_DATA_PATH);
+        //  SHRINK_THRESHOLD_TEST_DATA_PATH is defined in CMakeLists.txt
+        std::ifstream test_case_data_file(SHRINK_THRESHOLD_TEST_DATA_PATH);
         auto test_cases = json::parse(test_case_data_file);
 
         auto coeffs_map = test_cases["coeffs"].get<std::map<std::string, DWT2D::Coeffs>>();

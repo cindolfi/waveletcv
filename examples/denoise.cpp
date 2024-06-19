@@ -12,7 +12,7 @@
 #include <opencv2/highgui.hpp>
 #include <cvwt/dwt2d.hpp>
 #include <cvwt/array.hpp>
-#include <cvwt/shrinkage.hpp>
+#include <cvwt/shrink.hpp>
 #include "common.hpp"
 
 using namespace cvwt;

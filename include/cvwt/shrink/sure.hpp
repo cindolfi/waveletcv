@@ -7,7 +7,7 @@
 
 namespace cvwt
 {
-/** @addtogroup shrinkage
+/** @addtogroup shrink
  *  @{
  */
 //  ----------------------------------------------------------------------------
@@ -15,7 +15,7 @@ namespace cvwt
 //  ----------------------------------------------------------------------------
 /**
  * @brief Implements the SureShrink algorithm for shrinking DWT coefficients.
- * @headerfile <cvwt/shrinkage.hpp>
+ * @headerfile <cvwt/shrink.hpp>
  *
  * The coefficients can be partitioned Shrinker::GLOBALLY into a single subset,
  * by Shrinker::LEVELS into level subsets, or by Shrinker::SUBBANDS into subband
@@ -504,7 +504,7 @@ void sure_shrink_levelwise(
 );
 /** @}*/
 
-/** @} shrinkage */
+/** @} shrink */
 } // namespace cvwt
 
 #endif  // CVWT_SHRINK_SURE_HPP
