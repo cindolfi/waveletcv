@@ -10,8 +10,6 @@
 
 using namespace cvwt;
 
-const std::string PROGRAM_NAME = "dwt2d";
-
 void main_program(const cxxopts::ParseResult& args)
 {
     auto [image, filepath] = open_image(args["image_file"].as<std::string>());
@@ -42,6 +40,7 @@ void main_program(const cxxopts::ParseResult& args)
 
 int main(int argc, char* argv[])
 {
+    //  PROGRAM_NAME is defined in CMakeLists.txt
     cxxopts::Options options(PROGRAM_NAME);
     add_common_options(options);
     options.add_options()

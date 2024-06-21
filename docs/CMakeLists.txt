@@ -73,7 +73,6 @@ if (DOXYGEN_FOUND)
 
     doxygen_add_docs(
         docs
-        # ALL
         ${CVWT_INCLUDE_DIR}/cvwt
     )
 else()

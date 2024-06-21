@@ -9,36 +9,61 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(cxxopts)
 
 #   ----------------------------------------------------------------------------
-#   Build dwt2d
+#   Build cvwt-dwt2d
 #   ----------------------------------------------------------------------------
 add_executable(
-    dwt2d
+    cvwt-dwt2d
     dwt2d.cpp
     common.hpp
     common.cpp
 )
 target_link_libraries (
-    dwt2d
+    cvwt-dwt2d
     PRIVATE
     cvwt
     cxxopts
 )
-target_compile_features(dwt2d PRIVATE cxx_std_20)
+get_cmake_property(DWT2D_PROGRAM_NAME cvwt-dwt2d OUTPUT_NAME)
+target_compile_definitions(
+    cvwt-dwt2d
+    PRIVATE
+    PROGRAM_NAME="${DWT2D_PROGRAM_NAME}"
+)
+
+if(CVWT_INSTALL_EXAMPLES)
+    install(
+        TARGETS
+        cvwt-dwt2d
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif()
 
 #   ----------------------------------------------------------------------------
-#   Build denoise
+#   Build cvwt-denoise
 #   ----------------------------------------------------------------------------
 add_executable(
-    dwt2d-denoise
+    cvwt-denoise
     denoise.cpp
     common.hpp
     common.cpp
 )
 target_link_libraries (
-    dwt2d-denoise
+    cvwt-denoise
     PRIVATE
     cvwt
     cxxopts
 )
-target_compile_features(dwt2d-denoise PRIVATE cxx_std_20)
+get_cmake_property(DENOISE_PROGRAM_NAME cvwt-denoise OUTPUT_NAME)
+target_compile_definitions(
+    cvwt-denoise
+    PRIVATE
+    PROGRAM_NAME="${DENOISE_PROGRAM_NAME}"
+)
 
+if(CVWT_INSTALL_EXAMPLES)
+    install(
+        TARGETS
+        cvwt-denoise
+        DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+endif()

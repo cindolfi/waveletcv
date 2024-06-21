@@ -17,7 +17,6 @@
 
 using namespace cvwt;
 
-const std::string PROGRAM_NAME = "dwt2d-denoise";
 const std::set<std::string> AVAILABLE_SHRINK_METHODS = {
     "visu",
     "sure",
@@ -241,6 +240,7 @@ void main_program(const cxxopts::ParseResult& args)
 
 int main(int argc, char* argv[])
 {
+    //  PROGRAM_NAME is defined in CMakeLists.txt
     cxxopts::Options options(PROGRAM_NAME);
     add_common_options(options);
     options.add_options()
