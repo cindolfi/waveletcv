@@ -8,7 +8,6 @@
 #include "cvwt/filters/symlets.hpp"
 #include "cvwt/filters/coiflets.hpp"
 #include "cvwt/filters/biorthogonal.hpp"
-// #include "cvwt/utils.hpp"
 #include "cvwt/exception.hpp"
 
 namespace cvwt
@@ -31,8 +30,8 @@ Wavelet::Wavelet(
             filter_bank,
             orthogonality,
             symmetry,
-            family,
             name,
+            family,
             wavelet_vanishing_moments,
             scaling_vanishing_moments
         )
@@ -53,8 +52,8 @@ Wavelet::Wavelet(
             filter_bank,
             orthogonality,
             infer_symmetry(filter_bank),
-            family,
             name,
+            family,
             wavelet_vanishing_moments,
             scaling_vanishing_moments
         )
@@ -96,8 +95,8 @@ Wavelet::Wavelet(
             filter_bank,
             infer_orthogonality(filter_bank),
             infer_symmetry(filter_bank),
-            family,
             name,
+            family,
             wavelet_vanishing_moments,
             scaling_vanishing_moments
         )
@@ -127,6 +126,19 @@ Symmetry Wavelet::infer_symmetry(const FilterBank& filter_bank) const
         symmetry = Symmetry::ASYMMETRIC;
 
     return symmetry;
+}
+
+Wavelet Wavelet::as_type(int type) const
+{
+    return Wavelet(
+        _p->filter_bank.as_type(type),
+        _p->orthogonality,
+        _p->symmetry,
+        _p->name,
+        _p->family,
+        _p->wavelet_vanishing_moments,
+        _p->scaling_vanishing_moments
+    );
 }
 
 bool Wavelet::operator==(const Wavelet& other) const
@@ -263,12 +275,13 @@ std::set<std::string> Wavelet::_available_wavelets{
 //  ----------------------------------------------------------------------------
 //  Wavelet Factories
 //  ----------------------------------------------------------------------------
-Wavelet create_haar()
+Wavelet create_haar(int type)
 {
+    cv::Mat filter_coeffs(internal::DAUBECHIES_FILTER_COEFFS["db1"]);
+    filter_coeffs.convertTo(filter_coeffs, type);
+
     return Wavelet(
-        FilterBank::create_orthogonal_filter_bank(
-            cv::Mat(internal::DAUBECHIES_FILTER_COEFFS["db1"])
-        ),
+        FilterBank::create_orthogonal_filter_bank(filter_coeffs),
         Orthogonality::ORTHOGONAL,
         Symmetry::ASYMMETRIC,
         "haar",
@@ -278,7 +291,7 @@ Wavelet create_haar()
     );
 }
 
-Wavelet create_daubechies(int order)
+Wavelet create_daubechies(int order, int type)
 {
     auto name = internal::make_orthogonal_name(
         internal::DAUBECHIES_NAME,
@@ -289,11 +302,11 @@ Wavelet create_daubechies(int order)
         internal::DAUBECHIES_FAMILY,
         internal::DAUBECHIES_FILTER_COEFFS
     );
+    cv::Mat filter_coeffs(internal::DAUBECHIES_FILTER_COEFFS[name]);
+    filter_coeffs.convertTo(filter_coeffs, type);
 
     return Wavelet(
-        FilterBank::create_orthogonal_filter_bank(
-            cv::Mat(internal::DAUBECHIES_FILTER_COEFFS[name])
-        ),
+        FilterBank::create_orthogonal_filter_bank(filter_coeffs),
         Orthogonality::ORTHOGONAL,
         Symmetry::ASYMMETRIC,
         name,
@@ -303,7 +316,7 @@ Wavelet create_daubechies(int order)
     );
 }
 
-Wavelet create_symlets(int order)
+Wavelet create_symlets(int order, int type)
 {
     auto name = internal::make_orthogonal_name(
         internal::SYMLETS_NAME,
@@ -314,11 +327,11 @@ Wavelet create_symlets(int order)
         internal::SYMLETS_FAMILY,
         internal::SYMLETS_FILTER_COEFFS
     );
+    cv::Mat filter_coeffs(internal::SYMLETS_FILTER_COEFFS[name]);
+    filter_coeffs.convertTo(filter_coeffs, type);
 
     return Wavelet(
-        FilterBank::create_orthogonal_filter_bank(
-            cv::Mat(internal::SYMLETS_FILTER_COEFFS[name])
-        ),
+        FilterBank::create_orthogonal_filter_bank(filter_coeffs),
         Orthogonality::ORTHOGONAL,
         Symmetry::NEARLY_SYMMETRIC,
         name,
@@ -328,7 +341,7 @@ Wavelet create_symlets(int order)
     );
 }
 
-Wavelet create_coiflets(int order)
+Wavelet create_coiflets(int order, int type)
 {
     auto name = internal::make_orthogonal_name(
         internal::COIFLETS_NAME,
@@ -339,11 +352,11 @@ Wavelet create_coiflets(int order)
         internal::COIFLETS_FAMILY,
         internal::COIFLETS_FILTER_COEFFS
     );
+    cv::Mat filter_coeffs(internal::COIFLETS_FILTER_COEFFS[name]);
+    filter_coeffs.convertTo(filter_coeffs, type);
 
     return Wavelet(
-        FilterBank::create_orthogonal_filter_bank(
-            cv::Mat(internal::COIFLETS_FILTER_COEFFS[name])
-        ),
+        FilterBank::create_orthogonal_filter_bank(filter_coeffs),
         Orthogonality::ORTHOGONAL,
         Symmetry::NEARLY_SYMMETRIC,
         name,
@@ -353,7 +366,11 @@ Wavelet create_coiflets(int order)
     );
 }
 
-Wavelet create_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments)
+Wavelet create_biorthogonal(
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments,
+    int type
+)
 {
     auto name = internal::make_biorthogonal_name(
         internal::BIORTHOGONAL_NAME,
@@ -365,12 +382,13 @@ Wavelet create_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing
         internal::BIORTHOGONAL_FAMILY,
         internal::BIORTHOGONAL_FILTER_COEFFS
     );
+    cv::Mat filter_coeffs1(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).first);
+    filter_coeffs1.convertTo(filter_coeffs1, type);
+    cv::Mat filter_coeffs2(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second);
+    filter_coeffs2.convertTo(filter_coeffs2, type);
 
     return Wavelet(
-        FilterBank::create_biorthogonal_filter_bank(
-            cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).first),
-            cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second)
-        ),
+        FilterBank::create_biorthogonal_filter_bank(filter_coeffs1, filter_coeffs2),
         Orthogonality::BIORTHOGONAL,
         Symmetry::SYMMETRIC,
         name,
@@ -380,7 +398,11 @@ Wavelet create_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing
     );
 }
 
-Wavelet create_reverse_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments)
+Wavelet create_reverse_biorthogonal(
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments,
+    int type
+)
 {
     auto name = internal::make_biorthogonal_name(
         internal::BIORTHOGONAL_NAME,
@@ -394,9 +416,13 @@ Wavelet create_reverse_biorthogonal(int wavelet_vanishing_moments, int scaling_v
         internal::BIORTHOGONAL_FILTER_COEFFS,
         "r"
     );
+    cv::Mat filter_coeffs1(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).first);
+    filter_coeffs1.convertTo(filter_coeffs1, type);
+    cv::Mat filter_coeffs2(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second);
+    filter_coeffs2.convertTo(filter_coeffs2, type);
     auto biorthogonal_filter_bank = FilterBank::create_biorthogonal_filter_bank(
-        cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).first),
-        cv::Mat(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second)
+        filter_coeffs1,
+        filter_coeffs2
     );
 
     return Wavelet(

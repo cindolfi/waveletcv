@@ -547,6 +547,17 @@ void FilterBankImpl::throw_if_wrong_type(
 //  ----------------------------------------------------------------------------
 //  KernelPair
 //  ----------------------------------------------------------------------------
+KernelPair KernelPair::as_type(int type) const
+{
+    cv::Mat lowpass;
+    _lowpass.convertTo(lowpass, type);
+
+    cv::Mat highpass;
+    _highpass.convertTo(highpass, type);
+
+    return KernelPair(lowpass, highpass);
+}
+
 KernelPair make_kernel_pair(cv::InputArray lowpass, cv::InputArray highpass)
 {
     if (lowpass.size() != highpass.size()) {
@@ -599,6 +610,28 @@ FilterBank::FilterBank(
         )
     )
 {
+}
+
+FilterBank FilterBank::as_type(int type) const
+{
+    if (type != CV_64FC1 && type != CV_32FC1)
+        throw_bad_arg(
+            "Filter bank type must be CV_64FC1 or CV_32FC1. Got ",
+            internal::get_type_name(type), "."
+        );
+
+    if (type == this->type())
+        return *this;
+
+    auto decompose_kernels = this->decompose_kernels().as_type(type);
+    auto reconstruct_kernels = this->reconstruct_kernels().as_type(type);
+
+    return FilterBank(
+        decompose_kernels.lowpass(),
+        decompose_kernels.highpass(),
+        reconstruct_kernels.lowpass(),
+        reconstruct_kernels.highpass()
+    );
 }
 
 void FilterBank::decompose(

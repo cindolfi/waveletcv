@@ -215,6 +215,21 @@ public:
     Wavelet& operator=(Wavelet&& other) = default;
 
     /**
+     * @brief Copies the wavelet and converts the filter bank data type.
+     *
+     * @param[in] type The filter bank data type.
+     */
+    [[nodiscard]]
+    Wavelet as_type(int type) const;
+
+    /**
+     * @brief The filter bank data type.
+     *
+     * @param[in] type The filter bank data type.
+     */
+    int type() const { return _p->filter_bank.type(); }
+
+    /**
      * @brief The number of vanishing moments of the wavelet function.
      */
     int wavelet_vanishing_moments() const { return _p->wavelet_vanishing_moments; }
@@ -464,8 +479,8 @@ private:
         FilterBank filter_bank;
         Orthogonality orthogonality = Orthogonality::NONE;
         Symmetry symmetry = Symmetry::ASYMMETRIC;
-        std::string family = "";
         std::string name = "";
+        std::string family = "";
         int wavelet_vanishing_moments = -1;
         int scaling_vanishing_moments = -1;
     };
@@ -492,170 +507,185 @@ std::ostream& operator<<(std::ostream& stream, const Wavelet& wavelet);
  */
 /**
  * @brief Creates a Haar Wavelet.
+ *
+ * @param[in] type The wavelet data type.
  */
-Wavelet create_haar();
+Wavelet create_haar(int type = CV_64FC1);
 
 /**
  * @brief Creates a Daubechies Wavelet.
  *
  * @param[in] order The order of the wavelet.
  *                  Must be 2 \f$\le\f$ @pref{order} \f$\le\f$ 38.
+ * @param[in] type The wavelet data type.
  * @throws cv::Exception If @pref{order} is invalid.
  */
-Wavelet create_daubechies(int order);
+Wavelet create_daubechies(int order, int type = CV_64FC1);
 
 /**
  * @brief Creates a Symlets Wavelet.
  *
  * @param[in] order The order of the wavelet.
  *                  Must be 2 \f$\le\f$ @pref{order} \f$\le\f$ 20.
+ * @param[in] type The wavelet data type.
  * @throws cv::Exception If @pref{order} is invalid.
  */
-Wavelet create_symlets(int order);
+Wavelet create_symlets(int order, int type = CV_64FC1);
 
 /**
  * @brief Creates a Coiflets Wavelet.
  *
  * @param[in] order The order of the wavelet.
  *                  Must be 1 \f$\le\f$ @pref{order} \f$\le\f$ 17.
+ * @param[in] type The wavelet data type.
  * @throws cv::Exception If @pref{order} is invalid.
  */
-Wavelet create_coiflets(int order);
+Wavelet create_coiflets(int order, int type = CV_64FC1);
 
 /**
  * @brief Creates a Biorthogonal Wavelet.
  *
  * @param[in] wavelet_vanishing_moments The number of vanishing moments of the wavelet function.
  * @param[in] scaling_vanishing_moments The number of vanishing moments of the scaling function.
+ * @param[in] type The wavelet data type.
  * @throws cv::Exception If @pref{wavelet_vanishing_moments} and
  *                       @pref{scaling_vanishing_moments} are an invalid pair.
  */
-Wavelet create_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments);
+Wavelet create_biorthogonal(
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments,
+    int type = CV_64FC1
+);
 
 /**
  * @brief Creates a Reverse Biorthogonal Wavelet.
  *
  * @param[in] wavelet_vanishing_moments The number of vanishing moments of the wavelet function.
  * @param[in] scaling_vanishing_moments The number of vanishing moments of the scaling function.
+ * @param[in] type The wavelet data type.
  * @throws cv::Exception If @pref{wavelet_vanishing_moments} and
  *                       @pref{scaling_vanishing_moments} are an invalid pair.
  */
-Wavelet create_reverse_biorthogonal(int wavelet_vanishing_moments, int scaling_vanishing_moments);
+Wavelet create_reverse_biorthogonal(
+    int wavelet_vanishing_moments,
+    int scaling_vanishing_moments,
+    int type = CV_64FC1
+);
 /** @}*/
 
 
 template <typename... CallArgs>
 std::map<std::string, std::function<Wavelet(CallArgs...)>> Wavelet::_wavelet_factories{
-    {"haar", create_haar},
+    {"haar", std::bind(create_haar, CV_64FC1)},
     //  daubechies
-    {"db1", std::bind(create_daubechies, 1)},
-    {"db2", std::bind(create_daubechies, 2)},
-    {"db3", std::bind(create_daubechies, 3)},
-    {"db4", std::bind(create_daubechies, 4)},
-    {"db5", std::bind(create_daubechies, 5)},
-    {"db6", std::bind(create_daubechies, 6)},
-    {"db7", std::bind(create_daubechies, 7)},
-    {"db8", std::bind(create_daubechies, 8)},
-    {"db9", std::bind(create_daubechies, 9)},
-    {"db10", std::bind(create_daubechies, 10)},
-    {"db11", std::bind(create_daubechies, 11)},
-    {"db12", std::bind(create_daubechies, 12)},
-    {"db13", std::bind(create_daubechies, 13)},
-    {"db14", std::bind(create_daubechies, 14)},
-    {"db15", std::bind(create_daubechies, 15)},
-    {"db16", std::bind(create_daubechies, 16)},
-    {"db17", std::bind(create_daubechies, 17)},
-    {"db18", std::bind(create_daubechies, 18)},
-    {"db19", std::bind(create_daubechies, 19)},
-    {"db20", std::bind(create_daubechies, 20)},
-    {"db21", std::bind(create_daubechies, 21)},
-    {"db22", std::bind(create_daubechies, 22)},
-    {"db23", std::bind(create_daubechies, 23)},
-    {"db24", std::bind(create_daubechies, 24)},
-    {"db25", std::bind(create_daubechies, 25)},
-    {"db26", std::bind(create_daubechies, 26)},
-    {"db27", std::bind(create_daubechies, 27)},
-    {"db28", std::bind(create_daubechies, 28)},
-    {"db29", std::bind(create_daubechies, 29)},
-    {"db30", std::bind(create_daubechies, 30)},
-    {"db31", std::bind(create_daubechies, 31)},
-    {"db32", std::bind(create_daubechies, 32)},
-    {"db33", std::bind(create_daubechies, 33)},
-    {"db34", std::bind(create_daubechies, 34)},
-    {"db35", std::bind(create_daubechies, 35)},
-    {"db36", std::bind(create_daubechies, 36)},
-    {"db37", std::bind(create_daubechies, 37)},
-    {"db38", std::bind(create_daubechies, 38)},
+    {"db1", std::bind(create_daubechies, 1, CV_64FC1)},
+    {"db2", std::bind(create_daubechies, 2, CV_64FC1)},
+    {"db3", std::bind(create_daubechies, 3, CV_64FC1)},
+    {"db4", std::bind(create_daubechies, 4, CV_64FC1)},
+    {"db5", std::bind(create_daubechies, 5, CV_64FC1)},
+    {"db6", std::bind(create_daubechies, 6, CV_64FC1)},
+    {"db7", std::bind(create_daubechies, 7, CV_64FC1)},
+    {"db8", std::bind(create_daubechies, 8, CV_64FC1)},
+    {"db9", std::bind(create_daubechies, 9, CV_64FC1)},
+    {"db10", std::bind(create_daubechies, 10, CV_64FC1)},
+    {"db11", std::bind(create_daubechies, 11, CV_64FC1)},
+    {"db12", std::bind(create_daubechies, 12, CV_64FC1)},
+    {"db13", std::bind(create_daubechies, 13, CV_64FC1)},
+    {"db14", std::bind(create_daubechies, 14, CV_64FC1)},
+    {"db15", std::bind(create_daubechies, 15, CV_64FC1)},
+    {"db16", std::bind(create_daubechies, 16, CV_64FC1)},
+    {"db17", std::bind(create_daubechies, 17, CV_64FC1)},
+    {"db18", std::bind(create_daubechies, 18, CV_64FC1)},
+    {"db19", std::bind(create_daubechies, 19, CV_64FC1)},
+    {"db20", std::bind(create_daubechies, 20, CV_64FC1)},
+    {"db21", std::bind(create_daubechies, 21, CV_64FC1)},
+    {"db22", std::bind(create_daubechies, 22, CV_64FC1)},
+    {"db23", std::bind(create_daubechies, 23, CV_64FC1)},
+    {"db24", std::bind(create_daubechies, 24, CV_64FC1)},
+    {"db25", std::bind(create_daubechies, 25, CV_64FC1)},
+    {"db26", std::bind(create_daubechies, 26, CV_64FC1)},
+    {"db27", std::bind(create_daubechies, 27, CV_64FC1)},
+    {"db28", std::bind(create_daubechies, 28, CV_64FC1)},
+    {"db29", std::bind(create_daubechies, 29, CV_64FC1)},
+    {"db30", std::bind(create_daubechies, 30, CV_64FC1)},
+    {"db31", std::bind(create_daubechies, 31, CV_64FC1)},
+    {"db32", std::bind(create_daubechies, 32, CV_64FC1)},
+    {"db33", std::bind(create_daubechies, 33, CV_64FC1)},
+    {"db34", std::bind(create_daubechies, 34, CV_64FC1)},
+    {"db35", std::bind(create_daubechies, 35, CV_64FC1)},
+    {"db36", std::bind(create_daubechies, 36, CV_64FC1)},
+    {"db37", std::bind(create_daubechies, 37, CV_64FC1)},
+    {"db38", std::bind(create_daubechies, 38, CV_64FC1)},
     //  symlets
-    {"sym2", std::bind(create_symlets, 2)},
-    {"sym3", std::bind(create_symlets, 3)},
-    {"sym4", std::bind(create_symlets, 4)},
-    {"sym5", std::bind(create_symlets, 5)},
-    {"sym6", std::bind(create_symlets, 6)},
-    {"sym7", std::bind(create_symlets, 7)},
-    {"sym8", std::bind(create_symlets, 8)},
-    {"sym9", std::bind(create_symlets, 9)},
-    {"sym10", std::bind(create_symlets, 10)},
-    {"sym11", std::bind(create_symlets, 11)},
-    {"sym12", std::bind(create_symlets, 12)},
-    {"sym13", std::bind(create_symlets, 13)},
-    {"sym14", std::bind(create_symlets, 14)},
-    {"sym15", std::bind(create_symlets, 15)},
-    {"sym16", std::bind(create_symlets, 16)},
-    {"sym17", std::bind(create_symlets, 17)},
-    {"sym18", std::bind(create_symlets, 18)},
-    {"sym19", std::bind(create_symlets, 19)},
-    {"sym20", std::bind(create_symlets, 20)},
+    {"sym2", std::bind(create_symlets, 2, CV_64FC1)},
+    {"sym3", std::bind(create_symlets, 3, CV_64FC1)},
+    {"sym4", std::bind(create_symlets, 4, CV_64FC1)},
+    {"sym5", std::bind(create_symlets, 5, CV_64FC1)},
+    {"sym6", std::bind(create_symlets, 6, CV_64FC1)},
+    {"sym7", std::bind(create_symlets, 7, CV_64FC1)},
+    {"sym8", std::bind(create_symlets, 8, CV_64FC1)},
+    {"sym9", std::bind(create_symlets, 9, CV_64FC1)},
+    {"sym10", std::bind(create_symlets, 10, CV_64FC1)},
+    {"sym11", std::bind(create_symlets, 11, CV_64FC1)},
+    {"sym12", std::bind(create_symlets, 12, CV_64FC1)},
+    {"sym13", std::bind(create_symlets, 13, CV_64FC1)},
+    {"sym14", std::bind(create_symlets, 14, CV_64FC1)},
+    {"sym15", std::bind(create_symlets, 15, CV_64FC1)},
+    {"sym16", std::bind(create_symlets, 16, CV_64FC1)},
+    {"sym17", std::bind(create_symlets, 17, CV_64FC1)},
+    {"sym18", std::bind(create_symlets, 18, CV_64FC1)},
+    {"sym19", std::bind(create_symlets, 19, CV_64FC1)},
+    {"sym20", std::bind(create_symlets, 20, CV_64FC1)},
     //  coiflets
-    {"coif1", std::bind(create_coiflets, 1)},
-    {"coif2", std::bind(create_coiflets, 2)},
-    {"coif3", std::bind(create_coiflets, 3)},
-    {"coif4", std::bind(create_coiflets, 4)},
-    {"coif5", std::bind(create_coiflets, 5)},
-    {"coif6", std::bind(create_coiflets, 6)},
-    {"coif7", std::bind(create_coiflets, 7)},
-    {"coif8", std::bind(create_coiflets, 8)},
-    {"coif9", std::bind(create_coiflets, 9)},
-    {"coif10", std::bind(create_coiflets, 10)},
-    {"coif11", std::bind(create_coiflets, 11)},
-    {"coif12", std::bind(create_coiflets, 12)},
-    {"coif13", std::bind(create_coiflets, 13)},
-    {"coif14", std::bind(create_coiflets, 14)},
-    {"coif15", std::bind(create_coiflets, 15)},
-    {"coif16", std::bind(create_coiflets, 16)},
-    {"coif17", std::bind(create_coiflets, 17)},
+    {"coif1", std::bind(create_coiflets, 1, CV_64FC1)},
+    {"coif2", std::bind(create_coiflets, 2, CV_64FC1)},
+    {"coif3", std::bind(create_coiflets, 3, CV_64FC1)},
+    {"coif4", std::bind(create_coiflets, 4, CV_64FC1)},
+    {"coif5", std::bind(create_coiflets, 5, CV_64FC1)},
+    {"coif6", std::bind(create_coiflets, 6, CV_64FC1)},
+    {"coif7", std::bind(create_coiflets, 7, CV_64FC1)},
+    {"coif8", std::bind(create_coiflets, 8, CV_64FC1)},
+    {"coif9", std::bind(create_coiflets, 9, CV_64FC1)},
+    {"coif10", std::bind(create_coiflets, 10, CV_64FC1)},
+    {"coif11", std::bind(create_coiflets, 11, CV_64FC1)},
+    {"coif12", std::bind(create_coiflets, 12, CV_64FC1)},
+    {"coif13", std::bind(create_coiflets, 13, CV_64FC1)},
+    {"coif14", std::bind(create_coiflets, 14, CV_64FC1)},
+    {"coif15", std::bind(create_coiflets, 15, CV_64FC1)},
+    {"coif16", std::bind(create_coiflets, 16, CV_64FC1)},
+    {"coif17", std::bind(create_coiflets, 17, CV_64FC1)},
     //  biorthongonal
-    {"bior1.1", std::bind(create_biorthogonal, 1, 1)},
-    {"bior1.3", std::bind(create_biorthogonal, 1, 3)},
-    {"bior1.5", std::bind(create_biorthogonal, 1, 5)},
-    {"bior2.2", std::bind(create_biorthogonal, 2, 2)},
-    {"bior2.4", std::bind(create_biorthogonal, 2, 4)},
-    {"bior2.6", std::bind(create_biorthogonal, 2, 6)},
-    {"bior2.8", std::bind(create_biorthogonal, 2, 8)},
-    {"bior3.1", std::bind(create_biorthogonal, 3, 1)},
-    {"bior3.3", std::bind(create_biorthogonal, 3, 3)},
-    {"bior3.5", std::bind(create_biorthogonal, 3, 5)},
-    {"bior3.7", std::bind(create_biorthogonal, 3, 7)},
-    {"bior3.9", std::bind(create_biorthogonal, 3, 9)},
-    {"bior4.4", std::bind(create_biorthogonal, 4, 4)},
-    {"bior5.5", std::bind(create_biorthogonal, 5, 5)},
-    {"bior6.8", std::bind(create_biorthogonal, 6, 8)},
+    {"bior1.1", std::bind(create_biorthogonal, 1, 1, CV_64FC1)},
+    {"bior1.3", std::bind(create_biorthogonal, 1, 3, CV_64FC1)},
+    {"bior1.5", std::bind(create_biorthogonal, 1, 5, CV_64FC1)},
+    {"bior2.2", std::bind(create_biorthogonal, 2, 2, CV_64FC1)},
+    {"bior2.4", std::bind(create_biorthogonal, 2, 4, CV_64FC1)},
+    {"bior2.6", std::bind(create_biorthogonal, 2, 6, CV_64FC1)},
+    {"bior2.8", std::bind(create_biorthogonal, 2, 8, CV_64FC1)},
+    {"bior3.1", std::bind(create_biorthogonal, 3, 1, CV_64FC1)},
+    {"bior3.3", std::bind(create_biorthogonal, 3, 3, CV_64FC1)},
+    {"bior3.5", std::bind(create_biorthogonal, 3, 5, CV_64FC1)},
+    {"bior3.7", std::bind(create_biorthogonal, 3, 7, CV_64FC1)},
+    {"bior3.9", std::bind(create_biorthogonal, 3, 9, CV_64FC1)},
+    {"bior4.4", std::bind(create_biorthogonal, 4, 4, CV_64FC1)},
+    {"bior5.5", std::bind(create_biorthogonal, 5, 5, CV_64FC1)},
+    {"bior6.8", std::bind(create_biorthogonal, 6, 8, CV_64FC1)},
     //  reverse biorthongonal
-    {"rbior1.1", std::bind(create_reverse_biorthogonal, 1, 1)},
-    {"rbior1.3", std::bind(create_reverse_biorthogonal, 1, 3)},
-    {"rbior1.5", std::bind(create_reverse_biorthogonal, 1, 5)},
-    {"rbior2.2", std::bind(create_reverse_biorthogonal, 2, 2)},
-    {"rbior2.4", std::bind(create_reverse_biorthogonal, 2, 4)},
-    {"rbior2.6", std::bind(create_reverse_biorthogonal, 2, 6)},
-    {"rbior2.8", std::bind(create_reverse_biorthogonal, 2, 8)},
-    {"rbior3.1", std::bind(create_reverse_biorthogonal, 3, 1)},
-    {"rbior3.3", std::bind(create_reverse_biorthogonal, 3, 3)},
-    {"rbior3.5", std::bind(create_reverse_biorthogonal, 3, 5)},
-    {"rbior3.7", std::bind(create_reverse_biorthogonal, 3, 7)},
-    {"rbior3.9", std::bind(create_reverse_biorthogonal, 3, 9)},
-    {"rbior4.4", std::bind(create_reverse_biorthogonal, 4, 4)},
-    {"rbior5.5", std::bind(create_reverse_biorthogonal, 5, 5)},
-    {"rbior6.8", std::bind(create_reverse_biorthogonal, 6, 8)},
+    {"rbior1.1", std::bind(create_reverse_biorthogonal, 1, 1, CV_64FC1)},
+    {"rbior1.3", std::bind(create_reverse_biorthogonal, 1, 3, CV_64FC1)},
+    {"rbior1.5", std::bind(create_reverse_biorthogonal, 1, 5, CV_64FC1)},
+    {"rbior2.2", std::bind(create_reverse_biorthogonal, 2, 2, CV_64FC1)},
+    {"rbior2.4", std::bind(create_reverse_biorthogonal, 2, 4, CV_64FC1)},
+    {"rbior2.6", std::bind(create_reverse_biorthogonal, 2, 6, CV_64FC1)},
+    {"rbior2.8", std::bind(create_reverse_biorthogonal, 2, 8, CV_64FC1)},
+    {"rbior3.1", std::bind(create_reverse_biorthogonal, 3, 1, CV_64FC1)},
+    {"rbior3.3", std::bind(create_reverse_biorthogonal, 3, 3, CV_64FC1)},
+    {"rbior3.5", std::bind(create_reverse_biorthogonal, 3, 5, CV_64FC1)},
+    {"rbior3.7", std::bind(create_reverse_biorthogonal, 3, 7, CV_64FC1)},
+    {"rbior3.9", std::bind(create_reverse_biorthogonal, 3, 9, CV_64FC1)},
+    {"rbior4.4", std::bind(create_reverse_biorthogonal, 4, 4, CV_64FC1)},
+    {"rbior5.5", std::bind(create_reverse_biorthogonal, 5, 5, CV_64FC1)},
+    {"rbior6.8", std::bind(create_reverse_biorthogonal, 6, 8, CV_64FC1)},
 };
 
 namespace internal

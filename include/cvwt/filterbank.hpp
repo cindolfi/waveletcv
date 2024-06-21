@@ -59,6 +59,14 @@ public:
     cv::Mat highpass() const { return _highpass; }
 
     /**
+     * @brief Converts kernel coefficients to a different data type.
+     *
+     * @param type
+     */
+    [[nodiscard]]
+    KernelPair as_type(int type) const;
+
+    /**
      * @brief Returns true if both kernels are empty.
      */
     bool empty() const { return _lowpass.empty(); }
@@ -306,6 +314,14 @@ public:
      * @brief The reconstruction kernels.
      */
     KernelPair reconstruct_kernels() const { return _p->reconstruct_kernels(); }
+
+    /**
+     * @brief Converts the filter kernels to a different type.
+     *
+     * @param type Must be CV_64F or CV_32F.
+     */
+    [[nodiscard]]
+    FilterBank as_type(int type) const;
 
     /**
      * @brief Returns true if the filter kernels are empty.
