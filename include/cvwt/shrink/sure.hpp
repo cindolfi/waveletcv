@@ -453,7 +453,7 @@ void sure_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
  * @param[in] levels The maximum number of levels to shrink.  Shrinking is applied
  *                   starting at the lowest level (i.e. smallest scale).
  */
-DWT2D::Coeffs sure_shrink(DWT2D::Coeffs& coeffs, int levels);
+DWT2D::Coeffs sure_shrink(const DWT2D::Coeffs& coeffs, int levels);
 
 /**
  * @brief Shrinks detail coefficients using the SureShrink algorithm.
@@ -463,7 +463,7 @@ DWT2D::Coeffs sure_shrink(DWT2D::Coeffs& coeffs, int levels);
  * @param[in] levels The maximum number of levels to shrink.  Shrinking is applied
  *                   starting at the lowest level (i.e. smallest scale).
  */
-void sure_shrink(DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels);
+void sure_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels);
 
 /**
  * @brief Shrinks detail coefficients using the SureShrink algorithm.

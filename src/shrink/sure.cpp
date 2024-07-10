@@ -440,13 +440,13 @@ void sure_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs)
     shrink(coeffs, shrunk_coeffs);
 }
 
-DWT2D::Coeffs sure_shrink(DWT2D::Coeffs& coeffs, int levels)
+DWT2D::Coeffs sure_shrink(const DWT2D::Coeffs& coeffs, int levels)
 {
     SureShrinker shrink;
     return shrink(coeffs, levels);
 }
 
-void sure_shrink(DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels)
+void sure_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels)
 {
     SureShrinker shrink;
     shrink(coeffs, shrunk_coeffs, levels);
