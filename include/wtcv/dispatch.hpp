@@ -5,7 +5,7 @@
 #include <string>
 #include <utility>
 #include <opencv2/core.hpp>
-#include "cvwt/exception.hpp"
+#include "wtcv/exception.hpp"
 
 namespace std
 {
@@ -14,7 +14,7 @@ namespace std
 #endif
 }
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -316,7 +316,7 @@ auto dispatch_on_pixel_depths(int type1, int type2, auto&&... args)
     std::unreachable();
 }
 }   // namespace internal
-}   // namespace cvwt
+}   // namespace wtcv
 
 #endif  // CVWT_DISPATCH_HPP
 

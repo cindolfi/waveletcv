@@ -2,7 +2,7 @@
 
 Discrete Wavelet Transform (DWT)
 ================================
-.. cpp:namespace:: cvwt
+.. cpp:namespace:: wtcv
 .. cpp:namespace-push:: DWT2D
 
 .. figure:: ../dwt2d.png
@@ -14,8 +14,8 @@ by :cpp:func:`decompose`.
 
 .. code-block:: cpp
 
-    #include <cvwt/dwt2d.hpp>
-    using namespace cvwt;
+    #include <wtcv/dwt2d.hpp>
+    using namespace wtcv;
 
     cv::Mat image = ...;
     DWT2D dwt(Wavelet::create("db2"));

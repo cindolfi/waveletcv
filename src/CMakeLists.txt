@@ -39,32 +39,32 @@ FetchContent_MakeAvailable(nlopt)
 #   ----------------------------------------------------------------------------
 #   Build Library
 #   ----------------------------------------------------------------------------
-add_library(cvwt)
+add_library(wtcv)
 target_sources (
-    cvwt
+    wtcv
     PUBLIC
         FILE_SET HEADERS
         BASE_DIRS ${CVWT_INCLUDE_DIR}
         FILES
-            ${CVWT_INCLUDE_DIR}/cvwt/wavelet.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/filterbank.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/dwt2d.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/utils.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/dispatch.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/array.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/array/compare.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/array/array.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/array/statistics.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/filters/daubechies.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/filters/symlets.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/filters/coiflets.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/filters/biorthogonal.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/exception.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/shrink.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/shrink/shrink.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/shrink/bayes.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/shrink/sure.hpp
-            ${CVWT_INCLUDE_DIR}/cvwt/shrink/universal.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/wavelet.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/filterbank.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/dwt2d.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/utils.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/dispatch.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/array.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/array/compare.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/array/array.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/array/statistics.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/filters/daubechies.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/filters/symlets.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/filters/coiflets.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/filters/biorthogonal.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/exception.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/shrink.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/shrink/shrink.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/shrink/bayes.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/shrink/sure.hpp
+            ${CVWT_INCLUDE_DIR}/wtcv/shrink/universal.hpp
     PRIVATE
         wavelet.cpp
         filterbank.cpp
@@ -80,21 +80,21 @@ target_sources (
         shrink/universal.cpp
 )
 target_link_libraries(
-    cvwt
+    wtcv
     ${OpenCV_LIBS}
     nlopt
 )
 
 if(CVWT_ENABLE_EXCEPTIONS)
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC CVWT_EXCEPTIONS_ENABLED=true
         PUBLIC CVWT_NOEXCEPT=
         PUBLIC CVWT_NORETURN=[[noreturn]]
     )
 else()
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_EXCEPTIONS_ENABLED=false
         CVWT_NOEXCEPT=
@@ -104,14 +104,14 @@ endif()
 
 if(CVWT_ENABLE_DWT2D_EXCEPTIONS)
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_DWT2D_EXCEPTIONS_ENABLED=CVWT_EXCEPTIONS_ENABLED
         CVWT_DWT2D_NOEXCEPT=CVWT_NOEXCEPT
     )
 else()
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_DWT2D_EXCEPTIONS_ENABLED=false
         CVWT_DWT2D_NOEXCEPT=noexcept
@@ -120,14 +120,14 @@ endif()
 
 if(CVWT_ENABLE_DWT2D_COEFFS_EXCEPTIONS)
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED=CVWT_EXCEPTIONS_ENABLED
         CVWT_DWT2D_COEFFS_NOEXCEPT=CVWT_NOEXCEPT
     )
 else()
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_DWT2D_COEFFS_EXCEPTIONS_ENABLED=false
         CVWT_DWT2D_COEFFS_NOEXCEPT=noexcept
@@ -136,14 +136,14 @@ endif()
 
 if(CVWT_ENABLE_FILTER_BANK_EXCEPTIONS)
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_FILTER_BANK_EXCEPTIONS_ENABLED=CVWT_EXCEPTIONS_ENABLED
         CVWT_FILTER_BANK_NOEXCEPT=CVWT_NOEXCEPT
     )
 else()
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_FILTER_BANK_EXCEPTIONS_ENABLED=false
         CVWT_FILTER_BANK_NOEXCEPT=noexcept
@@ -152,14 +152,14 @@ endif()
 
 if(CVWT_ENABLE_WAVELET_EXCEPTIONS)
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_WAVELET_EXCEPTIONS_ENABLED=CVWT_EXCEPTIONS_ENABLED
         CVWT_WAVELET_NOEXCEPT=CVWT_NOEXCEPT
     )
 else()
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_WAVELET_EXCEPTIONS_ENABLED=false
         CVWT_WAVELET_NOEXCEPT=noexcept
@@ -168,13 +168,13 @@ endif()
 
 if(CVWT_ENABLE_DWT2D_WARNINGS)
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_DWT2D_WARNINGS_ENABLED=true
     )
 else()
     target_compile_definitions(
-        cvwt
+        wtcv
         PUBLIC
         CVWT_DWT2D_WARNINGS_ENABLED=false
     )
@@ -184,7 +184,7 @@ endif()
 #   Install Library
 #   ----------------------------------------------------------------------------
 install(
-    TARGETS cvwt
+    TARGETS wtcv
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

@@ -2,20 +2,20 @@
 */
 #include <numeric>
 #include <opencv2/imgproc.hpp>
-#include <cvwt/dwt2d.hpp>
-#include <cvwt/dispatch.hpp>
+#include <wtcv/dwt2d.hpp>
+#include <wtcv/dispatch.hpp>
 #include "common.hpp"
 
 using namespace testing;
 
-namespace cvwt
+namespace wtcv
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream)
 {
     PrintTo(cv::Mat(coeffs), stream);
     *stream << "(" << coeffs.levels() << " levels)\n";
 }
-}   // namespace cvwt
+}   // namespace wtcv
 
 void clamp_near_zero(cv::InputArray input, cv::OutputArray output, double tolerance)
 {
@@ -36,7 +36,7 @@ namespace cv
 {
 void PrintTo(const cv::Mat& matrix, std::ostream* stream)
 {
-    cvwt::internal::dispatch_on_pixel_type<print_matrix_to>(
+    wtcv::internal::dispatch_on_pixel_type<print_matrix_to>(
         matrix.type(),
         matrix,
         stream
@@ -47,9 +47,9 @@ void PrintTo(const cv::Mat& matrix, std::ostream* stream)
 std::string get_subband_name(int subband)
 {
     switch (subband){
-        case cvwt::HORIZONTAL: return "horizontal";
-        case cvwt::VERTICAL: return "vertical";
-        case cvwt::DIAGONAL: return "diagonal";
+        case wtcv::HORIZONTAL: return "horizontal";
+        case wtcv::VERTICAL: return "vertical";
+        case wtcv::DIAGONAL: return "diagonal";
     }
     assert(false);
     return "";
@@ -446,7 +446,7 @@ int ulps_between(double a, double b)
 
 cv::Mat permute_matrix(const cv::Mat& matrix, const std::vector<int>& permutation)
 {
-    return cvwt::internal::dispatch_on_pixel_type<PermuteMatrix>(
+    return wtcv::internal::dispatch_on_pixel_type<PermuteMatrix>(
         matrix.type(),
         matrix,
         permutation

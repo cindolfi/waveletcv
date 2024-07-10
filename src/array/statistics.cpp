@@ -1,11 +1,11 @@
-#include "cvwt/array/statistics.hpp"
+#include "wtcv/array/statistics.hpp"
 
 #include <span>
-#include "cvwt/dispatch.hpp"
-#include "cvwt/exception.hpp"
-#include "cvwt/array/array.hpp"
+#include "wtcv/dispatch.hpp"
+#include "wtcv/exception.hpp"
+#include "wtcv/array/array.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -167,4 +167,4 @@ double maximum_abs_value(cv::InputArray array, cv::InputArray mask)
 
     return result;
 }
-}   // namespace cvwt
+}   // namespace wtcv

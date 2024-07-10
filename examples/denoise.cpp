@@ -10,12 +10,12 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <cvwt/dwt2d.hpp>
-#include <cvwt/array.hpp>
-#include <cvwt/shrink.hpp>
+#include <wtcv/dwt2d.hpp>
+#include <wtcv/array.hpp>
+#include <wtcv/shrink.hpp>
 #include "common.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 
 const std::set<std::string> AVAILABLE_SHRINK_METHODS = {
     "visu",

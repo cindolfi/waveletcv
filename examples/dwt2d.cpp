@@ -5,10 +5,10 @@
 #include <cxxopts.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-#include <cvwt/dwt2d.hpp>
+#include <wtcv/dwt2d.hpp>
 #include "common.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 
 void main_program(const cxxopts::ParseResult& args)
 {

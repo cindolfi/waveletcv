@@ -2,10 +2,10 @@
  * Statistics Unit Test
 */
 #include <numeric>
-#include <cvwt/array/statistics.hpp>
+#include <wtcv/array/statistics.hpp>
 #include "common.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 //  ----------------------------------------------------------------------------

@@ -3,49 +3,49 @@
 Wavelet API
 ===========
 
-.. doxygenclass:: cvwt::Wavelet
+.. doxygenclass:: wtcv::Wavelet
     :project: WaveletCV
     :members:
 
-.. doxygenclass:: cvwt::FilterBank
+.. doxygenclass:: wtcv::FilterBank
     :project: WaveletCV
     :members:
 
-.. doxygenclass:: cvwt::KernelPair
+.. doxygenclass:: wtcv::KernelPair
     :project: WaveletCV
     :members:
 
-.. doxygenenum:: cvwt::DetailSubband
+.. doxygenenum:: wtcv::DetailSubband
     :project: WaveletCV
 
-.. doxygenfunction:: std::to_string(cvwt::DetailSubband)
+.. doxygenfunction:: std::to_string(wtcv::DetailSubband)
     :project: WaveletCV
 
-.. doxygenenum:: cvwt::Symmetry
+.. doxygenenum:: wtcv::Symmetry
     :project: WaveletCV
 
-.. doxygenenum:: cvwt::Orthogonality
+.. doxygenenum:: wtcv::Orthogonality
     :project: WaveletCV
 
 Wavelet Factories
 -----------------
 
-.. doxygenfunction:: cvwt::create_haar
+.. doxygenfunction:: wtcv::create_haar
     :project: WaveletCV
 
-.. doxygenfunction:: cvwt::create_daubechies
+.. doxygenfunction:: wtcv::create_daubechies
     :project: WaveletCV
 
-.. doxygenfunction:: cvwt::create_symlets
+.. doxygenfunction:: wtcv::create_symlets
     :project: WaveletCV
 
-.. doxygenfunction:: cvwt::create_coiflets
+.. doxygenfunction:: wtcv::create_coiflets
     :project: WaveletCV
 
-.. doxygenfunction:: cvwt::create_biorthogonal
+.. doxygenfunction:: wtcv::create_biorthogonal
     :project: WaveletCV
 
-.. doxygenfunction:: cvwt::create_reverse_biorthogonal
+.. doxygenfunction:: wtcv::create_reverse_biorthogonal
     :project: WaveletCV
 
 

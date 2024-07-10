@@ -34,7 +34,7 @@ if (DOXYGEN_FOUND AND SPHINX_FOUND)
 
     set(
         DOXYGEN_EXCLUDE_SYMBOLS
-        "cvwt::internal"
+        "wtcv::internal"
         "cv"
         "cvv"
         "cvflann"
@@ -80,7 +80,7 @@ if (DOXYGEN_FOUND AND SPHINX_FOUND)
 
     doxygen_add_docs(
         docs
-        ${CVWT_INCLUDE_DIR}/cvwt
+        ${CVWT_INCLUDE_DIR}/wtcv
     )
 
     set(CVWT_SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/source)

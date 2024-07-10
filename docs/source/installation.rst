@@ -2,7 +2,7 @@
 
 Installation
 ============
-.. cpp:namespace:: cvwt
+.. cpp:namespace:: wtcv
 
 Overview
 ---------
@@ -19,18 +19,18 @@ page on Github.
 .. code-block:: bash
 
     wget https://github.com/cindolfi/waveletcv/releases/stable.gz.tar
-    tar -axf cvwt.gz.tar
-    cd cvwt
+    tar -axf wtcv.gz.tar
+    cd wtcv
 
 
 Alternatively, clone the
-`WaveletCV repository <https://github.com/cindolfi/cvwt.git>`_ and checkout the
+`WaveletCV repository <https://github.com/cindolfi/wtcv.git>`_ and checkout the
 ``stable`` tag.
 
 .. code-block:: bash
 
-    git clone https://github.com/cindolfi/cvwt.git
-    cd cvwt
+    git clone https://github.com/cindolfi/wtcv.git
+    cd wtcv
     git checkout stable
 
 
@@ -131,8 +131,8 @@ Build
 
 .. .. code-block:: bash
 
-..     cmake --build build --target cvwt-dwt2d
-..     cmake --build build --target cvwt-denoise
+..     cmake --build build --target wtcv-dwt2d
+..     cmake --build build --target wtcv-denoise
 
 
 Install
@@ -157,8 +157,8 @@ WaveletCV is installed to `/usr/local` by default. To install to a specified dir
 
 .. .. code-block:: bash
 
-..     sudo cmake --install build --component cvwt-dwt2d
-..     sudo cmake --install build --component cvwt-denoise
+..     sudo cmake --install build --component wtcv-dwt2d
+..     sudo cmake --install build --component wtcv-denoise
 
 
 Uninstall
@@ -186,13 +186,13 @@ or build and install examples individually with
 
 .. code-block:: bash
 
-    # Build and install the cvwt-dwt2d program.
-    cmake --build build --target cvwt-dwt2d
-    sudo cmake --install build --component cvwt-dwt2d
+    # Build and install the wtcv-dwt2d program.
+    cmake --build build --target wtcv-dwt2d
+    sudo cmake --install build --component wtcv-dwt2d
 
-    # Build and install the cvwt-denoise program.
-    cmake --build build --target cvwt-denoise
-    sudo cmake --install build --component cvwt-denoise
+    # Build and install the wtcv-denoise program.
+    cmake --build build --target wtcv-denoise
+    sudo cmake --install build --component wtcv-denoise
 
 
 
@@ -202,7 +202,7 @@ or build and install examples individually with
 .. .. code-block:: bash
 
 ..     # Build
-..     cmake --build build --target cvwt_test
+..     cmake --build build --target wtcv_test
 
 ..     # Run
 ..     ctest --test-dir build

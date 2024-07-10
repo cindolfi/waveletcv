@@ -4,8 +4,8 @@
 
 |Build Status|
 
-.. |Build Status| image:: https://github.com/chrismi/waveletcv/actions/workflows/build.yml/badge.svg?branch=master
-   :target: https://github.com/chrismi/waveletcv/actions/workflows/build.yml
+.. |Build Status| image:: https://github.com/cindolfi/waveletcv/actions/workflows/build.yml/badge.svg?branch=master
+   :target: https://github.com/cindolfi/waveletcv/actions/workflows/build.yml
 
 |GitHub release|
 

@@ -3,7 +3,7 @@
 
 #include <opencv2/core.hpp>
 
-namespace cvwt
+namespace wtcv
 {
 /**
  * @name Statistics
@@ -59,7 +59,7 @@ cv::Scalar mad_stdev(cv::InputArray array);
 double maximum_abs_value(cv::InputArray array, cv::InputArray mask = cv::noArray());
 /** @}*/
 
-}   // namespace cvwt
+}   // namespace wtcv
 
 #endif  // #define CVWT_ARRAY_STATISTICS_HPP
 

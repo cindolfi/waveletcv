@@ -1,13 +1,13 @@
-#include "cvwt/array/compare.hpp"
+#include "wtcv/array/compare.hpp"
 
 #include <atomic>
-#include "cvwt/dispatch.hpp"
-#include "cvwt/exception.hpp"
-#include "cvwt/utils.hpp"
-#include "cvwt/array/array.hpp"
+#include "wtcv/dispatch.hpp"
+#include "wtcv/exception.hpp"
+#include "wtcv/utils.hpp"
+#include "wtcv/array/array.hpp"
 
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -865,4 +865,4 @@ void compare(
         break;
     }
 }
-}   // namespace cvwt
+}   // namespace wtcv

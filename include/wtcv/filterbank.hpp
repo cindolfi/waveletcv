@@ -5,7 +5,7 @@
 #include <source_location>
 #include <opencv2/core.hpp>
 
-namespace cvwt
+namespace wtcv
 {
 /**
  * @brief FilterBank detail subband identifiers.
@@ -714,11 +714,11 @@ private:
  * @brief Writes a string representation of a FilterBank to an output stream.
  */
 std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
-} // namespace cvwt
+} // namespace wtcv
 
 namespace std
 {
-string to_string(cvwt::DetailSubband subband);
+string to_string(wtcv::DetailSubband subband);
 } // namespace std
 #endif  // CVWT_FILTERBANK_HPP
 

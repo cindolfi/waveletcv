@@ -2,11 +2,11 @@
  * Filter Bank Unit Tests
 */
 #include <vector>
-#include <cvwt/filterbank.hpp>
+#include <wtcv/filterbank.hpp>
 #include "common.hpp"
 #include "base_dwt2d.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 // =============================================================================

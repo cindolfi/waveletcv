@@ -2,10 +2,10 @@
 #define CVWT_SHRINK_SURE_HPP
 
 #include <opencv2/core.hpp>
-#include "cvwt/shrink/shrink.hpp"
-#include "cvwt/dwt2d.hpp"
+#include "wtcv/shrink/shrink.hpp"
+#include "wtcv/dwt2d.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 /** @addtogroup shrink
  *  @{
@@ -15,7 +15,7 @@ namespace cvwt
 //  ----------------------------------------------------------------------------
 /**
  * @brief Implements the SureShrink algorithm for shrinking DWT coefficients.
- * @headerfile <cvwt/shrink.hpp>
+ * @headerfile <wtcv/shrink.hpp>
  *
  * The coefficients can be partitioned Shrinker::GLOBALLY into a single subset,
  * by Shrinker::LEVELS into level subsets, or by Shrinker::SUBBANDS into subband
@@ -505,7 +505,7 @@ void sure_shrink_levelwise(
 /** @}*/
 
 /** @} shrink */
-} // namespace cvwt
+} // namespace wtcv
 
 #endif  // CVWT_SHRINK_SURE_HPP
 

@@ -3,7 +3,7 @@
 
 #include <opencv2/core.hpp>
 #include <nlohmann/json.hpp>
-#include <cvwt/dwt2d.hpp>
+#include <wtcv/dwt2d.hpp>
 
 using json = nlohmann::json;
 
@@ -14,7 +14,7 @@ namespace cv
     void from_json(const json& json_scalar, Scalar& scalar);
 }
 
-namespace cvwt
+namespace wtcv
 {
     void from_json(const json& json_coeffs, DWT2D::Coeffs& coeffs);
 }

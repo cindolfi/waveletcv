@@ -6,7 +6,7 @@
 #include <vector>
 #include <utility>
 
-namespace cvwt::internal
+namespace wtcv::internal
 {
 const std::string BIORTHOGONAL_FAMILY = "Biorthogonal";
 const std::string BIORTHOGONAL_NAME = "bior";
@@ -986,6 +986,6 @@ std::map<std::string, std::pair<std::vector<double>, std::vector<double>>> BIORT
 //         },
 //     },
 // };
-}   // namespace cvwt::internal
+}   // namespace wtcv::internal
 
 #endif  // CVWT_BIORTHOGONAL_HPP

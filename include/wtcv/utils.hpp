@@ -21,7 +21,7 @@ namespace std
 #endif
 }
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -42,7 +42,7 @@ inline Index unravel_index(const cv::Mat& array, int flat_index)
     };
 }
 }   // namespace internal
-}   // namespace cvwt
+}   // namespace wtcv
 
 #endif  // CVWT_UTILS_HPP
 

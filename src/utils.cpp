@@ -1,6 +1,6 @@
-#include "cvwt/utils.hpp"
+#include "wtcv/utils.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -29,4 +29,4 @@ cv::Scalar set_unused_channels(const cv::Scalar& scalar, int channels, double va
     return result;
 }
 }   // namespace internal
-}   // namespace cvwt
+}   // namespace wtcv

@@ -1,11 +1,11 @@
 
-#include "cvwt/shrink/shrink.hpp"
+#include "wtcv/shrink/shrink.hpp"
 
 #include <algorithm>
 #include <numeric>
-#include "cvwt/array/array.hpp"
+#include "wtcv/array/array.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 //  ============================================================================
 //  Low Level API
@@ -129,7 +129,7 @@ void Shrinker::shrink(
 
     switch (partition()) {
     case Shrinker::GLOBALLY:
-        cvwt::shrink_globally(
+        wtcv::shrink_globally(
             shrunk_coeffs,
             subset_thresholds.at<cv::Scalar>(0, 0),
             shrink_function(),
@@ -137,10 +137,10 @@ void Shrinker::shrink(
         );
         break;
     case Shrinker::LEVELS:
-        cvwt::shrink_levels(shrunk_coeffs, subset_thresholds, shrink_function(), levels);
+        wtcv::shrink_levels(shrunk_coeffs, subset_thresholds, shrink_function(), levels);
         break;
     case Shrinker::SUBBANDS:
-        cvwt::shrink_subbands(shrunk_coeffs, subset_thresholds, shrink_function(), levels);
+        wtcv::shrink_subbands(shrunk_coeffs, subset_thresholds, shrink_function(), levels);
         break;
     case Shrinker::SUBSETS:
         shrink_subsets(shrunk_coeffs, subset_thresholds, levels);
@@ -324,5 +324,5 @@ cv::Mat4d Shrinker::compute_subband_thresholds(
 
     return thresholds;
 }
-}   // namespace cvwt
+}   // namespace wtcv
 

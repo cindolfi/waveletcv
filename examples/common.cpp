@@ -6,11 +6,11 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <cvwt/wavelet.hpp>
-#include <cvwt/utils.hpp>
-#include <cvwt/array.hpp>
+#include <wtcv/wavelet.hpp>
+#include <wtcv/utils.hpp>
+#include <wtcv/array.hpp>
 
-using namespace cvwt;
+using namespace wtcv;
 
 const std::array<std::string, 4> channel_names = {
     "blue",

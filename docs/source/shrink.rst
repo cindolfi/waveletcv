@@ -2,7 +2,7 @@
 
 Shrinking DWT Coefficients
 ==========================
-.. cpp:namespace:: cvwt
+.. cpp:namespace:: wtcv
 .. cpp:namespace-push:: Shrinker
 
 Many DWT based denoising and compression algorithms rely on shrinking
@@ -36,9 +36,9 @@ To shrink all detail coefficients:
 
 .. code-block:: cpp
 
-    #include <cvwt/shrink.hpp>
-    #include <cvwt/dwt2d.hpp>
-    using namespace cvwt;
+    #include <wtcv/shrink.hpp>
+    #include <wtcv/dwt2d.hpp>
+    using namespace wtcv;
 
     DWT2D::Coeffs coeffs = ...;
     Shrinker* shrinker = new ...;
@@ -100,7 +100,7 @@ To compute a mask that indicates which coefficients were shrunk to zero:
 
 .. code-block:: cpp
 
-    #include <cvwt/array.hpp>
+    #include <wtcv/array.hpp>
 
     cv::Mat shrunk_coeffs_mask;
     less_than_or_equal(

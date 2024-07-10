@@ -1,10 +1,10 @@
 /**
  * Array Unit Test
 */
-#include <cvwt/array.hpp>
+#include <wtcv/array.hpp>
 #include "common.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 

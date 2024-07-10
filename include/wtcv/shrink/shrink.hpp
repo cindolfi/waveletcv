@@ -4,12 +4,12 @@
 #include <thread>
 #include <utility>
 #include <opencv2/core.hpp>
-#include "cvwt/dwt2d.hpp"
-#include "cvwt/dispatch.hpp"
-#include "cvwt/exception.hpp"
-#include "cvwt/array/statistics.hpp"
+#include "wtcv/dwt2d.hpp"
+#include "wtcv/dispatch.hpp"
+#include "wtcv/exception.hpp"
+#include "wtcv/array/statistics.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 /** @addtogroup shrink Shrink DWT Coefficients
  *  @{
@@ -1494,7 +1494,7 @@ private:
 };
 /** @} shrink*/
 
-} // namespace cvwt
+} // namespace wtcv
 
 #endif  // CVWT_SHRINK_SHRINK_HPP
 

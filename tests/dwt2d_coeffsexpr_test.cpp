@@ -4,13 +4,13 @@
 // #include <vector>
 // #include <sstream>
 // #include <algorithm>
-#include <cvwt/dwt2d.hpp>
-// #include <cvwt/compare.hpp>
-// #include <cvwt/utils.hpp>
+#include <wtcv/dwt2d.hpp>
+// #include <wtcv/compare.hpp>
+// #include <wtcv/utils.hpp>
 #include "common.hpp"
 // #include "base_dwt2d.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 enum Operation

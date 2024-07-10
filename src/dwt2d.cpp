@@ -1,4 +1,4 @@
-#include "cvwt/dwt2d.hpp"
+#include "wtcv/dwt2d.hpp"
 
 #include <string>
 #include <vector>
@@ -6,11 +6,11 @@
 #include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/utils/logger.hpp>
-#include "cvwt/array/statistics.hpp"
-#include "cvwt/exception.hpp"
-#include "cvwt/array/array.hpp"
+#include "wtcv/array/statistics.hpp"
+#include "wtcv/exception.hpp"
+#include "wtcv/array/array.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 DWT2D::Coeffs::Coeffs() :
     _p(std::make_shared<internal::Dwt2dCoeffsImpl>())
@@ -1234,5 +1234,5 @@ void dwt2d(
 {
     dwt2d(image, coeffs, Wavelet::create(wavelet), levels, border_type);
 }
-} // namespace cvwt
+} // namespace wtcv
 

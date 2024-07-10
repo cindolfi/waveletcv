@@ -1,16 +1,16 @@
-#include "cvwt/wavelet.hpp"
+#include "wtcv/wavelet.hpp"
 
 #include <ranges>
 #include <functional>
 #include <sstream>
 #include <opencv2/imgproc.hpp>
-#include "cvwt/filters/daubechies.hpp"
-#include "cvwt/filters/symlets.hpp"
-#include "cvwt/filters/coiflets.hpp"
-#include "cvwt/filters/biorthogonal.hpp"
-#include "cvwt/exception.hpp"
+#include "wtcv/filters/daubechies.hpp"
+#include "wtcv/filters/symlets.hpp"
+#include "wtcv/filters/coiflets.hpp"
+#include "wtcv/filters/biorthogonal.hpp"
+#include "wtcv/exception.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 Wavelet::Wavelet() : _p(std::make_shared<WaveletImpl>())
 {
@@ -484,5 +484,5 @@ void throw_if_invalid_wavelet_name(
 #endif
 }
 } // namespace internal
-} // namespace cvwt
+} // namespace wtcv
 

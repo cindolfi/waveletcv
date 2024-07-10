@@ -3,8 +3,8 @@
 
 #include <vector>
 #include <map>
-#include <cvwt/dwt2d.hpp>
-#include <cvwt/utils.hpp>
+#include <wtcv/dwt2d.hpp>
+#include <wtcv/utils.hpp>
 #include "common.hpp"
 
 //  ============================================================================
@@ -42,7 +42,7 @@ protected:
 
     static void init_test_params();
 
-    cvwt::Wavelet wavelet;
+    wtcv::Wavelet wavelet;
     int levels;
     double nearness_tolerance;
     static std::map<std::string, cv::Mat> inputs;

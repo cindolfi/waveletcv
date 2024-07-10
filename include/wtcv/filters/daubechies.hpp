@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace cvwt::internal
+namespace wtcv::internal
 {
 const std::string DAUBECHIES_FAMILY = "Daubechies";
 const std::string DAUBECHIES_NAME = "db";
@@ -1686,6 +1686,6 @@ std::map<std::string, std::vector<double>> DAUBECHIES_FILTER_COEFFS = {
         },
     },
 };
-}   // namespace cvwt::internal
+}   // namespace wtcv::internal
 
 #endif  // CVWT_DAUBECHIES_H

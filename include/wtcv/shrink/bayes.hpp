@@ -2,10 +2,10 @@
 #define CVWT_SHRINK_BAYES_HPP
 
 #include <opencv2/core.hpp>
-#include "cvwt/shrink/shrink.hpp"
-#include "cvwt/dwt2d.hpp"
+#include "wtcv/shrink/shrink.hpp"
+#include "wtcv/dwt2d.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 /** @addtogroup shrink
  *  @{
@@ -180,7 +180,7 @@ void bayes_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
 /** @}*/
 
 /** @} shrink */
-} // namespace cvwt
+} // namespace wtcv
 
 #endif  // CVWT_SHRINK_BAYES_HPP
 

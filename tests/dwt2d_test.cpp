@@ -4,13 +4,13 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
-#include <cvwt/dwt2d.hpp>
-#include <cvwt/array/array.hpp>
-#include <cvwt/array/compare.hpp>
+#include <wtcv/dwt2d.hpp>
+#include <wtcv/array/array.hpp>
+#include <wtcv/array/compare.hpp>
 #include "common.hpp"
 #include "base_dwt2d.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 //  ============================================================================

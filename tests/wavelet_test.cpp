@@ -3,11 +3,11 @@
 */
 #include <fstream>
 #include <nlohmann/json.hpp>
-#include <cvwt/wavelet.hpp>
+#include <wtcv/wavelet.hpp>
 #include "common.hpp"
 #include "json.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 struct WaveletTestParam
@@ -92,10 +92,10 @@ class WaveletTest : public testing::TestWithParam<WaveletTestParam>
 protected:
     WaveletTest() :
         testing::TestWithParam<WaveletTestParam>(),
-        wavelet(cvwt::Wavelet::create(GetParam().name))
+        wavelet(wtcv::Wavelet::create(GetParam().name))
     {}
 
-    cvwt::Wavelet wavelet;
+    wtcv::Wavelet wavelet;
 
 public:
     static std::vector<WaveletTestParam> create_test_params()

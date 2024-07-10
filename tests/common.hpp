@@ -12,11 +12,11 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <opencv2/core.hpp>
-#include <cvwt/wavelet.hpp>
-#include <cvwt/dwt2d.hpp>
+#include <wtcv/wavelet.hpp>
+#include <wtcv/dwt2d.hpp>
 
 
-namespace cvwt
+namespace wtcv
 {
 void PrintTo(const DWT2D::Coeffs& coeffs, std::ostream* stream);
 }

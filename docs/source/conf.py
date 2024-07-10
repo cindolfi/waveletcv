@@ -40,7 +40,7 @@ html_css_files = [
 html_context = dict(
    display_github=True,
    github_user='chrismi',
-   github_repo='cvwt',
+   github_repo='wtcv',
    github_version='stable',
 )
 html_baseurl = 'https://wavletcv.readthedocs.io/en/latest'

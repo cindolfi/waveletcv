@@ -7,10 +7,10 @@
 #include <map>
 #include <source_location>
 #include <opencv2/core.hpp>
-#include "cvwt/filterbank.hpp"
-#include "cvwt/exception.hpp"
+#include "wtcv/filterbank.hpp"
+#include "wtcv/exception.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 /**
  * @brief The degree of Wavelet symmetry.
@@ -849,7 +849,7 @@ namespace internal
     ) CVWT_WAVELET_NOEXCEPT;
 
 } // namespace internal
-} // namespace cvwt
+} // namespace wtcv
 
 #endif  // CVWT_WAVELET_HPP
 

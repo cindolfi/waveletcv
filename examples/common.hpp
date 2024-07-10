@@ -9,7 +9,7 @@
 #include <experimental/iterator>
 #include <opencv2/core.hpp>
 #include <opencv2/core/utils/logger.hpp>
-#include <cvwt/dwt2d.hpp>
+#include <wtcv/dwt2d.hpp>
 #include <cxxopts.hpp>
 
 const std::map<std::string, cv::utils::logging::LogLevel> AVAILABLE_LOG_LEVELS = {
@@ -35,8 +35,8 @@ std::pair<cv::Mat, std::filesystem::path> open_image(
     int type = CV_64FC3
 );
 void save_image(const cv::Mat& image, const std::filesystem::path& filepath);
-void save_coeffs(const cvwt::DWT2D::Coeffs& coeffs, const std::filesystem::path& filepath);
-cv::Mat normalize_details(const cvwt::DWT2D::Coeffs& coeffs, const std::string& normalization_method);
+void save_coeffs(const wtcv::DWT2D::Coeffs& coeffs, const std::filesystem::path& filepath);
+cv::Mat normalize_details(const wtcv::DWT2D::Coeffs& coeffs, const std::string& normalization_method);
 void show_image(
     const cv::Mat& image,
     bool split_channels,
@@ -44,7 +44,7 @@ void show_image(
     const std::string& title_info = ""
 );
 void show_coeffs(
-    const cvwt::DWT2D::Coeffs& coeffs,
+    const wtcv::DWT2D::Coeffs& coeffs,
     const std::string& normalization_method,
     bool split_channels,
     const std::string& title = "DWT Coefficients",

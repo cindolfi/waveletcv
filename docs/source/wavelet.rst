@@ -5,7 +5,7 @@ Wavelets
 
 Wavelet Objects
 ---------------
-.. cpp:namespace:: cvwt
+.. cpp:namespace:: wtcv
 .. cpp:namespace-push:: Wavelet
 
 Given a continuous **scaling function** :math:`\phi(t)` and a continuous

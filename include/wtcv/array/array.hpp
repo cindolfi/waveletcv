@@ -3,7 +3,7 @@
 
 #include <opencv2/core.hpp>
 
-namespace cvwt
+namespace wtcv
 {
 /**
  * @name Array Ops
@@ -140,7 +140,7 @@ bool is_row_vector(cv::InputArray array);
  */
 bool is_row_vector(cv::InputArray array, int channels);
 /** @}*/
-}   // namespace cvwt
+}   // namespace wtcv
 
 #endif  // #define CVWT_ARRAY_ARRAY_HPP
 

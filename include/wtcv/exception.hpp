@@ -4,10 +4,10 @@
 #include <string>
 #include <source_location>
 #include <opencv2/core.hpp>
-#include "cvwt/utils.hpp"
-#include "cvwt/array/array.hpp"
+#include "wtcv/utils.hpp"
+#include "wtcv/array/array.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 /**
  * @brief Allowed number of mask channels that can be used with given array.
@@ -619,7 +619,7 @@ _throw_if_not_vector(Args&&...) -> _throw_if_not_vector<Args...>;
                        allowed.
  */
 #define throw_if_not_vector(array, channels, ...) internal::_throw_if_not_vector{array, channels, #array __VA_OPT__(,) __VA_ARGS__}
-}   // namespace cvwt
+}   // namespace wtcv
 
 #endif  // CVWT_EXCEPTION_HPP
 

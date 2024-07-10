@@ -6,7 +6,7 @@
 #include "json.hpp"
 #include "base_dwt2d.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 void PrintTo(const DWT2DTestParam& param, std::ostream* stream)

@@ -2,10 +2,10 @@
  * Compare Unit Test
 */
 #include <numeric>
-#include <cvwt/array/compare.hpp>
+#include <wtcv/array/compare.hpp>
 #include "common.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 //  ----------------------------------------------------------------------------

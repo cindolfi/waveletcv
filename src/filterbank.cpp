@@ -1,13 +1,13 @@
-#include "cvwt/filterbank.hpp"
+#include "wtcv/filterbank.hpp"
 
 #include <opencv2/imgproc.hpp>
-#include "cvwt/utils.hpp"
-#include "cvwt/array/array.hpp"
-#include "cvwt/dispatch.hpp"
-#include "cvwt/array/compare.hpp"
-#include "cvwt/exception.hpp"
+#include "wtcv/utils.hpp"
+#include "wtcv/array/array.hpp"
+#include "wtcv/dispatch.hpp"
+#include "wtcv/array/compare.hpp"
+#include "wtcv/exception.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -1214,16 +1214,16 @@ std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank)
 
     return stream;
 }
-} // namespace cvwt
+} // namespace wtcv
 
 namespace std
 {
-string to_string(cvwt::DetailSubband subband)
+string to_string(wtcv::DetailSubband subband)
 {
     switch (subband) {
-        case cvwt::HORIZONTAL: return "HORIZONTAL";
-        case cvwt::VERTICAL: return "VERTICAL";
-        case cvwt::DIAGONAL: return "DIAGONAL";
+        case wtcv::HORIZONTAL: return "HORIZONTAL";
+        case wtcv::VERTICAL: return "VERTICAL";
+        case wtcv::DIAGONAL: return "DIAGONAL";
     }
 
     return "";

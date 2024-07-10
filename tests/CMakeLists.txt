@@ -20,7 +20,7 @@ FetchContent_MakeAvailable(googletest json)
 #   Build Tests
 #   ----------------------------------------------------------------------------
 add_executable(
-    cvwt-test
+    wtcv-test
     EXCLUDE_FROM_ALL
     common.hpp
     common.cpp
@@ -38,15 +38,15 @@ add_executable(
     statistics_test.cpp
 )
 target_link_libraries (
-    cvwt-test
+    wtcv-test
     PRIVATE
-    cvwt
+    wtcv
     gtest_main
     gmock_main
     nlohmann_json::nlohmann_json
 )
 target_compile_definitions(
-    cvwt-test
+    wtcv-test
     PRIVATE
     WAVELET_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/wavelet_test_data.json"
     DWT2D_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/dwt2d_test_data.json"
@@ -57,6 +57,6 @@ target_compile_definitions(
 #   Add Tests
 #   ----------------------------------------------------------------------------
 add_test(
-    NAME testcvwt
-    COMMAND cvwt-test
+    NAME testwtcv
+    COMMAND wtcv-test
 )

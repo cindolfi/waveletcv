@@ -1,12 +1,12 @@
-#include "cvwt/array/array.hpp"
+#include "wtcv/array/array.hpp"
 
 #include <atomic>
 #include <limits>
-#include "cvwt/dispatch.hpp"
-#include "cvwt/exception.hpp"
-#include "cvwt/array/compare.hpp"
+#include "wtcv/dispatch.hpp"
+#include "wtcv/exception.hpp"
+#include "wtcv/array/compare.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -189,4 +189,4 @@ bool is_row_vector(cv::InputArray array, int channels)
         && array.channels() == channels
         && array.isContinuous();
 }
-}   // namespace cvwt
+}   // namespace wtcv

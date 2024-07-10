@@ -1,14 +1,14 @@
 
-#include "cvwt/shrink/sure.hpp"
+#include "wtcv/shrink/sure.hpp"
 
 #include <opencv2/core/utils/logger.hpp>
 #include <nlopt.hpp>
-#include "cvwt/dispatch.hpp"
-#include "cvwt/exception.hpp"
-#include "cvwt/array/array.hpp"
-#include "cvwt/shrink/universal.hpp"
+#include "wtcv/dispatch.hpp"
+#include "wtcv/exception.hpp"
+#include "wtcv/array/array.hpp"
+#include "wtcv/shrink/universal.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -475,5 +475,5 @@ void sure_shrink_levelwise(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_co
     SureShrinker shrink(Shrinker::LEVELS);
     shrink(coeffs, shrunk_coeffs, levels);
 }
-}   // namespace cvwt
+}   // namespace wtcv
 

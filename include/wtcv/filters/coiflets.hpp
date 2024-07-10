@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace cvwt::internal
+namespace wtcv::internal
 {
 const std::string COIFLETS_FAMILY = "Coiflets";
 const std::string COIFLETS_NAME = "coif";
@@ -1017,6 +1017,6 @@ std::map<std::string, std::vector<double>> COIFLETS_FILTER_COEFFS = {
         }
     },
 };
-}   // namespace cvwt::internal
+}   // namespace wtcv::internal
 
 #endif  // CVWT_COIFLETS_HPP

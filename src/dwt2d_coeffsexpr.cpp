@@ -1,9 +1,9 @@
-#include "cvwt/dwt2d.hpp"
+#include "wtcv/dwt2d.hpp"
 
-#include "cvwt/exception.hpp"
-#include "cvwt/array/compare.hpp"
+#include "wtcv/exception.hpp"
+#include "wtcv/array/compare.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 inline
 void CoeffsExpr::throw_if_incompatible(
@@ -488,7 +488,7 @@ void CompareOp::assign(const cv::MatExpr& expression, cv::Mat& destination, int 
 
     if (expression.flags & A_IS_SCALAR) {
         std::vector<double> scalar = expression.a;
-        cvwt::compare(
+        wtcv::compare(
             scalar,
             expression.b,
             result,
@@ -496,14 +496,14 @@ void CompareOp::assign(const cv::MatExpr& expression, cv::Mat& destination, int 
         );
     } else if (expression.flags & B_IS_SCALAR) {
         std::vector<double> scalar = expression.b;
-        cvwt::compare(
+        wtcv::compare(
             expression.a,
             scalar,
             result,
             cmp_type
         );
     } else {
-        cvwt::compare(expression.a, expression.b, result, cmp_type);
+        wtcv::compare(expression.a, expression.b, result, cmp_type);
     }
 
     if (result.data != destination.data)
@@ -1131,12 +1131,12 @@ cv::MatExpr operator>=(double lhs, const DWT2D::Coeffs& rhs)
     internal::CompareOp::make_expression(result, cv::CMP_LE, rhs, lhs);
     return result;
 }
-} // namespace cvwt
+} // namespace wtcv
 
 
 namespace cv
 {
-using namespace cvwt;
+using namespace wtcv;
 
 //  ----------------------------------------------------------------------------
 //  abs
@@ -1185,7 +1185,7 @@ CoeffsExpr max(const CoeffsExpr& a, const DWT2D::Coeffs& b)
     );
 }
 
-CoeffsExpr max(const cvwt::CoeffsExpr& a, const cv::Mat& b)
+CoeffsExpr max(const wtcv::CoeffsExpr& a, const cv::Mat& b)
 {
     return CoeffsExpr(
         a.coeffs,
@@ -1193,7 +1193,7 @@ CoeffsExpr max(const cvwt::CoeffsExpr& a, const cv::Mat& b)
     );
 }
 
-CoeffsExpr max(const cvwt::CoeffsExpr& a, const cv::MatExpr& b)
+CoeffsExpr max(const wtcv::CoeffsExpr& a, const cv::MatExpr& b)
 {
     return CoeffsExpr(
         a.coeffs,
@@ -1201,7 +1201,7 @@ CoeffsExpr max(const cvwt::CoeffsExpr& a, const cv::MatExpr& b)
     );
 }
 
-CoeffsExpr max(const cvwt::CoeffsExpr& a, double b)
+CoeffsExpr max(const wtcv::CoeffsExpr& a, double b)
 {
     return CoeffsExpr(
         a.coeffs,
@@ -1262,7 +1262,7 @@ CoeffsExpr min(const CoeffsExpr& a, const DWT2D::Coeffs& b)
     );
 }
 
-CoeffsExpr min(const cvwt::CoeffsExpr& a, const cv::Mat& b)
+CoeffsExpr min(const wtcv::CoeffsExpr& a, const cv::Mat& b)
 {
     return CoeffsExpr(
         a.coeffs,
@@ -1270,7 +1270,7 @@ CoeffsExpr min(const cvwt::CoeffsExpr& a, const cv::Mat& b)
     );
 }
 
-CoeffsExpr min(const cvwt::CoeffsExpr& a, const cv::MatExpr& b)
+CoeffsExpr min(const wtcv::CoeffsExpr& a, const cv::MatExpr& b)
 {
     return CoeffsExpr(
         a.coeffs,
@@ -1278,7 +1278,7 @@ CoeffsExpr min(const cvwt::CoeffsExpr& a, const cv::MatExpr& b)
     );
 }
 
-CoeffsExpr min(const cvwt::CoeffsExpr& a, double b)
+CoeffsExpr min(const wtcv::CoeffsExpr& a, double b)
 {
     return CoeffsExpr(
         a.coeffs,

@@ -54,7 +54,7 @@ namespace cv
     }
 }
 
-namespace cvwt
+namespace wtcv
 {
     void from_json(const json& json_coeffs, DWT2D::Coeffs& coeffs)
     {

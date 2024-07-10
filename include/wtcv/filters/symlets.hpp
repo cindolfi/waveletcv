@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace cvwt::internal
+namespace wtcv::internal
 {
 const std::string SYMLETS_FAMILY = "Symlets";
 const std::string SYMLETS_NAME = "sym";
@@ -527,6 +527,6 @@ std::map<std::string, std::vector<double>> SYMLETS_FILTER_COEFFS = {
         }
     },
 };
-}   // namespace cvwt::internal
+}   // namespace wtcv::internal
 
 #endif  // CVWT_SYMLETS_HPP

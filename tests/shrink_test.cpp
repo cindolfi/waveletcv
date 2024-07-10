@@ -6,12 +6,12 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <nlopt.hpp>
-#include <cvwt/shrink.hpp>
-#include <cvwt/array.hpp>
+#include <wtcv/shrink.hpp>
+#include <wtcv/array.hpp>
 #include "common.hpp"
 #include "json.hpp"
 
-using namespace cvwt;
+using namespace wtcv;
 using namespace testing;
 
 const std::vector<int> PERMUTATION1 = {1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14};

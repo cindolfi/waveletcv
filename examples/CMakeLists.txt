@@ -9,63 +9,63 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(cxxopts)
 
 #   ----------------------------------------------------------------------------
-#   Build cvwt-dwt2d
+#   Build wtcv-dwt2d
 #   ----------------------------------------------------------------------------
 add_executable(
-    cvwt-dwt2d
+    wtcv-dwt2d
     EXCLUDE_FROM_ALL
     dwt2d.cpp
     common.hpp
     common.cpp
 )
 target_link_libraries (
-    cvwt-dwt2d
+    wtcv-dwt2d
     PRIVATE
-    cvwt
+    wtcv
     cxxopts
 )
-get_cmake_property(DWT2D_PROGRAM_NAME cvwt-dwt2d OUTPUT_NAME)
+get_cmake_property(DWT2D_PROGRAM_NAME wtcv-dwt2d OUTPUT_NAME)
 target_compile_definitions(
-    cvwt-dwt2d
+    wtcv-dwt2d
     PRIVATE
     PROGRAM_NAME="${DWT2D_PROGRAM_NAME}"
 )
 
 install(
     TARGETS
-    cvwt-dwt2d
-    COMPONENT cvwt-dwt2d
+    wtcv-dwt2d
+    COMPONENT wtcv-dwt2d
     EXCLUDE_FROM_ALL
     DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 #   ----------------------------------------------------------------------------
-#   Build cvwt-denoise
+#   Build wtcv-denoise
 #   ----------------------------------------------------------------------------
 add_executable(
-    cvwt-denoise
+    wtcv-denoise
     EXCLUDE_FROM_ALL
     denoise.cpp
     common.hpp
     common.cpp
 )
 target_link_libraries (
-    cvwt-denoise
+    wtcv-denoise
     PRIVATE
-    cvwt
+    wtcv
     cxxopts
 )
-get_cmake_property(DENOISE_PROGRAM_NAME cvwt-denoise OUTPUT_NAME)
+get_cmake_property(DENOISE_PROGRAM_NAME wtcv-denoise OUTPUT_NAME)
 target_compile_definitions(
-    cvwt-denoise
+    wtcv-denoise
     PRIVATE
     PROGRAM_NAME="${DENOISE_PROGRAM_NAME}"
 )
 
 install(
     TARGETS
-    cvwt-denoise
-    COMPONENT cvwt-denoise
+    wtcv-denoise
+    COMPONENT wtcv-denoise
     EXCLUDE_FROM_ALL
     DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
@@ -75,13 +75,13 @@ install(
 #   ----------------------------------------------------------------------------
 if(NOT TARGET examples)
   add_custom_target(examples)
-  add_dependencies(examples cvwt-dwt2d cvwt-denoise)
+  add_dependencies(examples wtcv-dwt2d wtcv-denoise)
 endif()
 
 install(
     TARGETS
-    cvwt-denoise
-    cvwt-dwt2d
+    wtcv-denoise
+    wtcv-dwt2d
     COMPONENT examples
     EXCLUDE_FROM_ALL
     DESTINATION ${CMAKE_INSTALL_BINDIR}

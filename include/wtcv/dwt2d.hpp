@@ -4,10 +4,10 @@
 #include <memory>
 #include <source_location>
 #include <opencv2/core.hpp>
-#include "cvwt/wavelet.hpp"
-#include "cvwt/array/array.hpp"
+#include "wtcv/wavelet.hpp"
+#include "wtcv/array/array.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 /** \addtogroup dwt2d Discrete Wavelet Transform
  *  @{
@@ -2959,7 +2959,7 @@ cv::MatExpr operator>=(const cv::Matx<T, m, n>& lhs, const DWT2D::Coeffs& rhs)
 
 cv::MatExpr operator>=(const DWT2D::Coeffs& lhs, double rhs);
 cv::MatExpr operator>=(double lhs, const DWT2D::Coeffs& rhs);
-} // namespace cvwt
+} // namespace wtcv
 
 
 //  ============================================================================
@@ -2969,145 +2969,145 @@ namespace cv
 {
 //  ----------------------------------------------------------------------------
 //  abs
-cvwt::CoeffsExpr abs(const cvwt::CoeffsExpr& expression);
-cvwt::CoeffsExpr abs(const cvwt::DWT2D::Coeffs& coeffs);
+wtcv::CoeffsExpr abs(const wtcv::CoeffsExpr& expression);
+wtcv::CoeffsExpr abs(const wtcv::DWT2D::Coeffs& coeffs);
 
 //  ----------------------------------------------------------------------------
 //  max
-cvwt::CoeffsExpr max(const cvwt::CoeffsExpr& a, const cvwt::CoeffsExpr& b);
+wtcv::CoeffsExpr max(const wtcv::CoeffsExpr& a, const wtcv::CoeffsExpr& b);
 
-cvwt::CoeffsExpr max(const cvwt::DWT2D::Coeffs& a, const cvwt::DWT2D::Coeffs& b);
+wtcv::CoeffsExpr max(const wtcv::DWT2D::Coeffs& a, const wtcv::DWT2D::Coeffs& b);
 
-cvwt::CoeffsExpr max(const cvwt::CoeffsExpr& a, const cvwt::DWT2D::Coeffs& b);
-inline cvwt::CoeffsExpr max(const cvwt::DWT2D::Coeffs& a, const cvwt::CoeffsExpr& b)
+wtcv::CoeffsExpr max(const wtcv::CoeffsExpr& a, const wtcv::DWT2D::Coeffs& b);
+inline wtcv::CoeffsExpr max(const wtcv::DWT2D::Coeffs& a, const wtcv::CoeffsExpr& b)
 {
     return max(b, a);
 }
 
-cvwt::CoeffsExpr max(const cvwt::CoeffsExpr& a, const cv::Mat& b);
-inline cvwt::CoeffsExpr max(const cv::Mat& a, const cvwt::CoeffsExpr& b)
+wtcv::CoeffsExpr max(const wtcv::CoeffsExpr& a, const cv::Mat& b);
+inline wtcv::CoeffsExpr max(const cv::Mat& a, const wtcv::CoeffsExpr& b)
 {
     return max(b, a);
 }
 
-cvwt::CoeffsExpr max(const cvwt::CoeffsExpr& a, const cv::MatExpr& b);
-inline cvwt::CoeffsExpr max(const cv::MatExpr& a, const cvwt::CoeffsExpr& b)
-{
-    return max(b, a);
-}
-
-template <typename T, int m, int n>
-cvwt::CoeffsExpr max(const cvwt::CoeffsExpr& a, const Matx<T, m, n>& b)
-{
-    return cvwt::CoeffsExpr(a.coeffs, max(static_cast<const MatExpr&>(a), b));
-}
-template <typename T, int m, int n>
-cvwt::CoeffsExpr max(const Matx<T, m, n>& a, const cvwt::CoeffsExpr& b)
-{
-    return max(b, a);
-}
-
-cvwt::CoeffsExpr max(const cvwt::CoeffsExpr& a, double b);
-inline cvwt::CoeffsExpr max(double a, const cvwt::CoeffsExpr& b)
-{
-    return max(b, a);
-}
-
-cvwt::CoeffsExpr max(const cvwt::DWT2D::Coeffs& a, const Mat& b);
-inline cvwt::CoeffsExpr max(const Mat& a, const cvwt::DWT2D::Coeffs& b)
+wtcv::CoeffsExpr max(const wtcv::CoeffsExpr& a, const cv::MatExpr& b);
+inline wtcv::CoeffsExpr max(const cv::MatExpr& a, const wtcv::CoeffsExpr& b)
 {
     return max(b, a);
 }
 
 template <typename T, int m, int n>
-cvwt::CoeffsExpr max(const cvwt::DWT2D::Coeffs& coeffs, const Matx<T, m, n>& matrix)
+wtcv::CoeffsExpr max(const wtcv::CoeffsExpr& a, const Matx<T, m, n>& b)
 {
-    return cvwt::CoeffsExpr(coeffs, max(static_cast<const Mat&>(coeffs), matrix));
+    return wtcv::CoeffsExpr(a.coeffs, max(static_cast<const MatExpr&>(a), b));
 }
 template <typename T, int m, int n>
-cvwt::CoeffsExpr max(const Matx<T, m, n>& a, const cvwt::DWT2D::Coeffs& b)
+wtcv::CoeffsExpr max(const Matx<T, m, n>& a, const wtcv::CoeffsExpr& b)
 {
     return max(b, a);
 }
 
-cvwt::CoeffsExpr max(const cvwt::DWT2D::Coeffs& a, const MatExpr& b);
-inline cvwt::CoeffsExpr max(const MatExpr& a, const cvwt::DWT2D::Coeffs& b)
+wtcv::CoeffsExpr max(const wtcv::CoeffsExpr& a, double b);
+inline wtcv::CoeffsExpr max(double a, const wtcv::CoeffsExpr& b)
 {
     return max(b, a);
 }
 
-cvwt::CoeffsExpr max(const cvwt::DWT2D::Coeffs& a, double b);
-inline cvwt::CoeffsExpr max(double a, const cvwt::DWT2D::Coeffs& b)
+wtcv::CoeffsExpr max(const wtcv::DWT2D::Coeffs& a, const Mat& b);
+inline wtcv::CoeffsExpr max(const Mat& a, const wtcv::DWT2D::Coeffs& b)
+{
+    return max(b, a);
+}
+
+template <typename T, int m, int n>
+wtcv::CoeffsExpr max(const wtcv::DWT2D::Coeffs& coeffs, const Matx<T, m, n>& matrix)
+{
+    return wtcv::CoeffsExpr(coeffs, max(static_cast<const Mat&>(coeffs), matrix));
+}
+template <typename T, int m, int n>
+wtcv::CoeffsExpr max(const Matx<T, m, n>& a, const wtcv::DWT2D::Coeffs& b)
+{
+    return max(b, a);
+}
+
+wtcv::CoeffsExpr max(const wtcv::DWT2D::Coeffs& a, const MatExpr& b);
+inline wtcv::CoeffsExpr max(const MatExpr& a, const wtcv::DWT2D::Coeffs& b)
+{
+    return max(b, a);
+}
+
+wtcv::CoeffsExpr max(const wtcv::DWT2D::Coeffs& a, double b);
+inline wtcv::CoeffsExpr max(double a, const wtcv::DWT2D::Coeffs& b)
 {
     return max(b, a);
 }
 
 //  ----------------------------------------------------------------------------
 //  min
-cvwt::CoeffsExpr min(const cvwt::CoeffsExpr& a, const cvwt::CoeffsExpr& b);
+wtcv::CoeffsExpr min(const wtcv::CoeffsExpr& a, const wtcv::CoeffsExpr& b);
 
-cvwt::CoeffsExpr min(const cvwt::DWT2D::Coeffs& a, const cvwt::DWT2D::Coeffs& b);
+wtcv::CoeffsExpr min(const wtcv::DWT2D::Coeffs& a, const wtcv::DWT2D::Coeffs& b);
 
-cvwt::CoeffsExpr min(const cvwt::CoeffsExpr& a, const cvwt::DWT2D::Coeffs& b);
-inline cvwt::CoeffsExpr min(const cvwt::DWT2D::Coeffs& a, const cvwt::CoeffsExpr& b)
+wtcv::CoeffsExpr min(const wtcv::CoeffsExpr& a, const wtcv::DWT2D::Coeffs& b);
+inline wtcv::CoeffsExpr min(const wtcv::DWT2D::Coeffs& a, const wtcv::CoeffsExpr& b)
 {
     return min(b, a);
 }
 
-cvwt::CoeffsExpr min(const cvwt::CoeffsExpr& a, const cv::Mat& b);
-inline cvwt::CoeffsExpr min(const cv::Mat& a, const cvwt::CoeffsExpr& b)
+wtcv::CoeffsExpr min(const wtcv::CoeffsExpr& a, const cv::Mat& b);
+inline wtcv::CoeffsExpr min(const cv::Mat& a, const wtcv::CoeffsExpr& b)
 {
     return min(b, a);
 }
 
-cvwt::CoeffsExpr min(const cvwt::CoeffsExpr& a, const cv::MatExpr& b);
-inline cvwt::CoeffsExpr min(const cv::MatExpr& a, const cvwt::CoeffsExpr& b)
-{
-    return min(b, a);
-}
-
-template <typename T, int m, int n>
-cvwt::CoeffsExpr min(const cvwt::CoeffsExpr& a, const Matx<T, m, n>& b)
-{
-    return cvwt::CoeffsExpr(a.coeffs, min(static_cast<const MatExpr&>(a), b));
-}
-template <typename T, int m, int n>
-cvwt::CoeffsExpr min(const Matx<T, m, n>& a, const cvwt::CoeffsExpr& b)
-{
-    return min(b, a);
-}
-
-cvwt::CoeffsExpr min(const cvwt::CoeffsExpr& a, double b);
-inline cvwt::CoeffsExpr min(double a, const cvwt::CoeffsExpr& b)
-{
-    return min(b, a);
-}
-
-cvwt::CoeffsExpr min(const cvwt::DWT2D::Coeffs& a, const Mat& b);
-inline cvwt::CoeffsExpr min(const Mat& a, const cvwt::DWT2D::Coeffs& b)
+wtcv::CoeffsExpr min(const wtcv::CoeffsExpr& a, const cv::MatExpr& b);
+inline wtcv::CoeffsExpr min(const cv::MatExpr& a, const wtcv::CoeffsExpr& b)
 {
     return min(b, a);
 }
 
 template <typename T, int m, int n>
-cvwt::CoeffsExpr min(const cvwt::DWT2D::Coeffs& coeffs, const Matx<T, m, n>& matrix)
+wtcv::CoeffsExpr min(const wtcv::CoeffsExpr& a, const Matx<T, m, n>& b)
 {
-    return cvwt::CoeffsExpr(coeffs, min(static_cast<const Mat&>(coeffs), matrix));
+    return wtcv::CoeffsExpr(a.coeffs, min(static_cast<const MatExpr&>(a), b));
 }
 template <typename T, int m, int n>
-cvwt::CoeffsExpr min(const Matx<T, m, n>& a, const cvwt::DWT2D::Coeffs& b)
+wtcv::CoeffsExpr min(const Matx<T, m, n>& a, const wtcv::CoeffsExpr& b)
 {
     return min(b, a);
 }
 
-cvwt::CoeffsExpr min(const cvwt::DWT2D::Coeffs& a, const MatExpr& b);
-inline cvwt::CoeffsExpr min(const MatExpr& a, const cvwt::DWT2D::Coeffs& b)
+wtcv::CoeffsExpr min(const wtcv::CoeffsExpr& a, double b);
+inline wtcv::CoeffsExpr min(double a, const wtcv::CoeffsExpr& b)
 {
     return min(b, a);
 }
 
-cvwt::CoeffsExpr min(const cvwt::DWT2D::Coeffs& a, double b);
-inline cvwt::CoeffsExpr min(double a, const cvwt::DWT2D::Coeffs& b)
+wtcv::CoeffsExpr min(const wtcv::DWT2D::Coeffs& a, const Mat& b);
+inline wtcv::CoeffsExpr min(const Mat& a, const wtcv::DWT2D::Coeffs& b)
+{
+    return min(b, a);
+}
+
+template <typename T, int m, int n>
+wtcv::CoeffsExpr min(const wtcv::DWT2D::Coeffs& coeffs, const Matx<T, m, n>& matrix)
+{
+    return wtcv::CoeffsExpr(coeffs, min(static_cast<const Mat&>(coeffs), matrix));
+}
+template <typename T, int m, int n>
+wtcv::CoeffsExpr min(const Matx<T, m, n>& a, const wtcv::DWT2D::Coeffs& b)
+{
+    return min(b, a);
+}
+
+wtcv::CoeffsExpr min(const wtcv::DWT2D::Coeffs& a, const MatExpr& b);
+inline wtcv::CoeffsExpr min(const MatExpr& a, const wtcv::DWT2D::Coeffs& b)
+{
+    return min(b, a);
+}
+
+wtcv::CoeffsExpr min(const wtcv::DWT2D::Coeffs& a, double b);
+inline wtcv::CoeffsExpr min(double a, const wtcv::DWT2D::Coeffs& b)
 {
     return min(b, a);
 }

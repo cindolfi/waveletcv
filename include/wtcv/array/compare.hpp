@@ -5,7 +5,7 @@
 #include <utility>
 #include <opencv2/core.hpp>
 
-namespace cvwt
+namespace wtcv
 {
 namespace internal
 {
@@ -246,7 +246,7 @@ void compare(
     cv::InputArray mask = cv::noArray()
 );
 /** @}*/
-}   // namespace cvwt
+}   // namespace wtcv
 
 #endif  // CVWT_ARRAY_COMPARE_HPP
 

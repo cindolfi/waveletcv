@@ -1,9 +1,9 @@
 
-#include "cvwt/shrink/universal.hpp"
+#include "wtcv/shrink/universal.hpp"
 
-#include "cvwt/utils.hpp"
+#include "wtcv/utils.hpp"
 
-namespace cvwt
+namespace wtcv
 {
 //  ============================================================================
 //  Low Level API
@@ -82,5 +82,5 @@ void visu_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int 
     VisuShrinker shrink;
     shrink(coeffs, shrunk_coeffs, levels);
 }
-}   // namespace cvwt
+}   // namespace wtcv
 
