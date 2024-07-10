@@ -346,7 +346,7 @@ void visu_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs);
  * @param[in] levels The maximum number of levels to shrink.  Shrinking is applied
  *                   starting at the lowest level (i.e. smallest scale).
  */
-DWT2D::Coeffs visu_shrink(DWT2D::Coeffs& coeffs, int levels);
+DWT2D::Coeffs visu_shrink(const DWT2D::Coeffs& coeffs, int levels);
 
 /**
  * @brief Shrinks detail coefficients using the VisuShrink algorithm.
@@ -356,7 +356,7 @@ DWT2D::Coeffs visu_shrink(DWT2D::Coeffs& coeffs, int levels);
  * @param[in] levels The maximum number of levels to shrink.  Shrinking is applied
  *                   starting at the lowest level (i.e. smallest scale).
  */
-void visu_shrink(DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels);
+void visu_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels);
 /** @}*/
 
 /** @} shrink */

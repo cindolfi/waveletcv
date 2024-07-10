@@ -71,13 +71,13 @@ void visu_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs)
     shrink(coeffs, shrunk_coeffs);
 }
 
-DWT2D::Coeffs visu_shrink(DWT2D::Coeffs& coeffs, int levels)
+DWT2D::Coeffs visu_shrink(const DWT2D::Coeffs& coeffs, int levels)
 {
     VisuShrinker shrink;
     return shrink(coeffs, levels);
 }
 
-void visu_shrink(DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels)
+void visu_shrink(const DWT2D::Coeffs& coeffs, DWT2D::Coeffs& shrunk_coeffs, int levels)
 {
     VisuShrinker shrink;
     shrink(coeffs, shrunk_coeffs, levels);
