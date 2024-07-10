@@ -75,7 +75,7 @@ install(
 #   ----------------------------------------------------------------------------
 if(NOT TARGET examples)
   add_custom_target(examples)
-  add_dependencies(examples cvwt-denoise cvwt-denoise)
+  add_dependencies(examples cvwt-dwt2d cvwt-denoise)
 endif()
 
 install(
