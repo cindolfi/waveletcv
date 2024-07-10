@@ -1,0 +1,162 @@
+/* Extends class declaration box */
+.cpp.class dt:first-child {
+    width: 100%;
+}
+
+/* Extends function declaration box */
+.cpp.function dt:first-child {
+    width: 100%;
+}
+
+/* Removes extra space around wrapped arguments */
+.cpp.function .sig-paren ~ dl > dd {
+    margin-bottom: 0;
+    line-height: 22px;
+}
+
+/* Move closing paranthesis closer to last argument */
+/* .cpp.function .sig-paren ~ dl > dd:last-child {
+    margin-bottom: -8px;
+} */
+
+/* Removes wrapping empty arguments */
+.cpp.function .sig-paren ~ dl {
+    display: inline;
+}
+
+span.n.sig-param {
+    filter: brightness(50%);
+}
+
+
+.coeffs-layout-table table {
+    aspect-ratio: 1 / 1;
+}
+.coeffs-layout-table td {
+    border: black solid 1px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0.25em;
+    font-weight: bold;
+}
+
+.coeffs-layout {
+    height: 480px;
+    aspect-ratio: 1 / 1;
+    position: relative;
+    margin: auto;
+}
+
+.coeffs-layout .subcoeffs {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    aspect-ratio: 1 / 1;
+    font-size: 1em;
+    font-weight: bold;
+    padding: 0.15em;
+    border-width: 1px;
+    border-left-style: none;
+    border-right-style: solid;
+    border-top-style: none;
+    border-bottom-style: solid;
+}
+
+
+
+.subcoeffs.A {
+    width: 6.25%;
+    top: 0;
+    left: 0;
+    border-left-style: solid;
+    border-top-style: solid;
+}
+
+.subcoeffs.H3 {
+    width: 6.25%;
+    top: 6.25%;
+    left: 0;
+    border-left-style: solid;
+}
+
+.subcoeffs.H2 {
+    width: 12.5%;
+    top: 12.5%;
+    left: 0;
+    border-left-style: solid;
+}
+
+.subcoeffs.H1 {
+    width: 25%;
+    top: 25%;
+    left: 0;
+    border-left-style: solid;
+}
+
+.subcoeffs.H0 {
+    width: 50%;
+    top: 50%;
+    left: 0;
+    border-left-style: solid;
+}
+
+.subcoeffs.V3 {
+    width: 6.25%;
+    top: 0;
+    left: 6.25%;
+    border-top-style: solid;
+}
+
+.subcoeffs.V2 {
+    width: 12.5%;
+    top: 0;
+    left: 12.5%;
+    border-top-style: solid;
+}
+
+.subcoeffs.V1 {
+    width: 25%;
+    top: 0;
+    left: 25%;
+    border-top-style: solid;
+}
+
+.subcoeffs.V0 {
+    width: 50%;
+    top: 0;
+    left: 50%;
+    border-top-style: solid;
+}
+
+.subcoeffs.D3 {
+    width: 6.25%;
+    top: 6.25%;
+    left: 6.25%;
+}
+
+.subcoeffs.D2 {
+    width: 12.5%;
+    top: 12.5%;
+    left: 12.5%;
+}
+
+.subcoeffs.D1 {
+    width: 25%;
+    top: 25%;
+    left: 25%;
+}
+
+.subcoeffs.D0 {
+    width: 50%;
+    top: 50%;
+    left: 50%;
+}
+
+.subcoeffs.shade {
+    background-color: lightblue;
+}
+
+.wy-menu code {
+    font-size: unset;
+}
