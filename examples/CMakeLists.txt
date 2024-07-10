@@ -13,6 +13,7 @@ FetchContent_MakeAvailable(cxxopts)
 #   ----------------------------------------------------------------------------
 add_executable(
     cvwt-dwt2d
+    EXCLUDE_FROM_ALL
     dwt2d.cpp
     common.hpp
     common.cpp
@@ -30,19 +31,20 @@ target_compile_definitions(
     PROGRAM_NAME="${DWT2D_PROGRAM_NAME}"
 )
 
-if(CVWT_INSTALL_EXAMPLES)
-    install(
-        TARGETS
-        cvwt-dwt2d
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
-endif()
+install(
+    TARGETS
+    cvwt-dwt2d
+    COMPONENT cvwt-dwt2d
+    EXCLUDE_FROM_ALL
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
 #   ----------------------------------------------------------------------------
 #   Build cvwt-denoise
 #   ----------------------------------------------------------------------------
 add_executable(
     cvwt-denoise
+    EXCLUDE_FROM_ALL
     denoise.cpp
     common.hpp
     common.cpp
@@ -60,10 +62,29 @@ target_compile_definitions(
     PROGRAM_NAME="${DENOISE_PROGRAM_NAME}"
 )
 
-if(CVWT_INSTALL_EXAMPLES)
-    install(
-        TARGETS
-        cvwt-denoise
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
+install(
+    TARGETS
+    cvwt-denoise
+    COMPONENT cvwt-denoise
+    EXCLUDE_FROM_ALL
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+#   ----------------------------------------------------------------------------
+#   Group Examples Into Single Target
+#   ----------------------------------------------------------------------------
+if(NOT TARGET examples)
+  add_custom_target(examples)
+  add_dependencies(examples cvwt-denoise cvwt-denoise)
 endif()
+
+install(
+    TARGETS
+    cvwt-denoise
+    cvwt-dwt2d
+    COMPONENT examples
+    EXCLUDE_FROM_ALL
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+

@@ -22,8 +22,6 @@ find_package(OpenCV REQUIRED)
 #   Options
 #   ----------------------------------------------------------------------------
 option(CVWT_BUILD_TESTS "Build tests" OFF)
-option(CVWT_BUILD_EXAMPLES "Build examples" OFF)
-option(CVWT_INSTALL_EXAMPLES "Install examples" OFF)
 option(CVWT_ENABLE_BUILD_IN_PLACE "Allow building in the project directory" OFF)
 
 #   Ensure CMAKE_BUILD_TYPE is set.
@@ -46,20 +44,10 @@ Or to enable building in place use:
     )
 endif()
 
-if (CVWT_INSTALL_EXAMPLES AND NOT CVWT_BUILD_EXAMPLES)
-    message(
-        WARNING
-        "CVWT_INSTALL_EXAMPLES is ${CVWT_INSTALL_EXAMPLES} "
-        "but CVWT_BUILD_TESTS is ${CVWT_BUILD_TESTS}"
-    )
-endif()
-
 message(VERBOSE "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}")
 message(VERBOSE "CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR}")
 message(VERBOSE "CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
 message(VERBOSE "CVWT_BUILD_TESTS ${CVWT_BUILD_TESTS}")
-message(VERBOSE "CVWT_BUILD_EXAMPLES ${CVWT_BUILD_EXAMPLES}")
-message(VERBOSE "CVWT_INSTALL_EXAMPLES ${CVWT_INSTALL_EXAMPLES}")
 message(VERBOSE "CVWT_ENABLE_BUILD_IN_PLACE ${CVWT_ENABLE_BUILD_IN_PLACE}")
 
 #   ----------------------------------------------------------------------------
@@ -79,9 +67,7 @@ if (CVWT_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
-if (CVWT_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+add_subdirectory(examples)
 add_subdirectory(docs)
 
 #   ----------------------------------------------------------------------------
