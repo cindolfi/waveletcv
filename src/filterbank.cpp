@@ -596,17 +596,17 @@ FilterBank::FilterBank() :
 }
 
 FilterBank::FilterBank(
-    const cv::Mat& decompose_lowpass,
-    const cv::Mat& decompose_highpass,
-    const cv::Mat& reconstruct_lowpass,
-    const cv::Mat& reconstruct_highpass
+    cv::InputArray decompose_lowpass,
+    cv::InputArray decompose_highpass,
+    cv::InputArray reconstruct_lowpass,
+    cv::InputArray reconstruct_highpass
 ) :
     _p(
         std::make_shared<internal::FilterBankImpl>(
-            decompose_lowpass,
-            decompose_highpass,
-            reconstruct_lowpass,
-            reconstruct_highpass
+            decompose_lowpass.getMat(),
+            decompose_highpass.getMat(),
+            reconstruct_lowpass.getMat(),
+            reconstruct_highpass.getMat()
         )
     )
 {
@@ -957,18 +957,48 @@ bool FilterBank::is_linear_phase(cv::InputArray kernel)
         || is_equal(stripped_kernel, -flipped_kernel);
 }
 
-FilterBank FilterBank::create_orthogonal_filter_bank(cv::InputArray reconstruct_lowpass_coeffs)
+FilterBank FilterBank::create_orthogonal(cv::InputArray reconstruct_lowpass_coeffs)
+{
+    cv::Mat reconstruct_lowpass;
+    cv::normalize(reconstruct_lowpass_coeffs, reconstruct_lowpass);
+
+    auto filter_bank = create_conjugate_mirror(reconstruct_lowpass);
+
+    filter_bank.throw_if_not_orthogonal();
+
+    return filter_bank;
+}
+
+FilterBank FilterBank::create_conjugate_mirror(cv::InputArray reconstruct_lowpass_coeffs)
 {
     cv::Mat decompose_lowpass_coeffs;
     cv::flip(reconstruct_lowpass_coeffs, decompose_lowpass_coeffs, -1);
 
-    return create_biorthogonal_filter_bank(
+    return create_quadrature_mirror(
         reconstruct_lowpass_coeffs,
         decompose_lowpass_coeffs
     );
 }
 
-FilterBank FilterBank::create_biorthogonal_filter_bank(
+FilterBank FilterBank::create_biorthogonal(
+    cv::InputArray reconstruct_lowpass_coeffs,
+    cv::InputArray decompose_lowpass_coeffs
+)
+{
+    cv::Mat reconstruct_lowpass;
+    cv::normalize(reconstruct_lowpass_coeffs, reconstruct_lowpass);
+
+    cv::Mat decompose_lowpass;
+    cv::normalize(decompose_lowpass_coeffs, decompose_lowpass);
+
+    auto filter_bank = create_quadrature_mirror(reconstruct_lowpass, decompose_lowpass);
+
+    filter_bank.throw_if_not_orthogonal();
+
+    return filter_bank;
+}
+
+FilterBank FilterBank::create_quadrature_mirror(
     cv::InputArray reconstruct_lowpass_coeffs,
     cv::InputArray decompose_lowpass_coeffs
 )
@@ -1147,6 +1177,28 @@ void FilterBank::throw_if_reconstruct_coeffs_are_wrong_size(
             location
         );
     }
+#endif
+}
+
+inline
+void FilterBank::throw_if_not_orthogonal(
+    const std::source_location& location
+) const CVWT_FILTER_BANK_NOEXCEPT
+{
+#if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
+    if (!is_orthogonal())
+        throw_bad_arg("FilterBank is not orthogonal", location);
+#endif
+}
+
+inline
+void FilterBank::throw_if_not_biorthogonal(
+    const std::source_location& location
+) const CVWT_FILTER_BANK_NOEXCEPT
+{
+#if CVWT_FILTER_BANK_EXCEPTIONS_ENABLED
+    if (!is_biorthogonal())
+        throw_bad_arg("FilterBank is not biorthogonal", location);
 #endif
 }
 

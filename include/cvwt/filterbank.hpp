@@ -290,10 +290,10 @@ public:
      *  - All of the kernels are not the same type
      */
     FilterBank(
-        const cv::Mat& decompose_lowpass,
-        const cv::Mat& decompose_highpass,
-        const cv::Mat& reconstruct_lowpass,
-        const cv::Mat& reconstruct_highpass
+        cv::InputArray decompose_lowpass,
+        cv::InputArray decompose_highpass,
+        cv::InputArray reconstruct_lowpass,
+        cv::InputArray reconstruct_highpass
     );
 
     /**
@@ -511,9 +511,28 @@ public:
     bool operator==(const FilterBank& other) const;
     friend std::ostream& operator<<(std::ostream& stream, const FilterBank& filter_bank);
 
-    /**@{*/
+    /**
+     * @name Factories
+     * @{
+     */
     /**
      * @brief Creates an orthogonal wavelet filter bank.
+     *
+     * @equivalentto
+     * @code{cpp}
+     * cv::normalize(reconstruct_lowpass_kernel, reconstruct_lowpass_kernel);
+     * create_conjugate_mirror(reconstruct_lowpass_kernel);
+     * @endcode
+     *
+     * @param[in] reconstruct_lowpass_kernel The reconstruction lowpass kernel \f$g_r[n]\f$.
+     * @throws cv::Exception If the filter bank is not orthogonal.
+     */
+    static FilterBank create_orthogonal(
+        cv::InputArray reconstruct_lowpass_kernel
+    );
+
+    /**
+     * @brief Creates conjugate mirror filter bank.
      *
      * This factory creates a conjugate mirror filter bank from \f$g_r[n]\f$
      * whose remaining kernels are defined to be
@@ -523,18 +542,35 @@ public:
      *     h_r[n] &= (-1^{n + 1}) \, g_r[-n]
      * \f}
      *
-     * The resulting filter bank is_orthogonal().
-     *
      * @note This function clones @pref{reconstruct_lowpass_kernel}.
      *
      * @param[in] reconstruct_lowpass_kernel The reconstruction lowpass kernel \f$g_r[n]\f$.
      */
-    static FilterBank create_orthogonal_filter_bank(
+    static FilterBank create_conjugate_mirror(
         cv::InputArray reconstruct_lowpass_kernel
     );
 
     /**
      * @brief Creates a biorthogonal wavelet filter bank.
+     *
+     * @equivalentto
+     * @code{cpp}
+     * cv::normalize(reconstruct_lowpass_kernel, reconstruct_lowpass_kernel);
+     * cv::normalize(decompose_lowpass_kernel, decompose_lowpass_kernel);
+     * create_quadrature_mirror(reconstruct_lowpass_kernel, decompose_lowpass_kernel);
+     * @endcode
+     *
+     * @param[in] reconstruct_lowpass_kernel The reconstruction lowpass kernel \f$g_r[n]\f$.
+     * @param[in] decompose_lowpass_kernel The decomposition lowpass kernel \f$g_d[n]\f$.
+     * @throws cv::Exception If the filter bank is not biorthogonal.
+     */
+    static FilterBank create_biorthogonal(
+        cv::InputArray reconstruct_lowpass_kernel,
+        cv::InputArray decompose_lowpass_kernel
+    );
+
+    /**
+     * @brief Creates a quadrature mirror filter bank.
      *
      * This factory creates a quadrature mirror filter bank from \f$g_d[n]\f$
      * and \f$g_r[n]\f$ whose remaining kernels are defined to be
@@ -543,19 +579,17 @@ public:
      *     h_r[n] &= (-1^{n + 1}) \, g_d[n]
      * \f}
      *
-     * The resulting filter bank is_biorthogonal().
-     *
      * @note This function clones @pref{decompose_lowpass_kernel} and
      *       @pref{reconstruct_lowpass_kernel}.
      *
      * @param[in] reconstruct_lowpass_kernel The reconstruction lowpass kernel \f$g_r[n]\f$.
      * @param[in] decompose_lowpass_kernel The decomposition lowpass kernel \f$g_d[n]\f$.
      */
-    static FilterBank create_biorthogonal_filter_bank(
+    static FilterBank create_quadrature_mirror(
         cv::InputArray reconstruct_lowpass_kernel,
         cv::InputArray decompose_lowpass_kernel
     );
-    /**@}*/
+    /**@} Factories */
 
     /** @private */
     int promote_type(int type) const;
@@ -661,6 +695,14 @@ private:
         cv::InputArray horizontal_detail,
         cv::InputArray vertical_detail,
         cv::InputArray diagonal_detail,
+        const std::source_location& location = std::source_location::current()
+    ) const CVWT_FILTER_BANK_NOEXCEPT;
+
+    void throw_if_not_orthogonal(
+        const std::source_location& location = std::source_location::current()
+    ) const CVWT_FILTER_BANK_NOEXCEPT;
+
+    void throw_if_not_biorthogonal(
         const std::source_location& location = std::source_location::current()
     ) const CVWT_FILTER_BANK_NOEXCEPT;
 

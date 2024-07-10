@@ -80,14 +80,55 @@ public:
     );
 
     /**
+     * @brief Construct a new Wavelet.
+     *
+     * @param[in] decompose_lowpass
+     * @param[in] decompose_highpass
+     * @param[in] reconstruct_lowpass
+     * @param[in] reconstruct_highpass
+     * @param[in] orthogonality
+     * @param[in] symmetry
+     * @param[in] name
+     * @param[in] family
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
+     */
+    Wavelet(
+        cv::InputArray decompose_lowpass,
+        cv::InputArray decompose_highpass,
+        cv::InputArray reconstruct_lowpass,
+        cv::InputArray reconstruct_highpass,
+        Orthogonality orthogonality,
+        Symmetry symmetry,
+        const std::string& name = "",
+        const std::string& family = "",
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
+    ) : Wavelet(
+            FilterBank(
+                decompose_lowpass,
+                decompose_highpass,
+                reconstruct_lowpass,
+                reconstruct_highpass
+            ),
+            orthogonality,
+            symmetry,
+            name,
+            family,
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
+        )
+    {}
+
+    /**
      * @brief Construct a new Wavelet object
      *
-     * @param filter_bank
-     * @param orthogonality
-     * @param name
-     * @param family
-     * @param wavelet_vanishing_moments
-     * @param scaling_vanishing_moments
+     * @param[in] filter_bank
+     * @param[in] orthogonality
+     * @param[in] name
+     * @param[in] family
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
      */
     Wavelet(
         const FilterBank& filter_bank,
@@ -97,6 +138,44 @@ public:
         int wavelet_vanishing_moments = -1,
         int scaling_vanishing_moments = -1
     );
+
+    /**
+     * @brief Construct a new Wavelet object
+     *
+     * @param[in] decompose_lowpass
+     * @param[in] decompose_highpass
+     * @param[in] reconstruct_lowpass
+     * @param[in] reconstruct_highpass
+     * @param[in] orthogonality
+     * @param[in] name
+     * @param[in] family
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
+     */
+    Wavelet(
+        cv::InputArray decompose_lowpass,
+        cv::InputArray decompose_highpass,
+        cv::InputArray reconstruct_lowpass,
+        cv::InputArray reconstruct_highpass,
+        Orthogonality orthogonality,
+        const std::string& name = "",
+        const std::string& family = "",
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
+    ) : Wavelet(
+            FilterBank(
+                decompose_lowpass,
+                decompose_highpass,
+                reconstruct_lowpass,
+                reconstruct_highpass
+            ),
+            orthogonality,
+            name,
+            family,
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
+        )
+    {}
 
     /**
      * @brief Construct a new Wavelet object
@@ -120,11 +199,49 @@ public:
     /**
      * @brief Construct a new Wavelet object
      *
-     * @param filter_bank
-     * @param name
-     * @param family
-     * @param wavelet_vanishing_moments
-     * @param scaling_vanishing_moments
+     * @param[in] decompose_lowpass
+     * @param[in] decompose_highpass
+     * @param[in] reconstruct_lowpass
+     * @param[in] reconstruct_highpass
+     * @param[in] symmetry
+     * @param[in] name
+     * @param[in] family
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
+     */
+    Wavelet(
+        cv::InputArray decompose_lowpass,
+        cv::InputArray decompose_highpass,
+        cv::InputArray reconstruct_lowpass,
+        cv::InputArray reconstruct_highpass,
+        Symmetry symmetry,
+        const std::string& name = "",
+        const std::string& family = "",
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
+    ) : Wavelet(
+            FilterBank(
+                decompose_lowpass,
+                decompose_highpass,
+                reconstruct_lowpass,
+                reconstruct_highpass
+            ),
+            symmetry,
+            name,
+            family,
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
+        )
+    {}
+
+    /**
+     * @brief Construct a new Wavelet object
+     *
+     * @param[in] filter_bank
+     * @param[in] name
+     * @param[in] family
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
      */
     Wavelet(
         const FilterBank& filter_bank,
@@ -133,6 +250,91 @@ public:
         int wavelet_vanishing_moments = -1,
         int scaling_vanishing_moments = -1
     );
+
+    /**
+     * @brief Construct a new Wavelet object
+     *
+     * @param[in] decompose_lowpass
+     * @param[in] decompose_highpass
+     * @param[in] reconstruct_lowpass
+     * @param[in] reconstruct_highpass
+     * @param[in] name
+     * @param[in] family
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
+     */
+    Wavelet(
+        cv::InputArray decompose_lowpass,
+        cv::InputArray decompose_highpass,
+        cv::InputArray reconstruct_lowpass,
+        cv::InputArray reconstruct_highpass,
+        const std::string& name = "",
+        const std::string& family = "",
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
+    ) : Wavelet(
+            FilterBank(
+                decompose_lowpass,
+                decompose_highpass,
+                reconstruct_lowpass,
+                reconstruct_highpass
+            ),
+            name,
+            family,
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
+        )
+    {}
+
+    /**
+     * @brief Construct a new orthogonal Wavelet object
+     *
+     * @param[in] reconstruct_lowpass
+     * @param[in] name
+     * @param[in] family
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
+     */
+    Wavelet(
+        cv::InputArray reconstruct_lowpass,
+        const std::string& name = "",
+        const std::string& family = "",
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
+    ) : Wavelet(
+            FilterBank::create_orthogonal(reconstruct_lowpass),
+            name,
+            family,
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
+        )
+    {}
+
+    /**
+     * @brief Construct a new biorthogonal Wavelet object
+     *
+     * @param[in] decompose_lowpass
+     * @param[in] reconstruct_lowpass
+     * @param[in] name
+     * @param[in] family
+     * @param[in] wavelet_vanishing_moments
+     * @param[in] scaling_vanishing_moments
+     */
+    Wavelet(
+        cv::InputArray decompose_lowpass,
+        cv::InputArray reconstruct_lowpass,
+        const std::string& name = "",
+        const std::string& family = "",
+        int wavelet_vanishing_moments = -1,
+        int scaling_vanishing_moments = -1
+    ) : Wavelet(
+            FilterBank::create_biorthogonal(reconstruct_lowpass, decompose_lowpass),
+            name,
+            family,
+            wavelet_vanishing_moments,
+            scaling_vanishing_moments
+        )
+    {}
 
     /**
      * @brief Copy Constructor.
@@ -271,7 +473,7 @@ public:
      *
      * @note Use this overload when all sets of factory parameters can be
      *       enumerated and the wavelet name() uniquely determines the
-     *       filter_bank().  Otherwise, use
+     *       filter_bank().  Otherwise, use this
      *       @ref register_factory(const std::string& name, Wavelet factory(BoundArgs..., CallArgs...), const BoundArgs&... args) "register_factory()"
      *       instead.
      *
