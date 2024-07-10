@@ -21,7 +21,6 @@ find_package(OpenCV REQUIRED)
 #   ----------------------------------------------------------------------------
 #   Options
 #   ----------------------------------------------------------------------------
-option(CVWT_BUILD_TESTS "Build tests" OFF)
 option(CVWT_ENABLE_BUILD_IN_PLACE "Allow building in the project directory" OFF)
 
 #   Ensure CMAKE_BUILD_TYPE is set.
@@ -31,6 +30,11 @@ if (is_multi_config)
         message(FATAL_ERROR "CMAKE_BUILD_TYPE is not set")
     endif()
 endif()
+
+message(VERBOSE "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}")
+message(VERBOSE "CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR}")
+message(VERBOSE "CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
+message(VERBOSE "CVWT_ENABLE_BUILD_IN_PLACE ${CVWT_ENABLE_BUILD_IN_PLACE}")
 
 #   Guard against accidental in place builds.
 if ((CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR) AND NOT CVWT_ENABLE_BUILD_IN_PLACE)
@@ -43,12 +47,6 @@ Or to enable building in place use:
     cmake -DCVWT_ENABLE_BUILD_IN_PLACE=ON]=]
     )
 endif()
-
-message(VERBOSE "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}")
-message(VERBOSE "CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR}")
-message(VERBOSE "CMAKE_BINARY_DIR ${CMAKE_BINARY_DIR}")
-message(VERBOSE "CVWT_BUILD_TESTS ${CVWT_BUILD_TESTS}")
-message(VERBOSE "CVWT_ENABLE_BUILD_IN_PLACE ${CVWT_ENABLE_BUILD_IN_PLACE}")
 
 #   ----------------------------------------------------------------------------
 #   Global Compiler Settings
@@ -63,10 +61,7 @@ set(CVWT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 add_subdirectory(src)
-if (CVWT_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
-endif()
+add_subdirectory(tests)
 add_subdirectory(examples)
 add_subdirectory(docs)
 

@@ -1,3 +1,5 @@
+enable_testing()
+
 #   ----------------------------------------------------------------------------
 #   Find or Fetch Dependencies
 #   ----------------------------------------------------------------------------
@@ -18,7 +20,8 @@ FetchContent_MakeAvailable(googletest json)
 #   Build Tests
 #   ----------------------------------------------------------------------------
 add_executable(
-    cvwt_test
+    cvwt-test
+    EXCLUDE_FROM_ALL
     common.hpp
     common.cpp
     json.hpp
@@ -35,7 +38,7 @@ add_executable(
     statistics_test.cpp
 )
 target_link_libraries (
-    cvwt_test
+    cvwt-test
     PRIVATE
     cvwt
     gtest_main
@@ -43,7 +46,7 @@ target_link_libraries (
     nlohmann_json::nlohmann_json
 )
 target_compile_definitions(
-    cvwt_test
+    cvwt-test
     PRIVATE
     WAVELET_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/wavelet_test_data.json"
     DWT2D_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/dwt2d_test_data.json"
@@ -55,5 +58,5 @@ target_compile_definitions(
 #   ----------------------------------------------------------------------------
 add_test(
     NAME testcvwt
-    COMMAND cvwt_test
+    COMMAND cvwt-test
 )
