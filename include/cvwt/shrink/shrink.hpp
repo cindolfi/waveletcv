@@ -16,6 +16,15 @@ namespace cvwt
  */
 /**
  * @brief A function that shrinks matrix elements towards zero.
+ *
+ * Multichannel, masked
+ *
+ * @param[in] array The array the shrink
+ * @param[out] shrunk_array The shrunk array
+ * @param[in] threshold The threshold
+ * @param[in] mask The mask
+ *
+ * @see make_shrink_function(), soft_threshold(), hard_threshold()
  */
 using ShrinkFunction = std::function<
     void(
@@ -28,6 +37,8 @@ using ShrinkFunction = std::function<
 
 /**
  * @brief A function that shrinks fundamental types towards zero.
+ *
+ * @see make_shrink_function()
  */
 template <typename Value, typename Threshold>
 using PrimitiveShrinkFunction = std::function<Value(Value, Threshold)>;
@@ -382,150 +393,12 @@ void shrink_subbands(
 
 
 
-
-
-
 //  ============================================================================
 //  High Level API
 //  ============================================================================
+
 /**
  * @brief Base class for DWT coefficient shrinkage algorithms.
- *
- * The DWT coefficients are partitioned into disjoint subsets and each subset
- * is shrunk toward zero by a shrink_function().
- *
- * Algorithms will support one or more of the following partitions:
- *  - All detail coefficients comprise a single set (Shrinker::GLOBALLY)
- *  - Coefficients are partitioned by decomposition level (Shrinker::LEVELS)
- *  - Coefficients are partitioned by subband (Shrinker::SUBBANDS)
- *  - Specialized, implementation defined partition (Shrinker::SUBSETS)
- *
- * The format of the thresholds matrix returned by compute_thresholds(), called
- * with N decomposition levels, depends on the partition():
- *  - Shrinker::GLOBALLY: 1 row and 1 column.
- *  - Shrinker::LEVELS: N rows and 1 column, where each row corresponds to a level.
- *  - Shrinker::SUBBANDS: N rows and 3 columns, where each row corresponds to a
- *    level and the columns corresponds to HORIZONTAL, VERTICAL, and DIAGONAL
- *    subbands.
- *  - Shrinker::SUBSETS: implementation defined
- *
- * Many shrinkage algorithms assume that the original image pixels are drawn
- * from a normal distribution with a identical variance.  Since this
- * is generally unknown, the noise standard deviation is estimated from the
- * coefficients by compute_noise_stdev().
- *
- * Usage
- * =====
- *
- * Shrinking Coefficients
- * ----------------------
- * To shrink all detail coefficients:
- * @code{cpp}
- * cvwt::DWT2D::Coeffs coeffs = ...;
- * cvwt::Shrinker* shrinker = ...;
- * cvwt::DWT2D::Coeffs shrunken_coeffs;
- * shrunken_coeffs = shrinker->shrink(coeffs);
- * @endcode
- *
- * To shrink only the highest resolution detail coefficients:
- * @code{cpp}
- * shrunken_coeffs = shrinker->shrink(coeffs, 1);
- * @endcode
- *
- * To shrink only the first two decomposition levels:
- * @code{cpp}
- * shrunken_coeffs = shrinker->shrink(coeffs, 2);
- * @endcode
- *
- * To shrink all but the highest resolution detail coefficients:
- * @code{cpp}
- * shrunken_coeffs = shrinker->shrink(coeffs, cv::Range(1, coeffs.levels()));
- * @endcode
- *
- * Shrinker objects are also functors:
- * @code{cpp}
- * cvwt::BayesShrink bayesshrink;
- * shrunken_coeffs = bayesshrink(coeffs);
- * @endcode
- *
- * Working With Thresholds
- * -----------------------
- * To compute the thresholds:
- * @code{cpp}
- * cv::Mat4d thresholds;
- * thresholds = shrinker->compute_thresholds(coeffs);
- * @endcode
- *
- * To shrink detail coefficients and get the thresholds in a single call:
- * @code{cpp}
- * shrunken_coeffs = shrinker->shrink(coeffs, thresholds);
- * @endcode
- *
- * To get an array containing the threshold for each corresponding coefficient:
- * @code{cpp}
- * cv::Mat coeff_thresholds = shrinker->expand_thresholds(coeffs, thresholds);
- * @endcode
- *
- * To compute a mask that indicates which coefficients were shrunk to zero:
- * @code{cpp}
- * cv::Mat shrunk_coeffs_mask;
- * cvwt::less_than_or_equal(
- *     cv::abs(coeffs),
- *     coeffs_thresholds,
- *     shrunk_coeffs_mask,
- *     coeffs.detail_mask()
- * );
- * @endcode
- *
- * @note In the unlikely situation that the coefficient noise variance is known
- *       (e.g. from a knowlegdge about image acquisition) users should call
- *       the shrink() and compute_thresholds() overloads that take a @pref{stdev}.
- *       In most cases the noise variance must be estimated from the
- *       coefficients and users should call the shrink() and
- *       compute_thresholds() overloads that do not accept a @pref{stdev}, in
- *       which case it is estimated internally using compute_noise_stdev().
- *
- * Subclassing
- * ===========
- *
- * Algorithms that shrink all detail coefficients using a single threshold must
- * implement:
- *  - A constructor that passes or allows the user to pass Shrinker::GLOBALLY to
- *    this class's constructor
- *  - compute_global_threshold()
- *
- * Algorithms that shrink detail coefficients using a separate threshold for
- * each level must implement:
- *  - A constructor that passes or allows the user to pass Shrinker::LEVELS to
- *    this class's constructor
- *  - compute_level_threshold()
- *
- * Algorithms that shrink detail coefficients using a separate threshold for
- * each subband must implement:
- *  - A constructor that passes or allows the user to pass Shrinker::SUBBAND to
- *    this class's constructor
- *  - compute_subband_threshold()
- *
- * Algorithms that shrink detail coefficients using a partitioning scheme other
- * than those listed above must implement:
- *  - A constructor that passes or allows the user to pass Shrinker::SUBSETS to
- *    this class's constructor
- *  - compute_subset_thresholds()
- *  - expand_subset_thresholds()
- *  - shrink_subsets()
- *
- * The default implementation of compute_noise_stdev() calls stdev_function() on
- * the diagonal subband at the finest resolution (i.e. coeffs.diagonal_detail(0)).
- * The default stdev_function() is mad_stdev(), which gives a statistically
- * robust estimate of the standard deviation.
- *
- * Subclasses can override compute_noise_stdev() to change which coefficients
- * are used to esitmate the coefficient noise standard deviation.  Subclasses
- * should change the standard deviation estimator by passing a different
- * estimator to this class's constructor.
- *
- * For performance reasons, algorithms that do not require an estimate of the
- * noise variance should override compute_noise_stdev() to do nothing.
  */
 class Shrinker
 {

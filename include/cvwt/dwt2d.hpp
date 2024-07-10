@@ -157,7 +157,28 @@ public:
      * resolutions).  The submatrices are layed out as (a 4-level decomposition
      * is shown for illustration):
      *
-     * @copydetails common_four_level_coeff_matrix
+     *
+     * @verbatim embed:rst:leading-asterisk
+     *
+     * .. raw:: html
+     *
+     *     <div class="coeffs-layout">
+     *          <div class="subcoeffs A">A</div>
+     *          <div class="subcoeffs H0">H0</div>
+     *          <div class="subcoeffs H1">H1</div>
+     *          <div class="subcoeffs H2">H2</div>
+     *          <div class="subcoeffs H3">H3</div>
+     *          <div class="subcoeffs V0">V0</div>
+     *          <div class="subcoeffs V1">V1</div>
+     *          <div class="subcoeffs V2">V2</div>
+     *          <div class="subcoeffs V3">V3</div>
+     *          <div class="subcoeffs D0">D0</div>
+     *          <div class="subcoeffs D1">D1</div>
+     *          <div class="subcoeffs D2">D2</div>
+     *          <div class="subcoeffs D3">D3</div>
+     *     </div>
+     *
+     * @endverbatim
      *
      * The regions labeled H0, V0, and D0 are the level 0 (i.e. finest)
      * horizontal, vertical, and diagonal detail subbands, respectively.
@@ -297,36 +318,31 @@ public:
          * @note Assigment semantics depend on is_subcoeffs().  See
          *       @ref operator=(cv::InputArray) "operator=()" for details.
          */
+
         /**
          * @class common_four_level_coeff_matrix
          *
-         * <div class="coeffs-layout-table">
-         * <table>
-         *     <tr>
-         *         <td class="A" style="width: 6.25%; height: 6.25%">A</td>
-         *         <td class="V3" style="width: 6.25%; height: 6.25%">V3</td>
-         *         <td class="V2" rowspan="2" colspan="1" style="width: 12.5%; height: 12.5%">V2</td>
-         *         <td class="V1" rowspan="3" colspan="1" style="width: 25%; height: 25%">V1</td>
-         *         <td class="V0" rowspan="4" colspan="1" style="width: 50%; height: 50%">V0</td>
-         *     </tr>
-         *     <tr>
-         *         <td class="H3" style="width: 6.25%; height: 6.25%">H3</td>
-         *         <td class="D3" style="width: 6.25%; height: 6.25%">D3</td>
-         *     </tr>
-         *     <tr>
-         *         <td class="H2" rowspan="1" colspan="2" style="width: 12.5%; height: 12.5%">H2</td>
-         *         <td class="D2" rowspan="1" colspan="1" style="width: 12.5%; height: 12.5%">D2</td>
-         *     </tr>
-         *     <tr>
-         *         <td class="H1" rowspan="1" colspan="3" style="width: 25%; height: 25%">H1</td>
-         *         <td class="D1"  rowspan="1" colspan="1" style="width: 25%; height: 25%">D1</td>
-         *     </tr>
-         *     <tr>
-         *         <td class="H0"  rowspan="1" colspan="4" style="width: 50%; height: 50%">H0</td>
-         *         <td class="D0" rowspan="1" colspan="1" style="width: 50%; height: 50%">D0</td>
-         *     </tr>
-         * </table>
-         * </div>
+         * @verbatim embed:rst:leading-asterisk
+         *
+         * .. raw:: html
+         *
+         *     <div class="coeffs-layout">
+         *          <div class="subcoeffs A">A</div>
+         *          <div class="subcoeffs H0">H0</div>
+         *          <div class="subcoeffs H1">H1</div>
+         *          <div class="subcoeffs H2">H2</div>
+         *          <div class="subcoeffs H3">H3</div>
+         *          <div class="subcoeffs V0">V0</div>
+         *          <div class="subcoeffs V1">V1</div>
+         *          <div class="subcoeffs V2">V2</div>
+         *          <div class="subcoeffs V3">V3</div>
+         *          <div class="subcoeffs D0">D0</div>
+         *          <div class="subcoeffs D1">D1</div>
+         *          <div class="subcoeffs D2">D2</div>
+         *          <div class="subcoeffs D3">D3</div>
+         *     </div>
+         *
+         * @endverbatim
          */
 
         /**
@@ -339,6 +355,10 @@ public:
          */
     public:
         /**
+         * @name Constructors
+         * @{
+         */
+        /**
          * @brief Construct an empty Coeffs object.
          */
         Coeffs();
@@ -350,6 +370,7 @@ public:
          * @brief Move Constructor.
          */
         Coeffs(Coeffs&& other) = default;
+        /** @} */
 
         //  --------------------------------------------------------------------
         //  Assignment
@@ -394,10 +415,10 @@ public:
 
         //  --------------------------------------------------------------------
         //  Casting
-        // /**
-        //  * @name Conversion
-        //  * @{
-        //  */
+        /**
+         * @name Conversion
+         * @{
+         */
         /**
          * @brief Implicit cast to cv::Mat.
          *
@@ -461,7 +482,7 @@ public:
          *          will modify the coefficients stored by this object.
          */
         operator cv::_InputOutputArray() const { return _p->coeff_matrix; }
-        // /**@} Conversion*/
+        /**@} Conversion*/
 
         //  --------------------------------------------------------------------
         //  Copy
@@ -504,9 +525,27 @@ public:
          * the approximation coefficients A and the detail subbands H2, V2, D2,
          * H3, V3, and D3.
          *
-         * <div class="shade A H2 V2 D2 H3 V3 D3">
-         * @copydetails common_four_level_coeff_matrix
-         * </div>
+         * @verbatim embed:rst:leading-asterisk
+         *
+         * .. raw:: html
+         *
+         *     <div class="coeffs-layout">
+         *          <div class="subcoeffs A shade">A</div>
+         *          <div class="subcoeffs H0">H0</div>
+         *          <div class="subcoeffs H1">H1</div>
+         *          <div class="subcoeffs H2 shade">H2</div>
+         *          <div class="subcoeffs H3 shade">H3</div>
+         *          <div class="subcoeffs V0">V0</div>
+         *          <div class="subcoeffs V1">V1</div>
+         *          <div class="subcoeffs V2 shade">V2</div>
+         *          <div class="subcoeffs V3 shade">V3</div>
+         *          <div class="subcoeffs D0">D0</div>
+         *          <div class="subcoeffs D1">D1</div>
+         *          <div class="subcoeffs D2 shade">D2</div>
+         *          <div class="subcoeffs D3 shade">D3</div>
+         *     </div>
+         *
+         * @endverbatim
          *
          * @param[in] level
          */
@@ -534,9 +573,27 @@ public:
          * to the shaded submatrix comprised of the approximation coefficients
          * A and the detail subbands H2, V2, D2, H3, V3, and D3.
          *
-         * <div class="shade A H2 V2 D2 H3 V3 D3">
-         * @copydetails common_four_level_coeff_matrix
-         * </div>
+         * @verbatim embed:rst:leading-asterisk
+         *
+         * .. raw:: html
+         *
+         *     <div class="coeffs-layout">
+         *          <div class="subcoeffs A shade">A</div>
+         *          <div class="subcoeffs H0">H0</div>
+         *          <div class="subcoeffs H1">H1</div>
+         *          <div class="subcoeffs H2 shade">H2</div>
+         *          <div class="subcoeffs H3 shade">H3</div>
+         *          <div class="subcoeffs V0">V0</div>
+         *          <div class="subcoeffs V1">V1</div>
+         *          <div class="subcoeffs V2 shade">V2</div>
+         *          <div class="subcoeffs V3 shade">V3</div>
+         *          <div class="subcoeffs D0">D0</div>
+         *          <div class="subcoeffs D1">D1</div>
+         *          <div class="subcoeffs D2 shade">D2</div>
+         *          <div class="subcoeffs D3 shade">D3</div>
+         *     </div>
+         *
+         * @endverbatim
          *
          * @param[in] level
          * @param[in] coeffs The coefficients.  This must be one of:
@@ -565,8 +622,6 @@ public:
          * @copydetails common_assignment_semantics_depends_on_is_subcoeffs
          */
         bool is_subcoeffs() const { return _p->flags & internal::Dwt2dCoeffsImpl::Flags::SUBCOEFFS; }
-
-
         /**@} Subcoefficients*/
 
         //  --------------------------------------------------------------------
@@ -651,10 +706,27 @@ public:
          * The result of `collect_details(DetailSubband::HORIZONTAL)` is a
          * vector containing the shaded submatrices H0, H1, H2, and H3.
          *
-         * <div class="shade H0 H1 H2 H3">
-         * @copydetails common_four_level_coeff_matrix
-         * </div>
+         *@verbatim embed:rst:leading-asterisk
          *
+         * .. raw:: html
+         *
+         *     <div class="coeffs-layout">
+         *          <div class="subcoeffs A">A</div>
+         *          <div class="subcoeffs H0 shade">H0</div>
+         *          <div class="subcoeffs H1 shade">H1</div>
+         *          <div class="subcoeffs H2 shade">H2</div>
+         *          <div class="subcoeffs H3 shade">H3</div>
+         *          <div class="subcoeffs V0">V0</div>
+         *          <div class="subcoeffs V1">V1</div>
+         *          <div class="subcoeffs V2">V2</div>
+         *          <div class="subcoeffs V3">V3</div>
+         *          <div class="subcoeffs D0">D0</div>
+         *          <div class="subcoeffs D1">D1</div>
+         *          <div class="subcoeffs D2">D2</div>
+         *          <div class="subcoeffs D3">D3</div>
+         *     </div>
+         *
+         * @endverbatim
          * @param[in] subband The detail subband.  This must be a #DetailSubband.
          *
          * @see collect_horizontal_details, collect_vertical_details,
@@ -845,7 +917,7 @@ public:
         /**@} Subband Regions*/
 
         //  --------------------------------------------------------------------
-        //  Masks
+        //  Subband Masks
         /**
          * @name Subband Masks
          * @{

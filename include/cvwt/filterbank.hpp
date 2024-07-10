@@ -237,9 +237,10 @@ struct FilterBankImpl
  * instead of downsampling.
  * @image html reconstruct_filter_bank.png "Reconstruction Block Diagram"
  *
- * @note FilterBank objects are designed to be allocated on the stack and should
- *       **not** be created with `new`.  They contain a single std::shared_ptr,
- *       making copying and moving an inexpensive operation.
+ * @note FilterBank objects are designed to be allocated on the stack and passed
+ *       by reference.  They manage their memory internally using a single
+ *       std::shared_ptr. Allocation using new incurs two heap allocations.
+ *       Passing by value incurs the cost of copying the shared pointer.
  */
 class FilterBank
 {

@@ -32,42 +32,8 @@ enum class Orthogonality {
     NONE,
 };
 
-
 /**
  * @brief A %Wavelet.
- *
- * Predefined Wavelets
- * ===================
- * The following predefined wavelets can be constructed by the indicated
- * factory or by create() using one of the indicated names.
- *  - Haar
- *      - Factory: create_haar()
- *      - Names: haar
- *  - Daubechies
- *      - Factory: create_daubechies()
- *      - Names: db1, db2, ..., db38
- *  - Symlets
- *      - Factory: create_symlets()
- *      - Names: sym2, sym3, ..., sym20
- *  - Coiflets
- *      - Factory: create_coiflets()
- *      - Names: coif1, coif2, ..., coif17
- *  - Biorthogonal
- *      - Factory: create_biorthogonal()
- *      - Names: bior1.1, bior1.3, bior1.5, bior2.2, bior2.4, bior2.6, bior.2,8,
- *               bior3.1, bior3.3, bior3.5, bior3.7, bior3.9, bior4.4, bior5.5,
- *               and bior6.8
- *  - Reverse Biorthognal
- *      - Factory: create_reverse_biorthogonal()
- *      - Names: rbior1.1, rbior1.3, rbior1.5, rbior2.2, rbior2.4, rbior2.6,
- *               rbior.2,8, rbior3.1, rbior3.3, rbior3.5, rbior3.7, rbior3.9,
- *               rbior4.4, rbior5.5, and rbior6.8
- *
- * Custom Wavelets
- * ===============
- * Custom wavelets are constructed by providing a defining FilterBank.
- * Additional properties such as orthogonality, symmetry, and the number
- * vanishing moments can be optionally given.
  *
  * When the orthogonality property is not explicitly provided it is inferred
  * using FilterBank::is_orthogonal() and FilterBank::is_biorthogonal().  Only
@@ -79,36 +45,10 @@ enum class Orthogonality {
  * using FilterBank::is_symmetric().  Only Symmetry::SYMMETRIC can be inferred.
  * Symmetry::NEARLY_SYMMETRIC cannot be inferred and must be set explicity.
  *
- * Constructing Custom Wavelets By Name
- * ------------------------------------
- * Providing support for creating custom wavelets by name is straight forward -
- * simply implement a wavelet factory and register each possible parameter set
- * with register_factory().
- * For example, the predefined Daubechies wavelets are registered at startup
- * using code equivalent to the following.
- * @code{cpp}
- * for (int order = 1; order < 39; ++order)
- *     Wavelet::register_factory(create_daubechies, order);
- * @endcode
- * And creating a 4th order Daubechies wavelet by name is done with
- * @code{cpp}
- * Wavelet db4_wavelet = Wavelet::create("db4");
- * @endcode
- * Under the hood, std::bind() binds `order` to create_daubechies()
- * and uses the name() of the wavelet (e.g. "db1") as the factory name.
- *
- * Use this approach whenever the wavelet name() *uniquely* identifies an
- * *entire* set of factory parameters.
- * If, however, it is impossible or inpractical to enumerate all possible sets
- * of factory parameters, or the wavelet name() does not uniquely identify the
- * filter_bank(), use the version of
- * @ref register_factory(const std::string& name, Wavelet factory(BoundArgs..., CallArgs...), const BoundArgs&... args) "register_factory()"
- * that takes a factory name and registers a factory that accepts unbound
- * parameters at creation.
- *
- * @note Wavelet objects are designed to be allocated on the stack and should
- *       **not** be created with `new`.  They contain a single std::shared_ptr,
- *       making copying and moving an inexpensive operation.
+ * @note Wavelet objects are designed to be allocated on the stack and passed
+ *       by reference.  They manage their memory internally using a single
+ *       std::shared_ptr. Allocation using new incurs an two heap allocations.
+ *       Passing by value incurs the cost of copying the shared pointer.
  */
 class Wavelet
 {
@@ -384,7 +324,7 @@ public:
      *
      * @note Use this overload when it is impossible or inpractical to enumerate
      *       all sets of factory parameters, or when the wavelet name() does not
-     *       uniquely determine the filter_bank().  Otherwise, use
+     *       uniquely determine the filter_bank().  Otherwise, use this
      *       @ref register_factory(Wavelet factory(BoundArgs...), const BoundArgs&... args) "register_factory()"
      *       instead.
      *
