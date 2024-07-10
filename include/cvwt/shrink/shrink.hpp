@@ -486,6 +486,10 @@ public:
      * @brief Move Constructor.
      */
     Shrinker(Shrinker&& other) = default;
+    /**
+     * @brief Destructor.
+     */
+    virtual ~Shrinker() = default;
 
     //  ------------------------------------------------------------------------
     //  Getters & Setters
