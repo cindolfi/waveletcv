@@ -26,8 +26,16 @@ option(CVWT_BUILD_EXAMPLES "Build examples" OFF)
 option(CVWT_INSTALL_EXAMPLES "Install examples" OFF)
 option(CVWT_ENABLE_BUILD_IN_PLACE "Allow building in the project directory" OFF)
 
+#   Ensure CMAKE_BUILD_TYPE is set.
+get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if (is_multi_config)
+    if (NOT CMAKE_BUILD_TYPE)
+        message(FATAL_ERROR "CMAKE_BUILD_TYPE is not set")
+    endif()
+endif()
+
 #   Guard against accidental in place builds.
-if((CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR) AND NOT CVWT_ENABLE_BUILD_IN_PLACE)
+if ((CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR) AND NOT CVWT_ENABLE_BUILD_IN_PLACE)
     message(
         FATAL_ERROR [=[
 Attempting to build inside the source directory.
