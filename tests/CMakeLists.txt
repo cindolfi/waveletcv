@@ -18,9 +18,9 @@ if (Python_FOUND)
     # if (NOT EXISTS VENV_PYTHON_EXECUTABLE)
     #     message(FATAL_ERROR "Python virutal environment executable does not exist: ${VENV_PYTHON_EXECUTABLE}")
     # endif()
-    if (NOT EXISTS VENV_PIP_EXECUTABLE)
-        message(FATAL_ERROR "Python virutal environment pip does not exist: ${VENV_PIP_EXECUTABLE}")
-    endif()
+    # if (NOT EXISTS "${VENV_PIP_EXECUTABLE}")
+    #     message(FATAL_ERROR "Python virutal environment pip does not exist: ${VENV_PIP_EXECUTABLE}")
+    # endif()
 
     execute_process(
         COMMAND
