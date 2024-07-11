@@ -77,7 +77,7 @@ jobs:
       if: ${{ startsWith(matrix.os, 'windows') }}
       run: |
         curl --output opencv-windows.exe https://github.com/opencv/opencv/releases/latest/opencv-*-windows.exe
-        cmd opencv-windows.exe
+        opencv-windows.exe -y -o"${{ steps.strings.outputs.build-output-dir }}/opencv"
 
     - name: Install Dependencies (Ubuntu)
       if: ${{ startsWith(matrix.os, 'ubuntu') }}
@@ -93,6 +93,7 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DWTCV_BUILD_TESTS=ON
+        -DOpenCV_DIR="${{ steps.strings.outputs.build-output-dir }}/opencv"
         -S ${{ github.workspace }}
 
     - name: Inspect Venv
