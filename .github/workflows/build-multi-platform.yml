@@ -74,7 +74,7 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-        -DWTCV_BUILD_TESTS
+        -DWTCV_BUILD_TESTS=ON
         -S ${{ github.workspace }}
 
     - name: Inspect Venv
