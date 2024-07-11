@@ -76,9 +76,10 @@ jobs:
     - name: Install Dependencies (Windows)
       if: ${{ startsWith(matrix.os, 'windows') }}
       shell: cmd
+      # curl --output opencv-4.10.0windows.exe https://github.com/opencv/opencv/releases/latest/opencv-4.10.0-windows.exe
       run: |
-        curl --output opencv-windows.exe https://github.com/opencv/opencv/releases/latest/opencv-*-windows.exe
-        .\opencv-windows.exe -y -o"${{ steps.strings.outputs.build-output-dir }}/opencv"
+        curl https://github.com/opencv/opencv/releases/latest/opencv-4.10.0-windows.exe
+        .\opencv-4.10.0-windows.exe -y -o"${{ steps.strings.outputs.build-output-dir }}/opencv"
 
     - name: Install Dependencies (Ubuntu)
       if: ${{ startsWith(matrix.os, 'ubuntu') }}
