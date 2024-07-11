@@ -281,7 +281,7 @@ Wavelet create_haar(int type)
     filter_coeffs.convertTo(filter_coeffs, type);
 
     return Wavelet(
-        FilterBank::create_orthogonal(filter_coeffs),
+        FilterBank::create_conjugate_mirror(filter_coeffs),
         Orthogonality::ORTHOGONAL,
         Symmetry::ASYMMETRIC,
         "haar",
@@ -306,7 +306,7 @@ Wavelet create_daubechies(int order, int type)
     filter_coeffs.convertTo(filter_coeffs, type);
 
     return Wavelet(
-        FilterBank::create_orthogonal(filter_coeffs),
+        FilterBank::create_conjugate_mirror(filter_coeffs),
         Orthogonality::ORTHOGONAL,
         Symmetry::ASYMMETRIC,
         name,
@@ -331,7 +331,7 @@ Wavelet create_symlets(int order, int type)
     filter_coeffs.convertTo(filter_coeffs, type);
 
     return Wavelet(
-        FilterBank::create_orthogonal(filter_coeffs),
+        FilterBank::create_conjugate_mirror(filter_coeffs),
         Orthogonality::ORTHOGONAL,
         Symmetry::NEARLY_SYMMETRIC,
         name,
@@ -356,7 +356,7 @@ Wavelet create_coiflets(int order, int type)
     filter_coeffs.convertTo(filter_coeffs, type);
 
     return Wavelet(
-        FilterBank::create_orthogonal(filter_coeffs),
+        FilterBank::create_conjugate_mirror(filter_coeffs),
         Orthogonality::ORTHOGONAL,
         Symmetry::NEARLY_SYMMETRIC,
         name,
@@ -388,7 +388,7 @@ Wavelet create_biorthogonal(
     filter_coeffs2.convertTo(filter_coeffs2, type);
 
     return Wavelet(
-        FilterBank::create_biorthogonal(filter_coeffs1, filter_coeffs2),
+        FilterBank::create_quadrature_mirror(filter_coeffs1, filter_coeffs2),
         Orthogonality::BIORTHOGONAL,
         Symmetry::SYMMETRIC,
         name,
@@ -420,7 +420,7 @@ Wavelet create_reverse_biorthogonal(
     filter_coeffs1.convertTo(filter_coeffs1, type);
     cv::Mat filter_coeffs2(internal::BIORTHOGONAL_FILTER_COEFFS.at(name).second);
     filter_coeffs2.convertTo(filter_coeffs2, type);
-    auto biorthogonal_filter_bank = FilterBank::create_biorthogonal(
+    auto biorthogonal_filter_bank = FilterBank::create_quadrature_mirror(
         filter_coeffs1,
         filter_coeffs2
     );
