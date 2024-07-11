@@ -1,4 +1,39 @@
-enable_testing()
+
+set(VENV_PATH "${CMAKE_BINARY_DIR}/venv")
+set(VENV_PYTHON_EXECUTABLE "${VENV_PATH}/bin/python3.10")
+set(VENV_PIP_EXECUTABLE "${VENV_PATH}/bin/pip")
+set(WTCV_GENERATE_TEST_DATA_COMMAND ${VENV_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_test_cases.py)
+
+include(FindPython)
+if (Python_FOUND)
+    execute_process(
+        COMMAND "${Python3_EXECUTABLE}" -m venv "${VENV_PATH}"
+        RESULT_VARIABLE venv_created
+    )
+    if (venv_created GREATER 0)
+        message(FATAL_ERROR "Failed to create virtual environment")
+    endif()
+
+    execute_process(
+        COMMAND
+        "${VENV_PIP_EXECUTABLE}" install PyWavelets
+        RESULT_VARIABLE pywt_installed
+    )
+    if (pywt_installed GREATER 0)
+        message(FATAL_ERROR "Failed to install PyWavelets")
+    endif()
+
+    execute_process(
+        COMMAND
+        "${VENV_PIP_EXECUTABLE}" install opencv-python
+        RESULT_VARIABLE opencv_python_installed
+    )
+    if (opencv_python_installed GREATER 0)
+        message(FATAL_ERROR "Failed to install opencv-python")
+    endif()
+else()
+    message(FATAL_ERROR "Python not found")
+endif()
 
 #   ----------------------------------------------------------------------------
 #   Find or Fetch Dependencies
@@ -48,15 +83,47 @@ target_link_libraries (
 target_compile_definitions(
     wtcv-test
     PRIVATE
-    WAVELET_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/wavelet_test_data.json"
-    DWT2D_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/dwt2d_test_data.json"
-    SHRINK_THRESHOLDS_TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/shrink_thresholds_test_data.json"
+    WAVELET_TEST_DATA_PATH="${CMAKE_CURRENT_BINARY_DIR}/wavelet_test_data.json"
+    DWT2D_TEST_DATA_PATH="${CMAKE_CURRENT_BINARY_DIR}/dwt2d_test_data.json"
+    SHRINK_THRESHOLDS_TEST_DATA_PATH="${CMAKE_CURRENT_BINARY_DIR}/shrink_thresholds_test_data.json"
+)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/images/lena.png
+    ${CMAKE_CURRENT_BINARY_DIR}/images/lena.png
+    COPYONLY
+)
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/images/lena_gray.png
+    ${CMAKE_CURRENT_BINARY_DIR}/images/lena_gray.png
+    COPYONLY
+)
+add_custom_target(
+    build-test-data
+    ${WTCV_GENERATE_TEST_DATA_COMMAND} --build
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Building test data"
+)
+add_dependencies(wtcv-test build-test-data)
+
+add_custom_target(
+    clean-test-data
+    ${WTCV_GENERATE_TEST_DATA_COMMAND} --clean
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Cleaning test data"
+)
+
+add_custom_target(
+    rebuild-test-data
+    ${WTCV_GENERATE_TEST_DATA_COMMAND} --clean --build
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Rebuilding test data"
 )
 
 #   ----------------------------------------------------------------------------
 #   Add Tests
 #   ----------------------------------------------------------------------------
 add_test(
-    NAME testwtcv
+    NAME wtcv_unittests
     COMMAND wtcv-test
 )

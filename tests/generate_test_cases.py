@@ -1,6 +1,7 @@
 """
 Generates test case for wavelet unit tests
 """
+import argparse
 import collections
 from collections import abc
 from collections.abc import Callable
@@ -8,6 +9,7 @@ from dataclasses import dataclass
 import json
 import os
 import warnings
+from pathlib import Path
 from typing import Any, Optional, SupportsIndex
 
 import numpy as np
@@ -15,9 +17,9 @@ from numpy.typing import ArrayLike
 import pywt
 import cv2
 
-WAVELET_TEST_DATA_FILENAME = 'wavelet_test_data.json'
-DWT2D_TEST_DATA_FILENAME = 'dwt2d_test_data.json'
-SHRINK_THRESHOLDS_TEST_DATA_FILENAME = 'shrink_thresholds_test_data.json'
+WAVELET_TEST_DATA_FILENAME = Path('wavelet_test_data.json')
+DWT2D_TEST_DATA_FILENAME = Path('dwt2d_test_data.json')
+SHRINK_THRESHOLDS_TEST_DATA_FILENAME = Path('shrink_thresholds_test_data.json')
 LENA_FILEPATH = 'images/lena.png'
 SEED = 42
 
@@ -52,6 +54,10 @@ class CoefficientTestCases:
 
 
 def generate_coefficients_test_cases():
+    if WAVELET_TEST_DATA_FILENAME.exists():
+        return
+
+    print('Generating wavelet coefficients test data...')
     coeffs_test_cases = CoefficientTestCases(
         families=[
             'haar',
@@ -63,6 +69,10 @@ def generate_coefficients_test_cases():
         ],
     )
     coeffs_test_cases.generate(WAVELET_TEST_DATA_FILENAME)
+
+
+def discard_coefficients_test_cases():
+    WAVELET_TEST_DATA_FILENAME.unlink(missing_ok=True)
 
 
 #   ============================================================================
@@ -170,17 +180,19 @@ class DWT2DTestCases:
 
     def transform_pattern(self, wavelet, pattern, level):
         axes = (0, 1)
-        try:
-            coeffs = pywt.wavedec2(
-                pattern,
-                wavelet,
-                axes=axes,
-                mode=self.border_mode,
-                level=level,
-            )
-            coeffs = pywt.coeffs_to_array(coeffs, axes=axes)[0]
-        except ValueError:
-            coeffs = np.zeros([0, 0], dtype=self.dtype)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=UserWarning)
+            try:
+                coeffs = pywt.wavedec2(
+                    pattern,
+                    wavelet,
+                    axes=axes,
+                    mode=self.border_mode,
+                    level=level,
+                )
+                coeffs = pywt.coeffs_to_array(coeffs, axes=axes)[0]
+            except ValueError:
+                coeffs = np.zeros([0, 0], dtype=self.dtype)
 
         return coeffs.astype(self.dtype)
 
@@ -188,6 +200,10 @@ class DWT2DTestCases:
 
 
 def generate_dwt2d_test_cases():
+    if DWT2D_TEST_DATA_FILENAME.exists():
+        return
+
+    print('Generating dwt2d test data...')
     def create_patterns(shape):
         return dict(
             zeros=np.zeros(shape, dtype=np.float64),
@@ -452,6 +468,10 @@ def generate_dwt2d_test_cases():
     )
 
     dwt2d_test_cases.generate(filename=DWT2D_TEST_DATA_FILENAME)
+
+
+def discard_dwt2d_test_cases():
+    DWT2D_TEST_DATA_FILENAME.unlink(missing_ok=True)
 
 
 #   ============================================================================
@@ -815,6 +835,10 @@ class ShrinkThresholdTestCaseGenerator:
 
 
 def generate_shrink_test_cases():
+    if SHRINK_THRESHOLDS_TEST_DATA_FILENAME.exists():
+        return
+
+    print('Generating shrink coefficients test data...')
     linear_shape = (16, 16, 3)
     linear_levels = 4
     lena_shape = (64, 64)
@@ -1011,6 +1035,10 @@ def generate_shrink_test_cases():
     shrink_test_case_generator.generate(SHRINK_THRESHOLDS_TEST_DATA_FILENAME)
 
 
+def discard_shrink_test_cases():
+    SHRINK_THRESHOLDS_TEST_DATA_FILENAME.unlink(missing_ok=True)
+
+
 #   ============================================================================
 #   Main
 #   ============================================================================
@@ -1073,9 +1101,20 @@ class TestCaseJsonEncoder(json.JSONEncoder):
 
 
 def main():
-    generate_coefficients_test_cases()
-    generate_dwt2d_test_cases()
-    generate_shrink_test_cases()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--clean', action='store_true')
+    parser.add_argument('--build', action='store_true')
+    args = parser.parse_args()
+
+    if args.clean:
+        discard_coefficients_test_cases()
+        discard_dwt2d_test_cases()
+        discard_shrink_test_cases()
+
+    if args.build:
+        generate_coefficients_test_cases()
+        generate_dwt2d_test_cases()
+        generate_shrink_test_cases()
 
 
 if __name__ == '__main__':

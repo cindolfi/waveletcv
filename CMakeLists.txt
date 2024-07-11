@@ -60,6 +60,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CVWT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
+enable_testing()
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(examples)
