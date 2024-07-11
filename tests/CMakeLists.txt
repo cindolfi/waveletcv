@@ -9,7 +9,7 @@ include(FindPython)
 if (Python_FOUND)
     message(STATUS "Creating python virtual environment")
     execute_process(
-        COMMAND "${Python3_EXECUTABLE}" -m venv "${VENV_PATH}"
+        COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_PATH}"
         RESULT_VARIABLE venv_created
     )
     if (venv_created GREATER 0)
