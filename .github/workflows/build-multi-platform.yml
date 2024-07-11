@@ -77,7 +77,7 @@ jobs:
       if: ${{ startsWith(matrix.os, 'windows') }}
       run: |
         curl --output opencv-windows.exe https://github.com/opencv/opencv/releases/latest/opencv-*-windows.exe
-        opencv-windows.exe
+        cmd opencv-windows.exe
 
     - name: Install Dependencies (Ubuntu)
       if: ${{ startsWith(matrix.os, 'ubuntu') }}
