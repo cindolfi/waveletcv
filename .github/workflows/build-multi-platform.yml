@@ -79,7 +79,7 @@ jobs:
       # curl --output opencv-4.10.0windows.exe https://https://github.com/opencv/opencv/releases/tag/4.10.0/opencv-4.10.0-windows.exe
       run: |
         # curl https://github.com/opencv/opencv/releases/latest/opencv-4.10.0-windows.exe
-        curl --output opencv-windows.exe https://https://github.com/opencv/opencv/releases/tag/4.10.0/opencv-4.10.0-windows.exe
+        curl --output opencv-windows.exe https://github.com/opencv/opencv/releases/tag/4.10.0/opencv-4.10.0-windows.exe
         .\opencv-windows.exe -y -o"${{ steps.strings.outputs.build-output-dir }}/opencv"
 
     - name: Install Dependencies (Ubuntu)
