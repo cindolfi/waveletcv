@@ -24,6 +24,15 @@ if (Python_FOUND)
 
     execute_process(
         COMMAND
+        "${VENV_PIP_EXECUTABLE}" install numpy
+        RESULT_VARIABLE numpy_installed
+    )
+    if (numpy_installed GREATER 0)
+        message(FATAL_ERROR "Failed to install numpy")
+    endif()
+
+    execute_process(
+        COMMAND
         "${VENV_PIP_EXECUTABLE}" install PyWavelets
         RESULT_VARIABLE pywt_installed
     )
