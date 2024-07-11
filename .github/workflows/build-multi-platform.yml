@@ -27,22 +27,32 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         # os: [ubuntu-latest, windows-latest]
-        os: [ubuntu-latest]
+        # os: [ubuntu-latest]
+        os: [windows-latest]
         build_type: [Release]
         # c_compiler: [gcc, clang, cl]
         # c_compiler: [gcc, cl]
-        c_compiler: [gcc]
+        c_compiler: [cl]
+        # c_compiler: [gcc]
 
         include:
-          # - os: windows-latest
-          #   c_compiler: cl
-          #   cpp_compiler: cl
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
+          - os: windows-latest
+            c_compiler: cl
+            cpp_compiler: cl
           # - os: ubuntu-latest
-          #   c_compiler: clang
-          #   cpp_compiler: clang++
+          #   c_compiler: gcc
+          #   cpp_compiler: g++
+
+        # include:
+        #   - os: windows-latest
+        #     c_compiler: cl
+        #     cpp_compiler: cl
+        #   - os: ubuntu-latest
+        #     c_compiler: gcc
+        #     cpp_compiler: g++
+        #   # - os: ubuntu-latest
+        #   #   c_compiler: clang
+        #   #   cpp_compiler: clang++
         # exclude:
         #   - os: windows-latest
         #     c_compiler: gcc
@@ -54,9 +64,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Dependencies
-      run: sudo apt update && sudo apt install -y libopencv-dev python3-venv
-
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs.
       # These step outputs can be used throughout the workflow file.
@@ -64,6 +71,17 @@ jobs:
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+
+    - name: Install Dependencies (Windows)
+      if: ${{ startsWith(matrix.os, 'windows') }}
+      run: |
+        curl --output opencv-windows.exe https://github.com/opencv/opencv/releases/latest/opencv-*-windows.exe
+        opencv-windows.exe
+
+    - name: Install Dependencies (Ubuntu)
+      if: ${{ startsWith(matrix.os, 'ubuntu') }}
+      run: sudo apt update && sudo apt install -y libopencv-dev python3-venv
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory.
