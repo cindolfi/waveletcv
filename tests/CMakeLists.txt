@@ -7,6 +7,7 @@ set(WTCV_GENERATE_TEST_DATA_COMMAND ${VENV_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SO
 
 include(FindPython)
 if (Python_FOUND)
+    message(STATUS "Creating python virtual environment")
     execute_process(
         COMMAND "${Python3_EXECUTABLE}" -m venv "${VENV_PATH}"
         RESULT_VARIABLE venv_created
@@ -22,6 +23,7 @@ if (Python_FOUND)
     #     message(FATAL_ERROR "Python virutal environment pip does not exist: ${VENV_PIP_EXECUTABLE}")
     # endif()
 
+    message(STATUS "Installing numpy")
     execute_process(
         COMMAND
         ${VENV_PIP_EXECUTABLE} install numpy
@@ -31,6 +33,7 @@ if (Python_FOUND)
         message(FATAL_ERROR "Failed to install numpy")
     endif()
 
+    message(STATUS "Installing PyWavelets")
     execute_process(
         COMMAND
         ${VENV_PIP_EXECUTABLE} install PyWavelets
@@ -40,6 +43,7 @@ if (Python_FOUND)
         message(FATAL_ERROR "Failed to install PyWavelets")
     endif()
 
+    message(STATUS "Installing opencv-python")
     execute_process(
         COMMAND
         ${VENV_PIP_EXECUTABLE} install opencv-python
