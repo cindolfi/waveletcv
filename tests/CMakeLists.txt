@@ -1,6 +1,7 @@
 
 set(VENV_PATH "${CMAKE_BINARY_DIR}/venv")
-set(VENV_PYTHON_EXECUTABLE "${VENV_PATH}/bin/python")
+# set(VENV_PYTHON_EXECUTABLE "${VENV_PATH}/bin/python")
+set(VENV_PYTHON_EXECUTABLE "python")
 set(VENV_PIP_EXECUTABLE "${VENV_PATH}/bin/pip")
 set(WTCV_GENERATE_TEST_DATA_COMMAND ${VENV_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_test_cases.py)
 
@@ -12,6 +13,13 @@ if (Python_FOUND)
     )
     if (venv_created GREATER 0)
         message(FATAL_ERROR "Failed to create virtual environment")
+    endif()
+
+    # if (NOT EXISTS VENV_PYTHON_EXECUTABLE)
+    #     message(FATAL_ERROR "Python virutal environment executable does not exist: ${VENV_PYTHON_EXECUTABLE}")
+    # endif()
+    if (NOT EXISTS VENV_PIP_EXECUTABLE)
+        message(FATAL_ERROR "Python virutal environment pip does not exist: ${VENV_PIP_EXECUTABLE}")
     endif()
 
     execute_process(
