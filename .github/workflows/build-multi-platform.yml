@@ -54,8 +54,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install OpenCV
-      run: sudo apt update && sudo apt install -y libopencv-dev
+    - name: Install Dependencies
+      run: sudo apt update && sudo apt install -y libopencv-dev python3-venv
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs.

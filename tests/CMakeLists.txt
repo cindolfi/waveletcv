@@ -24,7 +24,7 @@ if (Python_FOUND)
 
     execute_process(
         COMMAND
-        "${VENV_PIP_EXECUTABLE}" install numpy
+        ${VENV_PIP_EXECUTABLE} install numpy
         RESULT_VARIABLE numpy_installed
     )
     if (numpy_installed GREATER 0)
@@ -33,7 +33,7 @@ if (Python_FOUND)
 
     execute_process(
         COMMAND
-        "${VENV_PIP_EXECUTABLE}" install PyWavelets
+        ${VENV_PIP_EXECUTABLE} install PyWavelets
         RESULT_VARIABLE pywt_installed
     )
     if (pywt_installed GREATER 0)
@@ -42,7 +42,7 @@ if (Python_FOUND)
 
     execute_process(
         COMMAND
-        "${VENV_PIP_EXECUTABLE}" install opencv-python
+        ${VENV_PIP_EXECUTABLE} install opencv-python
         RESULT_VARIABLE opencv_python_installed
     )
     if (opencv_python_installed GREATER 0)
