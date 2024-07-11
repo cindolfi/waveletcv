@@ -1,60 +1,11 @@
+include(python_venv)
 
-set(VENV_PATH "${CMAKE_BINARY_DIR}/venv")
-set(VENV_PYTHON_EXECUTABLE "${VENV_PATH}/bin/python")
-# set(VENV_PYTHON_EXECUTABLE "python")
-set(VENV_PIP_EXECUTABLE "${VENV_PATH}/bin/pip")
-set(WTCV_GENERATE_TEST_DATA_COMMAND ${VENV_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_test_cases.py)
-
-include(FindPython)
-if (Python_FOUND)
-    message(STATUS "Creating python virtual environment")
-    execute_process(
-        COMMAND ${Python3_EXECUTABLE} -m venv "${VENV_PATH}"
-        RESULT_VARIABLE venv_created
-    )
-    if (venv_created GREATER 0)
-        message(FATAL_ERROR "Failed to create virtual environment")
-    endif()
-
-    # if (NOT EXISTS VENV_PYTHON_EXECUTABLE)
-    #     message(FATAL_ERROR "Python virutal environment executable does not exist: ${VENV_PYTHON_EXECUTABLE}")
-    # endif()
-    # if (NOT EXISTS "${VENV_PIP_EXECUTABLE}")
-    #     message(FATAL_ERROR "Python virutal environment pip does not exist: ${VENV_PIP_EXECUTABLE}")
-    # endif()
-
-    message(STATUS "Installing numpy")
-    execute_process(
-        COMMAND
-        ${VENV_PIP_EXECUTABLE} install numpy
-        RESULT_VARIABLE numpy_installed
-    )
-    if (numpy_installed GREATER 0)
-        message(FATAL_ERROR "Failed to install numpy")
-    endif()
-
-    message(STATUS "Installing PyWavelets")
-    execute_process(
-        COMMAND
-        ${VENV_PIP_EXECUTABLE} install PyWavelets
-        RESULT_VARIABLE pywt_installed
-    )
-    if (pywt_installed GREATER 0)
-        message(FATAL_ERROR "Failed to install PyWavelets")
-    endif()
-
-    message(STATUS "Installing opencv-python")
-    execute_process(
-        COMMAND
-        ${VENV_PIP_EXECUTABLE} install opencv-python
-        RESULT_VARIABLE opencv_python_installed
-    )
-    if (opencv_python_installed GREATER 0)
-        message(FATAL_ERROR "Failed to install opencv-python")
-    endif()
-else()
-    message(FATAL_ERROR "Python not found")
+if (NOT VENV_CREATED)
+    message(FATAL_ERROR "Failed to create python virtual environment - cannot generate test data")
 endif()
+
+pip_install_requirements("${CMAKE_CURRENT_SOURCE_DIR}/requirements.txt")
+set(WTCV_GENERATE_TEST_DATA_COMMAND ${VENV_PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/generate_test_cases.py)
 
 #   ----------------------------------------------------------------------------
 #   Find or Fetch Dependencies

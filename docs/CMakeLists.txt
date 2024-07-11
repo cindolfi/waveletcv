@@ -4,10 +4,10 @@
 find_package(Doxygen)
 find_package(Sphinx)
 
-if (DOXYGEN_FOUND)
+if (NOT DOXYGEN_FOUND)
     message(STATUS "Could not find Doxygen")
 endif()
-if (SPHINX_FOUND)
+if (NOT SPHINX_FOUND)
     message(STATUS "Could not find Sphinx")
 endif()
 
@@ -102,7 +102,6 @@ if (DOXYGEN_FOUND AND SPHINX_FOUND)
         COMMENT "Generating documentation with Sphinx"
     )
 
-    message(STATUS "DOXYGEN_OUTPUT_DIR ${DOXYGEN_OUTPUT_DIR}")
     add_custom_target(
         sphinx
         # ALL
