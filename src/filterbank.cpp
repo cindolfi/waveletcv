@@ -993,7 +993,7 @@ FilterBank FilterBank::create_biorthogonal(
 
     auto filter_bank = create_quadrature_mirror(reconstruct_lowpass, decompose_lowpass);
 
-    filter_bank.throw_if_not_orthogonal();
+    filter_bank.throw_if_not_biorthogonal();
 
     return filter_bank;
 }
