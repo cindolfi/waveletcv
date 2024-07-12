@@ -1,32 +1,30 @@
 
-.. [![Latest Docs](https://readthedocs.org/projects/nlopt/badge/?version=latest)](http://nlopt.readthedocs.io/en/latest/)
-.. [![Build Status](https://github.com/stevengj/nlopt/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/stevengj/nlopt/actions/workflows/build.yml)
+.. |Build Status| image:: https://img.shields.io/github/actions/workflow/status/cindolfi/waveletcv/build-multi-platform.yml?branch=master&event=push&logo=github%20actions&label=Build
+   :alt: GitHub Actions Workflow Status
 
-|Build Status|
+.. |Release| image:: https://img.shields.io/github/v/release/cindolfi/waveletcv?logo=github&label=Latest%20Release
+   :alt: GitHub Release
 
-.. |Build Status| image:: https://github.com/cindolfi/waveletcv/actions/workflows/build.yml/badge.svg?branch=master
-   :target: https://github.com/cindolfi/waveletcv/actions/workflows/build.yml
-
-|GitHub release|
-
-.. |GitHub release| image:: https://img.shields.io/github/release/Naereen/StrapDown.js.svg
-   :target: https://GitHub.com/Naereen/StrapDown.js/releases/
-
-|Documentation Status|
-
-.. |Documentation Status| image:: https://readthedocs.org/projects/waveletcv/badge/?version=latest
-   :target: http://waveletcv.readthedocs.io/?badge=latest
-
-|MIT license|
+.. |Documentation Status| image:: https://img.shields.io/readthedocs/waveletcv?logo=read%20the%20docs&label=Docs
+   :alt: Read the Docs
 
 .. |MIT license| image:: https://img.shields.io/badge/License-MIT-blue.svg
-   :target: https://lbesson.mit-license.org/
+   :target: https://github.com/cindolfi/waveletcv/blob/master/LICENSE
 
+.. list-table::
+   :width: 100%
+   :class: borderless
+
+   * - |Build Status|
+     - |Release|
+     - |Documentation Status|
+     - |MIT license|
 
 WaveletCV
 =========
 
 .. include:: snippets/overview.rst
+
 
 Build & Install
 ---------------
@@ -38,7 +36,12 @@ See the :ref:`installation` documentation for more details.
 Usage
 -----
 
-.. include:: snippets/basic_usage.rst
+.. include:: snippets/usage/wavelets.rst
+
+.. include:: snippets/usage/dwt.rst
+
+.. include:: snippets/usage/shrink.rst
+
 
 Documentation
 -------------
