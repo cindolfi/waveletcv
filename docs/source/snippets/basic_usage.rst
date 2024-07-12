@@ -1,5 +1,5 @@
 
-.. include:: usage/wavelets.rst
+.. include:: snippets/usage/wavelets.rst
 
 .. seealso::
 
@@ -7,7 +7,7 @@
     - :ref:`wavelet_api`
 
 
-.. include:: usage/dwt.rst
+.. include:: snippets/usage/dwt.rst
 
 .. seealso::
 
@@ -16,7 +16,7 @@
     - `wtcv-dwt2d <https://github.com/cindolfi/waveletcv/examples/dwt2d.cpp>`_ for a complete example
 
 
-.. include:: usage/shrink.rst
+.. include:: snippets/usage/shrink.rst
 
 .. seealso::
 
