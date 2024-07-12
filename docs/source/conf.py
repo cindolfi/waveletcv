@@ -39,9 +39,9 @@ html_css_files = [
 ]
 html_context = dict(
    display_github=True,
-   github_user='chrismi',
-   github_repo='wtcv',
-   github_version='stable',
+   github_user='cindolfi',
+   github_repo='waveletcv',
+   github_version='latest',
 )
 html_baseurl = 'https://wavletcv.readthedocs.io/en/latest'
 readme_docs_url_type = 'html'
