@@ -55,7 +55,7 @@ build system (version 3.24.0 or newer).
     # Download
     git clone https://github.com/cindolfi/wtcv.git
     cd wtcv
-    git checkout stable
+    git checkout latest
 
     # Configure
     mkdir build
