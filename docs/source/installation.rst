@@ -7,31 +7,32 @@ Installation
 Overview
 ---------
 
-.. include:: build_and_install.rst
+.. include:: snippets/build_and_install.rst
 
 Source Code
 -----------
 
-The latest source code is available from the
-`WaveletCV releases <https://github.com/cindolfi/waveletcv/releases>`_
-page on Github.
+
+.. The latest source code is available from the
+.. `WaveletCV releases <|github_url|/releases/latest>`_
+.. page on Github.
+
+.. .. code-block:: bash
+..     :substitutions:
+
+..     curl -L |github_url|/archive/refs/tags/|github_version_tag|.tar.gz > |github_repo|.tar.gz
+..     tar -xaf |github_repo|.tar.gz
+..     cd |github_repo|-|github_version|
+
+Download the `latest release <|github_url|/releases/latest>`_ from Github
+or clone the repository and checkout the |github_version_tag| commit.
 
 .. code-block:: bash
+    :substitutions:
 
-    wget https://github.com/cindolfi/waveletcv/releases/stable.gz.tar
-    tar -axf wtcv.gz.tar
-    cd wtcv
-
-
-Alternatively, clone the
-`WaveletCV repository <https://github.com/cindolfi/wtcv.git>`_ and checkout the
-``stable`` tag.
-
-.. code-block:: bash
-
-    git clone https://github.com/cindolfi/wtcv.git
-    cd wtcv
-    git checkout stable
+    git clone |github_url|.git
+    cd |github_repo|
+    git checkout |github_version_tag|
 
 
 Configure

@@ -107,9 +107,11 @@ if (DOXYGEN_FOUND AND SPHINX_FOUND)
         ${SPHINX_EXECUTABLE}
         -b html
         -Dbreathe_projects.WaveletCV="${CMAKE_CURRENT_BINARY_DIR}/xml"
-        -Drelease="${WaveletCV_VERSION}"
-        -Dproject="${WaveletCV_PROJECT_NAME}"
-        -Dhtml_context.github_version="${WaveletCV_VERSION}"
+        -Dproject="${CMAKE_PROJECT_NAME}"
+        -Dversion="${CMAKE_PROJECT_VERSION_MAJOR}.${CMAKE_PROJECT_VERSION_MINOR}"
+        -Drelease="${CMAKE_PROJECT_VERSION}"
+        -Dhtml_context.cmake_version="${CMAKE_MINIMUM_REQUIRED_VERSION}"
+        -Dhtml_context.github_version="${CMAKE_PROJECT_VERSION}"
         \"${CVWT_SPHINX_SOURCE}\"
         \"${CVWT_SPHINX_BUILD}\"
     )

@@ -2,6 +2,14 @@
 .. _.installation: https://wavletcv.readthedocs.io/en/latest/installation.html#installation
 
 
+        .. |release| replace:: 0.1.0
+        .. |author| replace:: Christopher Indolfi
+        .. |cmake_version| replace:: 3.24
+        .. |github_url| replace:: https://github.com/cindolfi/waveletcv
+        .. |github_repo| replace:: waveletcv
+        .. |github_version| replace:: 0.1.0
+        .. |github_version_tag| replace:: v0.1.0
+    
 
 .. |Build Status| image:: https://img.shields.io/github/actions/workflow/status/cindolfi/waveletcv/build-multi-platform.yml?branch=master&event=push&logo=github&label=Build
    :alt: GitHub Actions Workflow Status
@@ -13,7 +21,7 @@
 
 .. |Documentation Status| image:: https://img.shields.io/readthedocs/waveletcv?logo=read%20the%20docs&label=Docs
    :alt: Read the Docs
-   :target: http://waveletcv.readthedocs.org
+   :target: https://waveletcv.readthedocs.io/en/latest/
 
 .. |MIT license| image:: https://img.shields.io/badge/License-MIT-blue.svg
    :target: https://github.com/cindolfi/waveletcv/blob/master/LICENSE
@@ -46,16 +54,17 @@ Features
 Build & Install
 ---------------
 
-WaveletCV is built and installed using the
+WaveletCV is built and installed using
 `cmake <https://cmake.org/cmake/help/latest/manual/cmake.1.html>`_
-build system (version 3.24.0 or newer).
+|cmake_version| or newer.
 
 .. code-block:: bash
+    :substitutions:
 
     # Download
-    git clone https://github.com/cindolfi/wtcv.git
-    cd wtcv
-    git checkout latest
+    git clone |github_url|.git
+    cd |github_repo|
+    git checkout |github_version_tag|
 
     # Configure
     mkdir build
@@ -66,6 +75,7 @@ build system (version 3.24.0 or newer).
 
     # Install To /usr/local
     sudo cmake --install build
+
 
 See the |.installation|_ documentation for more details.
 
@@ -240,7 +250,7 @@ offers more options to fine tune the algorithm.
 Documentation
 -------------
 
-Documentation is hosted at `http://waveletcv.readthedocs.org`_.
+Documentation is hosted at `read the docs <https://waveletcv.readthedocs.org>`_.
 
 License
 -------

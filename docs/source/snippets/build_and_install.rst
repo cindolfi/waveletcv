@@ -1,13 +1,14 @@
-WaveletCV is built and installed using the
+WaveletCV is built and installed using
 `cmake <https://cmake.org/cmake/help/latest/manual/cmake.1.html>`_
-build system (version 3.24.0 or newer).
+|cmake_version| or newer.
 
 .. code-block:: bash
+    :substitutions:
 
     # Download
-    git clone https://github.com/cindolfi/wtcv.git
-    cd wtcv
-    git checkout latest
+    git clone |github_url|.git
+    cd |github_repo|
+    git checkout |github_version_tag|
 
     # Configure
     mkdir build

@@ -5,3 +5,4 @@ breathe
 sphinx-readme
 sphinx_rtd_theme
 readthedocs-sphinx-search
+Sphinx-Substitution-Extensions

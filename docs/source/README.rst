@@ -9,7 +9,7 @@
 
 .. |Documentation Status| image:: https://img.shields.io/readthedocs/waveletcv?logo=read%20the%20docs&label=Docs
    :alt: Read the Docs
-   :target: http://waveletcv.readthedocs.org
+   :target: https://waveletcv.readthedocs.io/en/latest/
 
 .. |MIT license| image:: https://img.shields.io/badge/License-MIT-blue.svg
    :target: https://github.com/cindolfi/waveletcv/blob/master/LICENSE
