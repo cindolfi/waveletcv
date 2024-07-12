@@ -7,7 +7,7 @@ build:
   tools:
     python: '3.10'
   commands:
-    - apt install doxygen
+    # - apt install doxygen
     - mkdir -p $READTHEDOCS_OUTPUT/html
     - mkdir build
     - cmake -B build -DWTCV_BUILD_DOCS_ONLY=ON -DWTCV_DOCS_OUTPUT=$READTHEDOCS_OUTPUT/html
