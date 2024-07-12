@@ -1,5 +1,7 @@
 # use pip to install cmake because apt version is too old
 cmake
 sphinx
+breathe
+sphinx-readme
 sphinx_rtd_theme
 readthedocs-sphinx-search
