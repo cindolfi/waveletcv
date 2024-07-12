@@ -1,17 +1,5 @@
-.. |.dwt| replace:: Discrete Wavelet Transform (DWT)
-.. _.dwt: https://wavletcv.readthedocs.io/en/latest/dwt2d.html#dwt
-.. |.dwt_api| replace:: DWT API
-.. _.dwt_api: https://wavletcv.readthedocs.io/en/latest/api/dwt.html#dwt-api
 .. |.installation| replace:: Installation
 .. _.installation: https://wavletcv.readthedocs.io/en/latest/installation.html#installation
-.. |.shrink| replace:: Shrinking DWT Coefficients
-.. _.shrink: https://wavletcv.readthedocs.io/en/latest/shrink.html#shrink
-.. |.shrink_api| replace:: Shrinker API
-.. _.shrink_api: https://wavletcv.readthedocs.io/en/latest/api/shrink.html#shrink-api
-.. |.wavelet| replace:: Wavelets
-.. _.wavelet: https://wavletcv.readthedocs.io/en/latest/wavelet.html#wavelet
-.. |.wavelet_api| replace:: Wavelet API
-.. _.wavelet_api: https://wavletcv.readthedocs.io/en/latest/api/wavelet.html#wavelet-api
 
 
 
@@ -84,7 +72,6 @@ See the |.installation|_ documentation for more details.
 Usage
 -----
 
-
 Wavelet Objects
 ^^^^^^^^^^^^^^^
 
@@ -112,33 +99,6 @@ Accessing the filter banks decomposition and reconstruction kernels
     wavelet.filter_bank().decompose_kernels().highpass()
     wavelet.filter_bank().reconstruct_kernels().lowpass()
     wavelet.filter_bank().reconstruct_kernels().highpass()
-
-
-
-.. raw:: html
-
-   <table>
-       <tr align="left">
-           <th>
-
-📄 Seealso
-
-.. raw:: html
-
-   </th>
-   <tr><td>
-
-- |.wavelet|_
-- |.wavelet_api|_
-
-.. raw:: html
-
-   </td></tr>
-   </table>
-
-
-
-
 
 
 Discrete Wavelet Transform (DWT)
@@ -242,32 +202,6 @@ Get detail coefficients at every scale and subband
     std::vector<wtcv::DWT2D::Coeffs::DetailTuple>> details = coeffs.details();
 
 
-.. raw:: html
-
-   <table>
-       <tr align="left">
-           <th>
-
-📄 Seealso
-
-.. raw:: html
-
-   </th>
-   <tr><td>
-
-- |.dwt|_
-- |.dwt_api|_
-- `wtcv-dwt2d <https://github.com/cindolfi/waveletcv/examples/dwt2d.cpp>`_ for a complete example
-
-.. raw:: html
-
-   </td></tr>
-   </table>
-
-
-
-
-
 Shrink DWT Coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -300,31 +234,6 @@ or as a function object
 
 The functional API is simpler and more succinct, whereas the object oriented API
 offers more options to fine tune the algorithm.
-
-
-
-.. raw:: html
-
-   <table>
-       <tr align="left">
-           <th>
-
-📄 Seealso
-
-.. raw:: html
-
-   </th>
-   <tr><td>
-
-- |.shrink|_
-- |.shrink_api|_
-- `wtcv-denoise <https://github.com/cindolfi/waveletcv/examples/denoise.cpp>`_ for a complete example
-
-.. raw:: html
-
-   </td></tr>
-   </table>
-
 
 
 

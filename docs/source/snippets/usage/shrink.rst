@@ -1,4 +1,3 @@
-
 Shrink DWT Coefficients
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -31,10 +30,3 @@ or as a function object
 
 The functional API is simpler and more succinct, whereas the object oriented API
 offers more options to fine tune the algorithm.
-
-
-.. seealso::
-
-    - :ref:`shrink`
-    - :ref:`shrink_api`
-    - `wtcv-denoise <https://github.com/cindolfi/waveletcv/examples/denoise.cpp>`_ for a complete example

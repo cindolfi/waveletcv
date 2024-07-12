@@ -1,4 +1,3 @@
-
 Wavelet Objects
 ^^^^^^^^^^^^^^^
 
@@ -26,10 +25,3 @@ Accessing the filter banks decomposition and reconstruction kernels
     wavelet.filter_bank().decompose_kernels().highpass()
     wavelet.filter_bank().reconstruct_kernels().lowpass()
     wavelet.filter_bank().reconstruct_kernels().highpass()
-
-
-.. seealso::
-
-    - :ref:`wavelet`
-    - :ref:`wavelet_api`
-

@@ -1,5 +1,3 @@
-
-
 Discrete Wavelet Transform (DWT)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -81,10 +79,3 @@ Get detail coefficients at every scale and subband
 .. code-block:: cpp
 
     std::vector<wtcv::DWT2D::Coeffs::DetailTuple>> details = coeffs.details();
-
-.. seealso::
-
-    - :ref:`dwt`
-    - :ref:`dwt_api`
-    - `wtcv-dwt2d <https://github.com/cindolfi/waveletcv/examples/dwt2d.cpp>`_ for a complete example
-
