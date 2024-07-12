@@ -49,7 +49,7 @@ Usage
 Documentation
 -------------
 
-Documentation is hosted at `http://waveletcv.readthedocs.org`_.
+Documentation is hosted at `read the docs <https://waveletcv.readthedocs.org>`_.
 
 License
 -------
