@@ -1,0 +1,5 @@
+# use pip to install cmake because apt version is too old
+cmake
+sphinx
+sphinx_rtd_theme
+readthedocs-sphinx-search

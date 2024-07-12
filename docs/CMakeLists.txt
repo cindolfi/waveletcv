@@ -4,11 +4,15 @@
 find_package(Doxygen)
 find_package(Sphinx)
 
-if (NOT DOXYGEN_FOUND)
-    message(STATUS "Could not find Doxygen")
+if (DOXYGEN_FOUND)
+    message(STATUS "Found Doxygen ${DOXYGEN_VERSION}")
+else()
+    message(STATUS "Doxygen not found")
 endif()
-if (NOT SPHINX_FOUND)
-    message(STATUS "Could not find Sphinx")
+if (SPHINX_FOUND)
+    message(STATUS "Found Sphinx ${SPHINX_VERSION}")
+else()
+    message(STATUS "Sphinx not found")
 endif()
 
 if (DOXYGEN_FOUND AND SPHINX_FOUND)
@@ -30,8 +34,11 @@ if (DOXYGEN_FOUND AND SPHINX_FOUND)
         endif()
     endif()
 
-    message(STATUS "Doxygen version ${DOXYGEN_VERSION}")
-
+    #   ------------------------------------------------------------------------
+    #   Doxygen Configuration
+    #   ------------------------------------------------------------------------
+    #   Symbols
+    set(DOXYGEN_EXTRACT_ALL YES)
     set(
         DOXYGEN_EXCLUDE_SYMBOLS
         "wtcv::internal"
@@ -42,26 +49,36 @@ if (DOXYGEN_FOUND AND SPHINX_FOUND)
         "common_*"
         "CoeffsExpr"
     )
+
+    #   General
+    set(DOXYGEN_USE_MATHJAX YES)
+
+    #   Warnings
     set(DOXYGEN_WARN_IF_UNDOCUMENTED NO)
     # set(DOXYGEN_WARNINGS NO)
-    set(DOXYGEN_EXTRACT_ALL YES)
+
+    #   External Libraries
     set(DOXYGEN_TAGFILES "${OPENCV_DOCS_TAG_FILE}=${OPENCV_DOCS_URL}")
-    set(DOXYGEN_HTML_EXTRA_STYLESHEET "docs.css")
-    set(DOXYGEN_FORMULA_MACROFILE "${CMAKE_CURRENT_SOURCE_DIR}/formulas.tex")
-    set(DOXYGEN_USE_MATHJAX YES)
     set(DOXYGEN_BUILTIN_STL_SUPPORT YES)
 
+    #   Extra Files
+    set(DOXYGEN_FORMULA_MACROFILE "${CMAKE_CURRENT_SOURCE_DIR}/formulas.tex")
+    set(DOXYGEN_HTML_EXTRA_STYLESHEET "docs.css")
+    set(DOXYGEN_CITE_BIB_FILES "dwt2d.bib")
+    set(DOXYGEN_IMAGE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+
+    #   Grouping & Sorting
     set(DOXYGEN_SHOW_GROUPED_MEMB_INC YES)
     set(DOXYGEN_SORT_MEMBER_DOCS NO)
 
+    #   Path Names
     set(DOXYGEN_STRIP_FROM_PATH "${CVWT_INCLUDE_DIR}")
     set(DOXYGEN_STRIP_FROM_INC_PATH "${CVWT_INCLUDE_DIR}")
-    set(DOXYGEN_CITE_BIB_FILES "dwt2d.bib")
-
     set(DOXYGEN_FULL_PATH_NAMES YES)
+
+    #   Aliases
     set(DOXYGEN_ALIASES
     [[rst=^^@verbatim embed:rst:leading-asterisk^^"]]
-    # [[rst=^^@verbatim embed:rst^^"]]
     [[endrst=@endverbatim"]]
     [[pref{1}="<span class=\"paramref paramname\">\1</span>"]]
     [[pref{2}="<span class=\"paramref paramname\">\1</span>.@ref \2"]]
@@ -72,28 +89,43 @@ if (DOXYGEN_FOUND AND SPHINX_FOUND)
     )
     set(DOXYGEN_VERBATIM_VARS DOXYGEN_ALIASES)
 
-    set(DOXYGEN_IMAGE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
-
-    # set(DOXYGEN_MATHJAX_EXTENSIONS ams)
-
+    #   Output
     set(DOXYGEN_GENERATE_XML YES)
 
-    doxygen_add_docs(
-        docs
-        ${CVWT_INCLUDE_DIR}/wtcv
-    )
-
+    #   ------------------------------------------------------------------------
+    #   Sphinx
+    #   ------------------------------------------------------------------------
     set(CVWT_SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/source)
-    set(CVWT_SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
+    if (WTCV_DOCS_OUTPUT)
+        set(CVWT_SPHINX_BUILD ${WTCV_DOCS_OUTPUT})
+    else()
+        set(CVWT_SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
+    endif()
+
     set(
         SPHINK_COMMAND
         ${SPHINX_EXECUTABLE}
         -b html
         -Dbreathe_projects.WaveletCV="${CMAKE_CURRENT_BINARY_DIR}/xml"
+        -Drelease="${WaveletCV_VERSION}"
+        -Dproject="${WaveletCV_PROJECT_NAME}"
+        -Dhtml_context.github_version="${WaveletCV_VERSION}"
         \"${CVWT_SPHINX_SOURCE}\"
         \"${CVWT_SPHINX_BUILD}\"
     )
 
+    message(VERBOSE "CVWT_SPHINX_SOURCE ${CVWT_SPHINX_SOURCE}")
+    message(VERBOSE "CVWT_SPHINX_BUILD ${CVWT_SPHINX_BUILD}")
+
+    #   ------------------------------------------------------------------------
+    #   Add docs target
+    #   ------------------------------------------------------------------------
+    doxygen_add_docs(
+        docs
+        ${CVWT_INCLUDE_DIR}/wtcv
+    )
+
+    #   Run sphinx-build after generating doxygen xml
     add_custom_command(
         TARGET docs
         POST_BUILD
@@ -101,13 +133,8 @@ if (DOXYGEN_FOUND AND SPHINX_FOUND)
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating documentation with Sphinx"
     )
-
-    add_custom_target(
-        sphinx
-        # ALL
-        COMMAND ${SPHINK_COMMAND}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating documentation with Sphinx"
-    )
+elseif(WTCV_BUILD_DOCS_ONLY)
+    message(FATAL_ERROR "Failed to add docs target")
+else()
+    message(WARNING "Failed to add docs target")
 endif()
-

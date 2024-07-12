@@ -14,15 +14,11 @@ message(STATUS "WaveletCV version ${WaveletCV_VERSION}")
 include(FetchContent)
 
 #   ----------------------------------------------------------------------------
-#   Find or Fetch Dependencies
-#   ----------------------------------------------------------------------------
-find_package(OpenCV REQUIRED)
-
-#   ----------------------------------------------------------------------------
 #   Options
 #   ----------------------------------------------------------------------------
 option(CVWT_ENABLE_BUILD_IN_PLACE "Allow building in the project directory" OFF)
 option(WTCV_BUILD_TESTS "Build tests" OFF)
+option(WTCV_BUILD_DOCS_ONLY "Only add the docs target" OFF)
 
 #   Ensure CMAKE_BUILD_TYPE is set.
 get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -61,12 +57,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CVWT_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/include")
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-add_subdirectory(src)
-if (WTCV_BUILD_TESTS)
-    enable_testing()
-    add_subdirectory(tests)
+if (NOT WTCV_BUILD_DOCS_ONLY)
+    find_package(OpenCV REQUIRED)
+
+    add_subdirectory(src)
+    if (WTCV_BUILD_TESTS)
+        enable_testing()
+        add_subdirectory(tests)
+    endif()
+    add_subdirectory(examples)
 endif()
-add_subdirectory(examples)
 add_subdirectory(docs)
 
 #   ----------------------------------------------------------------------------
