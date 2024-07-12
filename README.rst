@@ -3,7 +3,7 @@
 
 
 
-.. |Build Status| image:: https://img.shields.io/github/actions/workflow/status/cindolfi/waveletcv/build-multi-platform.yml?branch=master&event=push&logo=github%20actions&label=Build
+.. |Build Status| image:: https://img.shields.io/github/actions/workflow/status/cindolfi/waveletcv/build-multi-platform.yml?branch=master&event=push&logo=github&label=Build
    :alt: GitHub Actions Workflow Status
    :target: https://github.com/cindolfi/waveletcv/actions
 
