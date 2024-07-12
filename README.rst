@@ -17,12 +17,15 @@
 
 .. |Build Status| image:: https://img.shields.io/github/actions/workflow/status/cindolfi/waveletcv/build-multi-platform.yml?branch=master&event=push&logo=github%20actions&label=Build
    :alt: GitHub Actions Workflow Status
+   :target: https://github.com/cindolfi/waveletcv/actions
 
 .. |Release| image:: https://img.shields.io/github/v/release/cindolfi/waveletcv?logo=github&label=Latest%20Release
    :alt: GitHub Release
+   :target: https://github.com/cindolfi/waveletcv/releases/latest
 
 .. |Documentation Status| image:: https://img.shields.io/readthedocs/waveletcv?logo=read%20the%20docs&label=Docs
    :alt: Read the Docs
+   :target: http://waveletcv.readthedocs.org
 
 .. |MIT license| image:: https://img.shields.io/badge/License-MIT-blue.svg
    :target: https://github.com/cindolfi/waveletcv/blob/master/LICENSE
